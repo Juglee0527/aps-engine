@@ -110,7 +110,8 @@ aps-engine
 - [x] 001. 프로젝트 요구사항과 범위 문서화
 - [x] 002. Spring Boot 프로젝트 초기화
 - [x] 003. 로컬 PostgreSQL 환경 구성
-- [ ] 004. 데이터베이스 마이그레이션 기반 추가
+- [x] 004. 데이터베이스 마이그레이션 기반 추가
+- [ ] 005. 공통 API 오류 응답 구성
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 
@@ -161,6 +162,7 @@ $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 ```
 
 애플리케이션은 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` 환경변수로 연결 정보를 받습니다.
+시작 시 Flyway가 `src/main/resources/db/migration`의 버전 마이그레이션을 순서대로 적용하고, Hibernate는 스키마를 생성하지 않고 매핑만 검증합니다.
 
 ---
 

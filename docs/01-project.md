@@ -87,6 +87,17 @@ Spring Boot(local profile)
 - 애플리케이션은 `local` 프로필에서만 로컬 DataSource를 구성합니다.
 - JPA는 스키마를 자동 생성하지 않고 `ddl-auto=validate`로 코드와 스키마의 일치 여부만 검사합니다.
 
+### 데이터베이스 마이그레이션
+
+스키마 변경 도구는 Flyway를 사용합니다.
+
+- 현재 스키마 변경은 SQL로 명확하게 검토할 수 있으므로 별도 포맷 계층이 필요한 Liquibase보다 단순합니다.
+- 마이그레이션 파일은 `src/main/resources/db/migration`에 `V<버전>__<설명>.sql` 형식으로 추가합니다.
+- `V1__baseline.sql`은 도메인 테이블이 없는 초기 기준점이며 Flyway 연동 자체를 검증합니다.
+- 한번 적용되어 공유된 마이그레이션은 수정하지 않고 새로운 버전 파일로 변경합니다.
+- Flyway가 애플리케이션 시작 시 먼저 스키마를 변경하고 Hibernate는 `validate`만 수행합니다.
+- `baseline-on-migrate`는 기존 비관리 스키마를 암묵적으로 수용하지 않도록 `false`로 유지합니다.
+
 ### 생산 기준정보
 
 - Factory

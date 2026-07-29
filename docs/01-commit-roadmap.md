@@ -49,7 +49,7 @@ Redis나 비즈니스 도메인은 아직 추가하지 마세요.
 권장 커밋 메시지: chore: configure local postgresql environment
 ```
 
-### [ ] 004. 데이터베이스 마이그레이션 기반 추가
+### [x] 004. 데이터베이스 마이그레이션 기반 추가
 
 ```text
 데이터베이스 스키마를 버전 관리할 수 있도록 Flyway 또는 Liquibase 중 프로젝트에 더 단순한 하나를 선택해 추가해 주세요.
