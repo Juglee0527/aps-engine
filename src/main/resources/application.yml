@@ -1,7 +1,6 @@
 spring:
   application:
     name: aps-engine
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  jpa:
+    open-in-view: false
 

@@ -21,7 +21,7 @@
 | Language | Java 21 |
 | Framework | Spring Boot 3.5.16 |
 | Build | Gradle 8.14.4 Wrapper |
-| Database | PostgreSQL |
+| Database | PostgreSQL 18.4 |
 | ORM | Spring Data JPA, QueryDSL |
 | Cache | Redis |
 | Test | JUnit 5, Mockito, Testcontainers |
@@ -68,6 +68,24 @@ Spring Boot 3.x 요구사항을 유지하면서 2026년 7월 기준 마지막 �
 - Spring Boot 및 Gradle 프로젝트
 - PostgreSQL 연동과 스키마 마이그레이션
 - 공통 API 오류 응답
+
+### 로컬 PostgreSQL 연결
+
+로컬 환경은 `compose.yml`의 PostgreSQL 단일 서비스로 구성합니다.
+
+```text
+Spring Boot(local profile)
+  → jdbc:postgresql://localhost:${POSTGRES_PORT}/${POSTGRES_DB}
+  → PostgreSQL 18.4 container
+  → postgres-data named volume
+```
+
+- 사용자명, 비밀번호, 데이터베이스명과 호스트 포트는 환경변수로 주입합니다.
+- `POSTGRES_PASSWORD`는 필수값이며 Compose 파일에 기본 비밀번호를 두지 않습니다.
+- `.env.example`은 변수명과 예시만 제공하고 실제 `.env`는 Git에서 제외합니다.
+- 컨테이너 내부 데이터는 `postgres-data` 이름의 볼륨에 보존합니다.
+- 애플리케이션은 `local` 프로필에서만 로컬 DataSource를 구성합니다.
+- JPA는 스키마를 자동 생성하지 않고 `ddl-auto=validate`로 코드와 스키마의 일치 여부만 검사합니다.
 
 ### 생산 기준정보
 

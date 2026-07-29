@@ -39,7 +39,7 @@ README에 실행 방법을 반영해 주세요.
 권장 커밋 메시지: chore: initialize spring boot project
 ```
 
-### [ ] 003. 로컬 PostgreSQL 환경 구성
+### [x] 003. 로컬 PostgreSQL 환경 구성
 
 ```text
 PostgreSQL만 실행하는 Docker Compose 구성을 추가해 주세요.

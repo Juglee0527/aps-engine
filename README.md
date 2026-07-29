@@ -109,7 +109,8 @@ aps-engine
 
 - [x] 001. 프로젝트 요구사항과 범위 문서화
 - [x] 002. Spring Boot 프로젝트 초기화
-- [ ] 003. 로컬 PostgreSQL 환경 구성
+- [x] 003. 로컬 PostgreSQL 환경 구성
+- [ ] 004. 데이터베이스 마이그레이션 기반 추가
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 
@@ -120,8 +121,22 @@ aps-engine
 ## Requirements
 
 - Java 21
+- Docker Desktop
 
 별도의 Gradle 설치는 필요하지 않습니다. 저장소에 포함된 Gradle Wrapper를 사용합니다.
+
+## PostgreSQL
+
+환경변수 예시 파일을 복사한 뒤 로컬 개발용 비밀번호를 변경합니다.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d postgres
+docker compose ps
+```
+
+`.env`는 Git 추적 대상에서 제외됩니다. 실제 비밀번호를 `.env.example`이나 소스 코드에 기록하지 마세요.
+호스트의 `5432` 포트가 이미 사용 중이면 `.env`의 `POSTGRES_PORT`를 빈 포트로 변경합니다.
 
 ## Test
 
@@ -129,13 +144,23 @@ aps-engine
 .\gradlew.bat test
 ```
 
+실제 로컬 PostgreSQL 연결 테스트는 다음과 같이 명시적으로 실행합니다.
+
+```powershell
+$env:APS_POSTGRES_INTEGRATION_TEST = "true"
+$env:POSTGRES_DB = "aps"
+$env:POSTGRES_USER = "aps"
+$env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
+.\gradlew.bat test --tests "*PostgreSqlConnectionTest"
+```
+
 ## Run
 
 ```powershell
-.\gradlew.bat bootRun
+.\gradlew.bat bootRun --args="--spring.profiles.active=local"
 ```
 
-현재 002 단계에서는 데이터베이스 자동설정을 임시로 제외했습니다. PostgreSQL 연결은 003 단계에서 구성합니다.
+애플리케이션은 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` 환경변수로 연결 정보를 받습니다.
 
 ---
 
