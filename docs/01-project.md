@@ -19,8 +19,8 @@
 | 구분 | 기술 |
 | --- | --- |
 | Language | Java 21 |
-| Framework | Spring Boot 3.x |
-| Build | Gradle |
+| Framework | Spring Boot 3.5.16 |
+| Build | Gradle 8.14.4 Wrapper |
 | Database | PostgreSQL |
 | ORM | Spring Data JPA, QueryDSL |
 | Cache | Redis |
@@ -33,6 +33,8 @@
 ```text
 com.github.juglee0527.apsengine
 ```
+
+Spring Boot 3.x 요구사항을 유지하면서 2026년 7월 기준 마지막 공개 3.x 릴리스인 3.5.16을 사용합니다. Java 21은 이 버전의 공식 지원 범위에 포함됩니다.
 
 ## 3. 핵심 용어
 

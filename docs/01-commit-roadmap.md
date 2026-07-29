@@ -28,7 +28,7 @@ APS Engine의 목표, 핵심 용어, 구현 범위와 제외 범위를 docs/01-p
 권장 커밋 메시지: docs: define project scope and terminology
 ```
 
-### [ ] 002. Spring Boot 프로젝트 초기화
+### [x] 002. Spring Boot 프로젝트 초기화
 
 ```text
 Java 21과 Spring Boot 3.x 기반 Gradle 프로젝트를 초기화해 주세요.

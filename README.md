@@ -107,7 +107,35 @@ aps-engine
 
 🚧 In Progress
 
-현재 APS Engine의 핵심 기능을 단계적으로 구현 중입니다.
+- [x] 001. 프로젝트 요구사항과 범위 문서화
+- [x] 002. Spring Boot 프로젝트 초기화
+- [ ] 003. 로컬 PostgreSQL 환경 구성
+
+상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
+
+---
+
+# Local Development
+
+## Requirements
+
+- Java 21
+
+별도의 Gradle 설치는 필요하지 않습니다. 저장소에 포함된 Gradle Wrapper를 사용합니다.
+
+## Test
+
+```powershell
+.\gradlew.bat test
+```
+
+## Run
+
+```powershell
+.\gradlew.bat bootRun
+```
+
+현재 002 단계에서는 데이터베이스 자동설정을 임시로 제외했습니다. PostgreSQL 연결은 003 단계에서 구성합니다.
 
 ---
 

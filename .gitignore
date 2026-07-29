@@ -1,0 +1,15 @@
+.gradle/
+.gradle-user-home/
+build/
+out/
+
+*.log
+
+.env
+.env.*
+!.env.example
+
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/shelf/
+

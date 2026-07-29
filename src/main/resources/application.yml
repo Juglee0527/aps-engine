@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: aps-engine
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
