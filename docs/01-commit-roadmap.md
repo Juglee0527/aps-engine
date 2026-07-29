@@ -318,7 +318,7 @@ ProductionOrder, Operation, Machine, 시간 구간 사이의 데이터 흐름과
 권장 커밋 메시지: feat: add production order priority rule
 ```
 
-### [ ] 027. 스케줄 실행 유스케이스
+### [x] 027. 스케줄 실행 유스케이스
 
 ```text
 확정된 ProductionOrder를 조회해 스케줄러를 실행하고 결과를 반환하는 애플리케이션 유스케이스를 구현해 주세요.
@@ -328,7 +328,7 @@ ProductionOrder, Operation, Machine, 시간 구간 사이의 데이터 흐름과
 권장 커밋 메시지: feat: add scheduling execution use case
 ```
 
-### [ ] 028. 스케줄 결과 저장
+### [x] 028. 스케줄 결과 저장
 
 ```text
 검토된 스케줄 결과를 DB에 저장하는 모델과 유스케이스를 구현해 주세요.

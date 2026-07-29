@@ -57,4 +57,23 @@ ProductionOrder
 ## 5. 제한사항
 
 현재 엔진에는 Changeover Time, Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색이 없습니다.
-또한 JPA 조회와 결과 저장은 다음 스케줄 실행 유스케이스에서 연결합니다.
+
+## 6. 실행과 저장
+
+`ScheduleRunService`는 아래 흐름을 하나의 트랜잭션으로 실행합니다.
+
+```text
+CONFIRMED 오더 조회
+  → Routing·Operation·Machine 조회
+    → WorkingCalendar 스냅샷 구성
+      → ForwardScheduler 실행
+        → ScheduleRun·ScheduledOperation 저장
+          → 오더를 SCHEDULED로 변경
+```
+
+`executionKey`는 클라이언트가 생성하는 실행 식별자입니다.
+완료된 키의 재요청은 기존 결과를 반환하며, DB 유니크 제약이 동시 중복 저장을 최종 방어합니다.
+저장이나 상태 변경 중 하나라도 실패하면 전체 트랜잭션을 롤백하므로 부분 결과가 남지 않습니다.
+
+저장된 결과는 실행 당시의 오더, 공정, 설비를 참조합니다.
+현재는 마스터 수정 API가 없으므로 별도 이름 스냅샷을 중복 저장하지 않습니다.

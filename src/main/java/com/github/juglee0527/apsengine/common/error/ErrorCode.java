@@ -40,6 +40,10 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "비활성 설비는 Operation에 배정할 수 없습니다."
     ),
+    MACHINE_UNAVAILABLE_FOR_SCHEDULING(
+            HttpStatus.CONFLICT,
+            "가동 가능 상태가 아닌 설비는 스케줄링할 수 없습니다."
+    ),
     ROUTING_CODE_DUPLICATED(
             HttpStatus.CONFLICT,
             "해당 품목에 이미 등록된 Routing 코드입니다."
@@ -64,6 +68,18 @@ public enum ErrorCode {
     WORKING_CALENDAR_REQUIRED(
             HttpStatus.CONFLICT,
             "스케줄링할 설비의 근무시간이 필요합니다."
+    ),
+    CONFIRMED_PRODUCTION_ORDER_REQUIRED(
+            HttpStatus.CONFLICT,
+            "스케줄링할 확정 생산오더가 필요합니다."
+    ),
+    SCHEDULE_RUN_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "스케줄 실행 결과를 찾을 수 없습니다."
+    ),
+    SCHEDULE_EXECUTION_DUPLICATED(
+            HttpStatus.CONFLICT,
+            "같은 실행 키의 스케줄이 처리 중입니다."
     ),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 

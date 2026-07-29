@@ -382,3 +382,35 @@ GET /api/v1/machines/{machineId}/availability?from=2026-08-03T08:00:00%2B09:00&t
 
 가용시간 응답은 총 `availableMinutes`와 날짜별 실제 `intervals`를 반환합니다.
 조회 구간은 최대 366일입니다.
+
+## 13. 스케줄 실행과 결과 조회 API
+
+### 스케줄 실행
+
+```http
+POST /api/v1/schedules
+Content-Type: application/json
+```
+
+```json
+{
+  "executionKey": "3cb6bb7e-6d18-4d9b-b314-54812025c401",
+  "planningStart": "2026-07-27T08:00:00+09:00"
+}
+```
+
+- `CONFIRMED` 생산오더만 실행 대상입니다.
+- 공정 설비는 `AVAILABLE` 상태이며 근무 캘린더가 있어야 합니다.
+- 같은 `executionKey`로 완료 후 재요청하면 저장된 기존 결과를 반환합니다.
+- 동시 중복 요청은 `409 SCHEDULE_EXECUTION_DUPLICATED`로 차단합니다.
+- 성공하면 대상 생산오더를 `SCHEDULED`로 변경하고 결과를 한 트랜잭션에 저장합니다.
+
+### 스케줄 결과 조회
+
+```http
+GET /api/v1/schedules/latest
+GET /api/v1/schedules/{scheduleRunId}
+```
+
+응답은 실행 상태와 기간, 오더·작업·지연 오더 수, 간트 보드에 필요한 작업별
+품목·공정·설비·시작·종료 정보를 반환합니다.

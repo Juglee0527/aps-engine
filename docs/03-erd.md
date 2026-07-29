@@ -65,6 +65,26 @@ erDiagram
         TIME end_time
         BOOLEAN active
     }
+    SCHEDULE_RUN {
+        BIGINT schedule_run_id PK
+        UUID execution_key UK
+        TIMESTAMPTZ planning_start
+        TIMESTAMPTZ scheduling_end
+        TIMESTAMPTZ created_at
+        VARCHAR_20 status
+    }
+    SCHEDULED_OPERATION {
+        BIGINT scheduled_operation_id PK
+        BIGINT schedule_run_id FK
+        BIGINT production_order_id FK
+        BIGINT operation_id FK
+        BIGINT machine_id FK
+        INTEGER operation_sequence
+        TIMESTAMPTZ start_at
+        TIMESTAMPTZ end_at
+        BIGINT working_minutes
+        BOOLEAN delayed
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
     PRODUCT ||--o{ ROUTING : defines
@@ -72,6 +92,10 @@ erDiagram
     MACHINE ||--o{ OPERATION : executes
     ROUTING ||--o{ PRODUCTION_ORDER : produces
     MACHINE ||--o{ WORKING_CALENDAR : available
+    SCHEDULE_RUN ||--o{ SCHEDULED_OPERATION : contains
+    PRODUCTION_ORDER ||--o{ SCHEDULED_OPERATION : scheduled
+    OPERATION ||--o{ SCHEDULED_OPERATION : plans
+    MACHINE ||--o{ SCHEDULED_OPERATION : occupies
 ```
 
 ### 제약조건
@@ -146,3 +170,14 @@ erDiagram
 | `ck_working_calendar_day` | `day_of_week` | 유효한 요일만 허용 |
 | `ck_working_calendar_time` | `start_time`, `end_time` | 종료가 시작보다 이후임을 보장 |
 | `ix_working_calendar_machine_day` | 설비·요일·시작 | 설비 주간 캘린더 조회 지원 |
+
+### ScheduleRun과 ScheduledOperation 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_schedule_run_execution_key` | `execution_key` | 같은 실행 요청의 중복 저장 방지 |
+| `ck_schedule_run_period` | 계획 시작·스케줄 종료 | 종료가 계획 시작보다 이전이 아님을 보장 |
+| `uk_scheduled_operation_run_order_operation` | 실행·오더·공정 | 한 실행에서 같은 오더 공정 중복 방지 |
+| `ck_scheduled_operation_period` | 시작·종료 | 작업 종료가 시작보다 이후임을 보장 |
+| `ix_scheduled_operation_run_start` | 실행·시작 | 간트 보드 시간순 조회 지원 |
+| `ix_scheduled_operation_machine_start` | 설비·시작 | 설비별 부하 조회 지원 |

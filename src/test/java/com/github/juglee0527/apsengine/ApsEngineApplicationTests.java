@@ -12,6 +12,7 @@ import com.github.juglee0527.apsengine.machine.MachineRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.product.ProductRepository;
 import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
+import com.github.juglee0527.apsengine.scheduling.ScheduleRunRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +50,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private WorkingCalendarRepository workingCalendarRepository;
+
+    @MockitoBean
+    private ScheduleRunRepository scheduleRunRepository;
 
     @Test
     void contextLoads() {

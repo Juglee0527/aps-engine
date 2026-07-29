@@ -1,5 +1,6 @@
 package com.github.juglee0527.apsengine.order;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -18,4 +19,14 @@ public interface ProductionOrderRepository
 
     @EntityGraph(attributePaths = {"routing", "routing.product"})
     Page<ProductionOrder> findAllBy(Pageable pageable);
+
+    @EntityGraph(attributePaths = {
+            "routing",
+            "routing.product",
+            "routing.operations",
+            "routing.operations.machine"
+    })
+    List<ProductionOrder> findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+            ProductionOrderStatus status
+    );
 }
