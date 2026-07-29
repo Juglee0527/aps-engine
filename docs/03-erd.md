@@ -31,8 +31,27 @@ erDiagram
         VARCHAR_20 unit
         BOOLEAN active
     }
+    ROUTING {
+        BIGINT routing_id PK
+        BIGINT product_id FK
+        VARCHAR_50 routing_code
+        VARCHAR_100 routing_name
+        BOOLEAN active
+    }
+    OPERATION {
+        BIGINT operation_id PK
+        BIGINT routing_id FK
+        BIGINT machine_id FK
+        INTEGER operation_sequence
+        VARCHAR_50 operation_code
+        VARCHAR_100 operation_name
+        INTEGER processing_time_minutes
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
+    PRODUCT ||--o{ ROUTING : defines
+    ROUTING ||--|{ OPERATION : contains
+    MACHINE ||--o{ OPERATION : executes
 ```
 
 ### 제약조건
@@ -78,3 +97,13 @@ erDiagram
 | `ck_product_code_format` | `product_code` | 품목 코드 형식 검증 |
 | `ck_product_name_not_blank` | `product_name` | 공백 이름 방지 |
 | `ck_product_unit` | `unit` | 정의된 ProductUnit만 허용 |
+
+### Routing과 Operation 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_routing_product_code` | `product_id`, `routing_code` | 품목별 Routing 코드 중복 방지 |
+| `uk_operation_routing_sequence` | `routing_id`, `operation_sequence` | Routing 내 공정 순서 중복 방지 |
+| `uk_operation_routing_code` | `routing_id`, `operation_code` | Routing 내 공정 코드 중복 방지 |
+| `ck_operation_processing_time` | `processing_time_minutes` | 1~10080분 범위 보장 |
+| `ix_operation_machine_id` | `machine_id` | 설비별 Operation 접근 인덱스 |

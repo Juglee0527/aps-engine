@@ -175,7 +175,7 @@ Product 단건 조회와 페이징 목록 조회 API를 구현해 주세요.
 권장 커밋 메시지: feat: add product query api
 ```
 
-### [ ] 014. Routing과 Operation 도메인 모델
+### [x] 014. Routing과 Operation 도메인 모델
 
 ```text
 제품 생산 순서를 표현하는 Routing과 Operation 도메인을 설계하고 구현해 주세요.
@@ -185,7 +185,7 @@ REST API는 아직 구현하지 말고 도메인 문서와 ERD를 갱신해 주�
 권장 커밋 메시지: feat: add routing and operation domain
 ```
 
-### [ ] 015. Routing 등록 및 조회 API
+### [x] 015. Routing 등록 및 조회 API
 
 ```text
 제품별 Routing 등록과 조회 API를 구현해 주세요.

@@ -9,6 +9,7 @@ import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLineRepository;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
 import com.github.juglee0527.apsengine.product.ProductRepository;
+import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private ProductRepository productRepository;
+
+    @MockitoBean
+    private RoutingRepository routingRepository;
 
     @Test
     void contextLoads() {

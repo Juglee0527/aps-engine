@@ -273,3 +273,43 @@ GET /api/v1/products?page=0&size=20
 `404 PRODUCT_NOT_FOUND`, 중복 코드는 `409 PRODUCT_CODE_DUPLICATED`를 반환합니다.
 
 Product 수정, 삭제, BOM과 재고 API는 현재 범위에 포함하지 않습니다.
+
+## 10. Routing API
+
+### Routing 등록
+
+```http
+POST /api/v1/products/{productId}/routings
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "ROUTING-01",
+  "name": "표준 Routing",
+  "operations": [
+    {
+      "sequence": 10,
+      "code": "CUT",
+      "name": "절단",
+      "processingTimeMinutes": 15,
+      "machineId": 100
+    }
+  ]
+}
+```
+
+- Operation은 하나 이상 필요합니다.
+- `sequence`와 Operation 코드는 같은 Routing 안에서 중복될 수 없습니다.
+- 비활성 Product와 비활성 Machine은 신규 Routing 정의에 사용할 수 없습니다.
+- 표준 가공시간은 제품 1단위당 분 단위입니다.
+
+### Routing 조회
+
+```http
+GET /api/v1/routings/{routingId}
+GET /api/v1/products/{productId}/routings
+```
+
+응답의 Operation은 sequence 오름차순으로 반환합니다. Routing 수정과 버전 활성화 전환,
+대체 설비 정의는 현재 범위에 포함하지 않습니다.

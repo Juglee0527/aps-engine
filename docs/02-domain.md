@@ -106,3 +106,31 @@ Product는 생산오더와 Routing이 참조하는 생산 대상 품목입니다
 
 코드는 다른 기준정보와 같은 대문자 정규화 규칙을 사용합니다. 현재 APS 수직 MVP에서
 수량과 공정시간을 계산할 기준 단위만 관리하며 BOM, 재고, 가격과 단위 환산은 포함하지 않습니다.
+
+## 5. Routing과 Operation
+
+Routing은 한 Product를 생산하는 공정 경로이며, Operation의 순서 있는 집합입니다.
+
+### Routing
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `id` | Long | 내부 식별자 |
+| `product` | Product | 필수, 활성 품목만 신규 Routing 등록 가능 |
+| `code` | String | 품목 안에서 유일 |
+| `name` | String | 최대 100자 |
+| `active` | boolean | 신규 생성 시 `true` |
+| `operations` | List | 하나 이상, sequence 오름차순 |
+
+### Operation
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `sequence` | int | Routing 안에서 유일, 1 이상 |
+| `code` | String | Routing 안에서 유일 |
+| `name` | String | 최대 100자 |
+| `processingTimeMinutes` | int | 제품 1단위당 표준 가공시간, 1~10080분 |
+| `machine` | Machine | Operation을 수행할 고정 설비 |
+
+MVP에서는 Operation마다 하나의 설비만 지정합니다. 대체 설비, 병렬 공정, 작업자와
+setup 시간은 첫 순방향 스케줄러 범위에서 제외하고 이후 제약조건 단계에서 확장합니다.

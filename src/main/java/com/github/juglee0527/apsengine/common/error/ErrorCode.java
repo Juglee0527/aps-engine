@@ -32,6 +32,19 @@ public enum ErrorCode {
             "이미 등록된 품목 코드입니다."
     ),
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "품목을 찾을 수 없습니다."),
+    PRODUCT_INACTIVE(
+            HttpStatus.CONFLICT,
+            "비활성 품목에는 Routing을 등록할 수 없습니다."
+    ),
+    MACHINE_INACTIVE(
+            HttpStatus.CONFLICT,
+            "비활성 설비는 Operation에 배정할 수 없습니다."
+    ),
+    ROUTING_CODE_DUPLICATED(
+            HttpStatus.CONFLICT,
+            "해당 품목에 이미 등록된 Routing 코드입니다."
+    ),
+    ROUTING_NOT_FOUND(HttpStatus.NOT_FOUND, "Routing을 찾을 수 없습니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

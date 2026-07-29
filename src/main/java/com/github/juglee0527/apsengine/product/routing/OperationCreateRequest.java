@@ -1,0 +1,27 @@
+package com.github.juglee0527.apsengine.product.routing;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
+public record OperationCreateRequest(
+        @Min(value = 1, message = "Operation 순서는 1 이상이어야 합니다.")
+        int sequence,
+
+        @NotBlank(message = "Operation 코드는 필수입니다.")
+        @Size(max = 50, message = "Operation 코드는 50자를 초과할 수 없습니다.")
+        String code,
+
+        @NotBlank(message = "Operation 이름은 필수입니다.")
+        @Size(max = 100, message = "Operation 이름은 100자를 초과할 수 없습니다.")
+        String name,
+
+        @Min(value = 1, message = "표준 가공시간은 1분 이상이어야 합니다.")
+        @Max(value = 10080, message = "표준 가공시간은 10080분 이하여야 합니다.")
+        int processingTimeMinutes,
+
+        @Min(value = 1, message = "설비 ID는 1 이상이어야 합니다.")
+        long machineId
+) {
+}
