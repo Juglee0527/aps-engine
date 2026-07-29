@@ -59,7 +59,7 @@ Hibernate ddl-auto는 운영에 안전한 값으로 설정하고 테스트로 �
 권장 커밋 메시지: chore: add database migration foundation
 ```
 
-### [ ] 005. 공통 API 오류 응답 구성
+### [x] 005. 공통 API 오류 응답 구성
 
 ```text
 Validation 오류와 예상 가능한 애플리케이션 오류를 일관되게 반환할 최소 공통 오류 응답을 구현해 주세요.
