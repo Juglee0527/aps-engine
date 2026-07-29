@@ -17,7 +17,15 @@ erDiagram
         VARCHAR_100 line_name
         BOOLEAN active
     }
+    MACHINE {
+        BIGINT machine_id PK
+        BIGINT production_line_id FK
+        VARCHAR_50 machine_code
+        VARCHAR_100 machine_name
+        VARCHAR_20 status
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
+    PRODUCTION_LINE ||--o{ MACHINE : contains
 ```
 
 ### 제약조건
@@ -41,3 +49,15 @@ erDiagram
 | `ck_production_line_code_format` | `line_code` | 라인 코드 형식 검증 |
 | `ck_production_line_name_not_blank` | `line_name` | 공백 이름 방지 |
 | `ix_production_line_factory_id` | `factory_id` | 공장별 라인 접근을 위한 인덱스 |
+
+### Machine 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `pk_machine` | `machine_id` | 설비 내부 식별자 |
+| `fk_machine_production_line` | `production_line_id` | 소속 생산라인 참조 |
+| `uk_machine_line_code` | `production_line_id`, `machine_code` | 라인 내 설비 코드 중복 방지 |
+| `ck_machine_code_format` | `machine_code` | 설비 코드 형식 검증 |
+| `ck_machine_name_not_blank` | `machine_name` | 공백 이름 방지 |
+| `ck_machine_status` | `status` | 정의된 MachineStatus만 허용 |
+| `ix_machine_production_line_id` | `production_line_id` | 라인별 설비 접근 인덱스 |

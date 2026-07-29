@@ -119,7 +119,8 @@ aps-engine
 - [x] 007. Factory 등록 API
 - [x] 008. Factory 조회 API
 - [x] 009. ProductionLine 도메인과 등록 API
-- [ ] 010. Machine 도메인 모델
+- [x] 010. Machine 도메인 모델
+- [ ] 011. Machine 등록 및 조회 API
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 

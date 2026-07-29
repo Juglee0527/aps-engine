@@ -1,8 +1,8 @@
 package com.github.juglee0527.apsengine.factory.line;
 
-import java.util.Locale;
 import java.util.Objects;
 
+import com.github.juglee0527.apsengine.common.domain.BusinessCodeNormalizer;
 import com.github.juglee0527.apsengine.factory.Factory;
 
 import jakarta.persistence.Column;
@@ -28,8 +28,6 @@ public class ProductionLine {
 
     static final int MAX_CODE_LENGTH = 50;
     static final int MAX_NAME_LENGTH = 100;
-
-    private static final String CODE_PATTERN = "[A-Z0-9][A-Z0-9_-]*";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -59,7 +57,11 @@ public class ProductionLine {
 
     private ProductionLine(Factory factory, String code, String name) {
         this.factory = validateFactory(factory);
-        this.code = normalizeCode(code);
+        this.code = BusinessCodeNormalizer.normalize(
+                code,
+                "생산라인 코드",
+                MAX_CODE_LENGTH
+        );
         this.name = normalizeName(name);
         this.active = true;
     }
@@ -100,28 +102,6 @@ public class ProductionLine {
             );
         }
         return factory;
-    }
-
-    private static String normalizeCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("생산라인 코드는 필수입니다.");
-        }
-
-        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
-        if (normalizedCode.isEmpty()) {
-            throw new IllegalArgumentException("생산라인 코드는 필수입니다.");
-        }
-        if (normalizedCode.length() > MAX_CODE_LENGTH) {
-            throw new IllegalArgumentException(
-                    "생산라인 코드는 50자를 초과할 수 없습니다."
-            );
-        }
-        if (!normalizedCode.matches(CODE_PATTERN)) {
-            throw new IllegalArgumentException(
-                    "생산라인 코드는 영문, 숫자, 하이픈, 밑줄만 사용할 수 있습니다."
-            );
-        }
-        return normalizedCode;
     }
 
     private static String normalizeName(String name) {

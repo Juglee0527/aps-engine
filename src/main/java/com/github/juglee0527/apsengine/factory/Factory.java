@@ -1,6 +1,6 @@
 package com.github.juglee0527.apsengine.factory;
 
-import java.util.Locale;
+import com.github.juglee0527.apsengine.common.domain.BusinessCodeNormalizer;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,8 +15,6 @@ public class Factory {
 
     static final int MAX_CODE_LENGTH = 50;
     static final int MAX_NAME_LENGTH = 100;
-
-    private static final String CODE_PATTERN = "[A-Z0-9][A-Z0-9_-]*";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,7 +44,11 @@ public class Factory {
     }
 
     private Factory(String code, String name) {
-        this.code = normalizeCode(code);
+        this.code = BusinessCodeNormalizer.normalize(
+                code,
+                "공장 코드",
+                MAX_CODE_LENGTH
+        );
         this.name = normalizeName(name);
         this.active = true;
     }
@@ -83,28 +85,6 @@ public class Factory {
         return active;
     }
 
-    private static String normalizeCode(String code) {
-        if (code == null) {
-            throw new IllegalArgumentException("공장 코드는 필수입니다.");
-        }
-
-        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
-        if (normalizedCode.isEmpty()) {
-            throw new IllegalArgumentException("공장 코드는 필수입니다.");
-        }
-        if (normalizedCode.length() > MAX_CODE_LENGTH) {
-            throw new IllegalArgumentException(
-                    "공장 코드는 50자를 초과할 수 없습니다."
-            );
-        }
-        if (!normalizedCode.matches(CODE_PATTERN)) {
-            throw new IllegalArgumentException(
-                    "공장 코드는 영문, 숫자, 하이픈, 밑줄만 사용할 수 있습니다."
-            );
-        }
-        return normalizedCode;
-    }
-
     private static String normalizeName(String name) {
         if (name == null) {
             throw new IllegalArgumentException("공장 이름은 필수입니다.");
@@ -122,4 +102,3 @@ public class Factory {
         return normalizedName;
     }
 }
-

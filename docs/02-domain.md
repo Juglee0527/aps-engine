@@ -59,3 +59,35 @@ ProductionLine은 한 Factory 안에서 실제 생산 흐름을 구성하는 논
 - 같은 `LINE-01`을 서로 다른 Factory에서 사용할 수 있습니다.
 - 비활성 Factory에는 새 ProductionLine을 등록할 수 없습니다.
 - Factory 삭제 시 연쇄 삭제하지 않으며 현재 삭제 기능 자체를 제공하지 않습니다.
+
+## 3. Machine
+
+Machine은 ProductionLine에 소속되어 실제 Operation을 수행할 설비입니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `id` | Long | PostgreSQL Identity로 생성 |
+| `productionLine` | ProductionLine | 필수, 생성 후 소속 변경 불가 |
+| `code` | String | 생산라인 안에서 유일, 최대 50자 |
+| `name` | String | 최대 100자 |
+| `status` | MachineStatus | 신규 생성 시 `AVAILABLE` |
+
+### 상태
+
+| 상태 | 의미 |
+| --- | --- |
+| `AVAILABLE` | 스케줄 배정 가능한 정상 상태 |
+| `STOPPED` | 일시적으로 정지된 상태 |
+| `INACTIVE` | 사용 중단 상태 |
+
+```text
+AVAILABLE → STOPPED  : stop()
+STOPPED   → AVAILABLE: restart()
+AVAILABLE → INACTIVE : deactivate()
+STOPPED   → INACTIVE : deactivate()
+INACTIVE  → AVAILABLE: reactivate()
+```
+
+정의되지 않은 전이는 예외로 차단합니다. CAPA, WorkingCalendar와 Maintenance 정보는 이후 전용 단계에서 추가합니다.
+
+Factory, ProductionLine, Machine 코드에서 같은 정규화 규칙이 세 번째 반복되어 `BusinessCodeNormalizer`로 검증 함수만 공통화했습니다. JPA 필드는 단순 문자열로 유지해 값 객체·Converter 복잡도는 추가하지 않았습니다.

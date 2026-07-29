@@ -113,7 +113,7 @@ API 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: add production line creation
 ```
 
-### [ ] 010. Machine 도메인 모델
+### [x] 010. Machine 도메인 모델
 
 ```text
 생산라인에 배치되는 Machine 도메인을 구현해 주세요.
