@@ -94,6 +94,7 @@ aps-engine
 - [API 계약](docs/04-api.md)
 - [APS 운영 화면 MVP](docs/05-mvp-ui.md)
 - [CAPA 계산](docs/06-capacity.md)
+- [순방향 스케줄링](docs/05-scheduling.md)
 
 ---
 
@@ -136,7 +137,11 @@ aps-engine
 - [x] 020. WorkingCalendar 도메인 모델
 - [x] 021. 설비 가용시간 조회
 - [x] 022. 설비 CAPA 계산
-- [ ] 023. Scheduling 입력과 결과 모델
+- [x] 023. Scheduling 입력과 결과 모델
+- [x] 024. 단일 설비 순방향 스케줄링
+- [x] 025. 다중 Operation 스케줄링
+- [x] 026. 다중 생산오더 우선순위 규칙
+- [ ] 027. 스케줄 실행 유스케이스
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 

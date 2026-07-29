@@ -278,7 +278,7 @@ ERD와 CAPA 문서를 갱신해 주세요.
 
 ## Phase 5. 기본 스케줄링
 
-### [ ] 023. Scheduling 입력과 결과 모델
+### [x] 023. Scheduling 입력과 결과 모델
 
 ```text
 스케줄링 실행에 필요한 입력 모델과 결과 모델을 설계해 주세요.
@@ -288,7 +288,7 @@ ProductionOrder, Operation, Machine, 시간 구간 사이의 데이터 흐름과
 권장 커밋 메시지: feat: add scheduling input and result model
 ```
 
-### [ ] 024. 단일 설비 순방향 스케줄링
+### [x] 024. 단일 설비 순방향 스케줄링
 
 ```text
 하나의 설비와 하나의 생산오더를 대상으로 가장 단순한 순방향 스케줄링 알고리즘을 구현해 주세요.
@@ -298,7 +298,7 @@ ProductionOrder, Operation, Machine, 시간 구간 사이의 데이터 흐름과
 권장 커밋 메시지: feat: add single machine forward scheduler
 ```
 
-### [ ] 025. 다중 Operation 스케줄링
+### [x] 025. 다중 Operation 스케줄링
 
 ```text
 하나의 생산오더에 포함된 여러 Operation을 선후관계에 맞게 배치하도록 순방향 스케줄러를 확장해 주세요.
@@ -308,7 +308,7 @@ ProductionOrder, Operation, Machine, 시간 구간 사이의 데이터 흐름과
 권장 커밋 메시지: feat: schedule sequential operations
 ```
 
-### [ ] 026. 다중 생산오더 우선순위 규칙
+### [x] 026. 다중 생산오더 우선순위 규칙
 
 ```text
 여러 ProductionOrder를 스케줄링할 때 적용할 첫 Priority Rule을 구현해 주세요.
