@@ -70,7 +70,7 @@ Machine은 ProductionLine에 소속되어 실제 Operation을 수행할 설비�
 | `productionLine` | ProductionLine | 필수, 생성 후 소속 변경 불가 |
 | `code` | String | 생산라인 안에서 유일, 최대 50자 |
 | `name` | String | 최대 100자 |
-| `status` | MachineStatus | 신규 생성 시 `AVAILABLE` |
+| `status` | MachineStatus | 필수, 내부 기본 생성 메서드는 `AVAILABLE` |
 
 ### 상태
 

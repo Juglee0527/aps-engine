@@ -123,7 +123,7 @@ ERD와 도메인 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: add machine domain model
 ```
 
-### [ ] 011. Machine 등록 및 조회 API
+### [x] 011. Machine 등록 및 조회 API
 
 ```text
 Machine 등록, 단건 조회, 생산라인별 목록 조회 API를 구현해 주세요.

@@ -14,6 +14,19 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "해당 공장에 이미 등록된 생산라인 코드입니다."
     ),
+    PRODUCTION_LINE_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "생산라인을 찾을 수 없습니다."
+    ),
+    PRODUCTION_LINE_INACTIVE(
+            HttpStatus.CONFLICT,
+            "비활성 생산라인에는 설비를 등록할 수 없습니다."
+    ),
+    MACHINE_CODE_DUPLICATED(
+            HttpStatus.CONFLICT,
+            "해당 생산라인에 이미 등록된 설비 코드입니다."
+    ),
+    MACHINE_NOT_FOUND(HttpStatus.NOT_FOUND, "설비를 찾을 수 없습니다."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

@@ -42,6 +42,10 @@
 | `FACTORY_NOT_FOUND` | 404 | 요청한 ID의 공장이 존재하지 않음 |
 | `FACTORY_INACTIVE` | 409 | 비활성 공장에 생산라인 등록 시도 |
 | `PRODUCTION_LINE_CODE_DUPLICATED` | 409 | 같은 공장 내 생산라인 코드 중복 |
+| `PRODUCTION_LINE_NOT_FOUND` | 404 | 요청한 생산라인이 존재하지 않음 |
+| `PRODUCTION_LINE_INACTIVE` | 409 | 비활성 생산라인에 설비 등록 시도 |
+| `MACHINE_CODE_DUPLICATED` | 409 | 같은 생산라인 내 설비 코드 중복 |
+| `MACHINE_NOT_FOUND` | 404 | 요청한 설비가 존재하지 않음 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
 도메인별 오류 코드가 실제로 필요해지면 해당 기능을 구현하는 커밋에서 추가합니다. 현재 사용되지 않는 오류 코드를 미리 만들지 않습니다.
@@ -187,3 +191,42 @@ Location: /api/v1/factories/1/production-lines/10
 | 같은 Factory 내 코드 중복 | 409 | `PRODUCTION_LINE_CODE_DUPLICATED` |
 
 ProductionLine 조회, 수정 및 삭제는 현재 범위에 포함하지 않습니다.
+
+## 8. Machine API
+
+### Machine 등록
+
+```http
+POST /api/v1/production-lines/{productionLineId}/machines
+```
+
+```json
+{
+  "code": "MACHINE-01",
+  "name": "절단 설비",
+  "status": "AVAILABLE"
+}
+```
+
+상태는 `AVAILABLE`, `STOPPED`, `INACTIVE` 중 하나여야 합니다. 성공 시 `201 Created`, `/api/v1/machines/{machineId}` Location과 Machine 응답을 반환합니다.
+
+### Machine 단건 조회
+
+```http
+GET /api/v1/machines/{machineId}
+```
+
+존재하지 않으면 `404 MACHINE_NOT_FOUND`를 반환합니다.
+
+### ProductionLine별 Machine 목록
+
+```http
+GET /api/v1/production-lines/{productionLineId}/machines?page=0&size=20
+```
+
+- `page` 기본값은 0입니다.
+- `size` 기본값은 20이며 1 이상 100 이하입니다.
+- Machine ID 오름차순으로 반환합니다.
+- ProductionLine이 없으면 `404 PRODUCTION_LINE_NOT_FOUND`를 반환합니다.
+
+Machine 상태 변경, CAPA, Calendar 및 Maintenance API는 현재 범위에 포함하지 않습니다.

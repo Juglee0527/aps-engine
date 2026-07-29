@@ -2,6 +2,7 @@ package com.github.juglee0527.apsengine;
 
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLineRepository;
+import com.github.juglee0527.apsengine.machine.MachineRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -17,6 +18,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private ProductionLineRepository productionLineRepository;
+
+    @MockitoBean
+    private MachineRepository machineRepository;
 
     @Test
     void contextLoads() {

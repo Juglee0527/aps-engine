@@ -63,6 +63,15 @@ public class Machine {
     }
 
     private Machine(ProductionLine productionLine, String code, String name) {
+        this(productionLine, code, name, MachineStatus.AVAILABLE);
+    }
+
+    private Machine(
+            ProductionLine productionLine,
+            String code,
+            String name,
+            MachineStatus status
+    ) {
         this.productionLine = validateProductionLine(productionLine);
         this.code = BusinessCodeNormalizer.normalize(
                 code,
@@ -70,7 +79,7 @@ public class Machine {
                 MAX_CODE_LENGTH
         );
         this.name = normalizeName(name);
-        this.status = MachineStatus.AVAILABLE;
+        this.status = Objects.requireNonNull(status, "status must not be null");
     }
 
     public static Machine create(
@@ -79,6 +88,15 @@ public class Machine {
             String name
     ) {
         return new Machine(productionLine, code, name);
+    }
+
+    public static Machine create(
+            ProductionLine productionLine,
+            String code,
+            String name,
+            MachineStatus status
+    ) {
+        return new Machine(productionLine, code, name, status);
     }
 
     public void rename(String name) {
@@ -172,4 +190,3 @@ public class Machine {
         return normalizedName;
     }
 }
-
