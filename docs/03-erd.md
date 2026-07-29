@@ -57,12 +57,21 @@ erDiagram
         INTEGER priority
         VARCHAR_20 status
     }
+    WORKING_CALENDAR {
+        BIGINT working_calendar_id PK
+        BIGINT machine_id FK
+        VARCHAR_9 day_of_week
+        TIME start_time
+        TIME end_time
+        BOOLEAN active
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
     PRODUCT ||--o{ ROUTING : defines
     ROUTING ||--|{ OPERATION : contains
     MACHINE ||--o{ OPERATION : executes
     ROUTING ||--o{ PRODUCTION_ORDER : produces
+    MACHINE ||--o{ WORKING_CALENDAR : available
 ```
 
 ### 제약조건
@@ -128,3 +137,12 @@ erDiagram
 | `ck_production_order_dates` | `release_at`, `due_at` | 납기가 투입 가능 시각 이후임을 보장 |
 | `ck_production_order_priority` | `priority` | 1~100 우선순위 범위 |
 | `ix_production_order_status_due` | `status`, `due_at` | 스케줄 대상 오더 조회 지원 |
+
+### WorkingCalendar 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_working_calendar_machine_window` | 설비·요일·시작·종료 | 동일 근무 구간 중복 방지 |
+| `ck_working_calendar_day` | `day_of_week` | 유효한 요일만 허용 |
+| `ck_working_calendar_time` | `start_time`, `end_time` | 종료가 시작보다 이후임을 보장 |
+| `ix_working_calendar_machine_day` | 설비·요일·시작 | 설비 주간 캘린더 조회 지원 |

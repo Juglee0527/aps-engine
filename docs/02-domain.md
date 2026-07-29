@@ -155,3 +155,18 @@ DRAFT → CONFIRMED → SCHEDULED
 
 사용자가 검토한 DRAFT 오더만 CONFIRMED로 전환할 수 있고 스케줄러는 CONFIRMED 오더만
 입력으로 사용합니다. 취소 상태는 DB 계약에 예약했지만 취소 유스케이스는 현재 범위에 포함하지 않습니다.
+
+## 7. WorkingCalendar
+
+WorkingCalendar는 Machine의 반복 주간 근무시간 한 구간입니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `machine` | Machine | 소속 설비 |
+| `dayOfWeek` | DayOfWeek | 월요일~일요일 |
+| `startTime` | LocalTime | 근무 시작 |
+| `endTime` | LocalTime | 시작보다 이후, 자정 넘김 금지 |
+| `active` | boolean | 신규 생성 시 `true` |
+
+실제 날짜 구간은 `WorkingTimeCalculator`가 주간 규칙을 전개해 계산합니다. 상세 계산 정책은
+`docs/06-capacity.md`에서 관리합니다.

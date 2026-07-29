@@ -40,14 +40,23 @@ public class ProductionOrderService {
         Routing routing = routingRepository.findDetailById(routingId)
                 .orElseThrow(() ->
                         new ApplicationException(ErrorCode.ROUTING_NOT_FOUND));
-        ProductionOrder order = ProductionOrder.create(
-                routing,
-                orderNumber,
-                quantity,
-                releaseAt,
-                dueAt,
-                priority
-        );
+        ProductionOrder order;
+        try {
+            order = ProductionOrder.create(
+                    routing,
+                    orderNumber,
+                    quantity,
+                    releaseAt,
+                    dueAt,
+                    priority
+            );
+        } catch (IllegalArgumentException exception) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    exception.getMessage(),
+                    exception
+            );
+        }
 
         if (productionOrderRepository.existsByOrderNumber(
                 order.orderNumber()

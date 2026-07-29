@@ -57,6 +57,14 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "현재 생산오더 상태에서는 요청을 처리할 수 없습니다."
     ),
+    WORKING_CALENDAR_OVERLAP(
+            HttpStatus.CONFLICT,
+            "설비 근무시간이 기존 시간대와 겹칩니다."
+    ),
+    WORKING_CALENDAR_REQUIRED(
+            HttpStatus.CONFLICT,
+            "스케줄링할 설비의 근무시간이 필요합니다."
+    ),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

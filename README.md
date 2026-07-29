@@ -93,6 +93,7 @@ aps-engine
 - [ERD](docs/03-erd.md)
 - [API 계약](docs/04-api.md)
 - [APS 운영 화면 MVP](docs/05-mvp-ui.md)
+- [CAPA 계산](docs/06-capacity.md)
 
 ---
 
@@ -132,7 +133,10 @@ aps-engine
 - [x] 017. ProductionOrder 등록 API
 - [x] 018. ProductionOrder 조회 API
 - [x] 019. ProductionOrder 상태 변경
-- [ ] 020. WorkingCalendar 도메인 모델
+- [x] 020. WorkingCalendar 도메인 모델
+- [x] 021. 설비 가용시간 조회
+- [x] 022. 설비 CAPA 계산
+- [ ] 023. Scheduling 입력과 결과 모델
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 

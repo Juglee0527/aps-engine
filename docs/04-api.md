@@ -349,3 +349,36 @@ POST /api/v1/production-orders/{productionOrderId}/confirm
 - 같은 상태 전환을 반복하면 `409 PRODUCTION_ORDER_STATUS_INVALID`를 반환합니다.
 - 중복 오더 번호는 `409 PRODUCTION_ORDER_NUMBER_DUPLICATED`를 반환합니다.
 - 수정, 삭제와 취소 API는 현재 범위에 포함하지 않습니다.
+
+## 12. WorkingCalendar와 가용시간 API
+
+### 근무시간 등록
+
+```http
+POST /api/v1/machines/{machineId}/working-calendars
+Content-Type: application/json
+```
+
+```json
+{
+  "entries": [
+    {
+      "dayOfWeek": "MONDAY",
+      "startTime": "08:00:00",
+      "endTime": "17:00:00"
+    }
+  ]
+}
+```
+
+같은 요일의 겹치는 시간대는 `409 WORKING_CALENDAR_OVERLAP`을 반환합니다.
+
+### 근무시간과 기간 가용시간 조회
+
+```http
+GET /api/v1/machines/{machineId}/working-calendars
+GET /api/v1/machines/{machineId}/availability?from=2026-08-03T08:00:00%2B09:00&to=2026-08-07T17:00:00%2B09:00
+```
+
+가용시간 응답은 총 `availableMinutes`와 날짜별 실제 `intervals`를 반환합니다.
+조회 구간은 최대 366일입니다.

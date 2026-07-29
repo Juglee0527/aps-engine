@@ -244,7 +244,7 @@ ProductionOrder의 확정, 착수, 완료, 취소 상태 변경 유스케이스�
 
 ## Phase 4. CAPA
 
-### [ ] 020. WorkingCalendar 도메인 모델
+### [x] 020. WorkingCalendar 도메인 모델
 
 ```text
 설비의 가동 가능 시간을 표현하는 WorkingCalendar 도메인을 설계하고 구현해 주세요.
@@ -254,7 +254,7 @@ ERD와 CAPA 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: add working calendar domain
 ```
 
-### [ ] 021. 설비 가용시간 조회
+### [x] 021. 설비 가용시간 조회
 
 ```text
 설비와 날짜 범위를 입력받아 실제 가용시간 구간을 조회하는 서비스를 구현해 주세요.
@@ -264,7 +264,7 @@ ERD와 CAPA 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: calculate machine available time
 ```
 
-### [ ] 022. 설비 CAPA 계산
+### [x] 022. 설비 CAPA 계산
 
 ```text
 설비의 가용시간과 계획 부하를 기준으로 기간별 CAPA 사용률을 계산하는 서비스를 구현해 주세요.
