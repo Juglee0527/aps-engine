@@ -89,6 +89,8 @@ aps-engine
 - [개발 지침](docs/00-development-guidelines.md)
 - [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)
 - [프로젝트 목표와 범위](docs/01-project.md)
+- [도메인 모델](docs/02-domain.md)
+- [ERD](docs/03-erd.md)
 - [API 계약](docs/04-api.md)
 
 ---
@@ -113,7 +115,8 @@ aps-engine
 - [x] 003. 로컬 PostgreSQL 환경 구성
 - [x] 004. 데이터베이스 마이그레이션 기반 추가
 - [x] 005. 공통 API 오류 응답 구성
-- [ ] 006. Factory 도메인 모델
+- [x] 006. Factory 도메인 모델
+- [ ] 007. Factory 등록 API
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 
