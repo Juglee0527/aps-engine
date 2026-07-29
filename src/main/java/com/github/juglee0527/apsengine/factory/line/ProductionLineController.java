@@ -2,9 +2,14 @@ package com.github.juglee0527.apsengine.factory.line;
 
 import java.net.URI;
 
+import com.github.juglee0527.apsengine.common.web.PageRequestParameters;
+import com.github.juglee0527.apsengine.common.web.PageResponse;
 import jakarta.validation.Valid;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -44,5 +49,21 @@ public class ProductionLineController {
 
         return ResponseEntity.created(location).body(response);
     }
-}
 
+    @GetMapping
+    public PageResponse<ProductionLineResponse> getPage(
+            @PathVariable long factoryId,
+            @Valid @ModelAttribute PageRequestParameters request
+    ) {
+        Page<ProductionLine> productionLinePage =
+                productionLineService.getPageByFactory(
+                        factoryId,
+                        request.page(),
+                        request.size()
+                );
+        return PageResponse.from(
+                productionLinePage,
+                ProductionLineResponse::from
+        );
+    }
+}

@@ -6,6 +6,9 @@ import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +47,29 @@ public class ProductionLineService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public Page<ProductionLine> getPageByFactory(
+            long factoryId,
+            int page,
+            int size
+    ) {
+        validateFactoryId(factoryId);
+        validatePage(page, size);
+        if (!factoryRepository.existsById(factoryId)) {
+            throw new ApplicationException(ErrorCode.FACTORY_NOT_FOUND);
+        }
+
+        PageRequest pageRequest = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.ASC, "id")
+        );
+        return productionLineRepository.findAllByFactory_Id(
+                factoryId,
+                pageRequest
+        );
+    }
+
     private Factory getActiveFactory(long factoryId) {
         Factory factory = factoryRepository.findById(factoryId)
                 .orElseThrow(() ->
@@ -65,5 +91,22 @@ public class ProductionLineService {
             );
         }
     }
-}
 
+    private void validateFactoryId(long factoryId) {
+        if (factoryId < 1) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "공장 ID는 1 이상이어야 합니다."
+            );
+        }
+    }
+
+    private void validatePage(int page, int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "페이지 조건이 올바르지 않습니다."
+            );
+        }
+    }
+}

@@ -1,9 +1,9 @@
-package com.github.juglee0527.apsengine.machine;
+package com.github.juglee0527.apsengine.common.web;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
-public record MachinePageRequest(
+public record PageRequestParameters(
         @Min(value = 0, message = "페이지 번호는 0 이상이어야 합니다.")
         Integer page,
 
@@ -12,9 +12,8 @@ public record MachinePageRequest(
         Integer size
 ) {
 
-    public MachinePageRequest {
+    public PageRequestParameters {
         page = page == null ? 0 : page;
         size = size == null ? 20 : size;
     }
 }
-

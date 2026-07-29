@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Optional;
+import java.util.List;
 
 import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
@@ -19,6 +20,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 class ProductionLineServiceTest {
@@ -106,6 +111,41 @@ class ProductionLineServiceTest {
         );
     }
 
+    @Test
+    void getsProductionLinePageByFactory() {
+        Factory factory = Factory.create("FACTORY-01", "서울 공장");
+        ProductionLine productionLine =
+                ProductionLine.create(factory, "LINE-01", "조립 라인");
+        PageRequest pageRequest = PageRequest.of(
+                0,
+                20,
+                Sort.by(Sort.Direction.ASC, "id")
+        );
+        Page<ProductionLine> expectedPage =
+                new PageImpl<>(List.of(productionLine), pageRequest, 1);
+        when(factoryRepository.existsById(1L)).thenReturn(true);
+        when(productionLineRepository.findAllByFactory_Id(1L, pageRequest))
+                .thenReturn(expectedPage);
+
+        Page<ProductionLine> result =
+                productionLineService.getPageByFactory(1L, 0, 20);
+
+        assertThat(result).isSameAs(expectedPage);
+    }
+
+    @Test
+    void rejectsMissingFactoryWhenGettingPage() {
+        when(factoryRepository.existsById(999L)).thenReturn(false);
+
+        assertErrorCode(
+                () -> productionLineService.getPageByFactory(999L, 0, 20),
+                ErrorCode.FACTORY_NOT_FOUND
+        );
+
+        verify(productionLineRepository, never())
+                .findAllByFactory_Id(any(), any());
+    }
+
     private void assertErrorCode(
             org.assertj.core.api.ThrowableAssert.ThrowingCallable callable,
             ErrorCode expectedErrorCode
@@ -118,4 +158,3 @@ class ProductionLineServiceTest {
                 );
     }
 }
-

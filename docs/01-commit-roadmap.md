@@ -133,6 +133,26 @@ CAPA 관련 기능은 구현하지 마세요.
 권장 커밋 메시지: feat: add machine management api
 ```
 
+### [x] 011-A. MVP용 ProductionLine 목록 조회 API
+
+```text
+Factory를 선택해 ProductionLine을 탐색할 수 있도록 Factory별 ProductionLine 목록 조회 API를 구현해 주세요.
+기존 Factory와 Machine 목록의 페이징 요청·응답 중복은 공통 web 모델로 최소 정리하되 JSON 계약은 변경하지 마세요.
+존재하지 않는 Factory, 잘못된 페이지 조건과 정상 목록을 테스트하고 API 문서를 갱신해 주세요.
+ProductionLine 단건 조회, 수정 및 삭제는 구현하지 마세요.
+권장 커밋 메시지: feat: ProductionLine 목록 조회 API 추가
+```
+
+### [ ] 011-B. APS 운영 화면 MVP
+
+```text
+사용자가 현재 구현된 Factory, ProductionLine, Machine 기능을 브라우저에서 확인할 수 있는 MVP 화면을 구현해 주세요.
+별도 Node 빌드 도구 없이 Spring Boot 정적 리소스로 구성하고 등록과 계층별 목록 탐색을 지원해 주세요.
+데스크톱과 모바일 레이아웃, 빈 상태, API 오류 표시를 검증하고 README에 실행 방법을 갱신해 주세요.
+Product, Scheduling, CAPA 화면과 인증 기능은 구현하지 마세요.
+권장 커밋 메시지: feat: APS 운영 화면 MVP 추가
+```
+
 ---
 
 ## Phase 2. 제품과 공정

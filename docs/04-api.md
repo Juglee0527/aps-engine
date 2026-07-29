@@ -190,7 +190,18 @@ Location: /api/v1/factories/1/production-lines/10
 | Factory 비활성 | 409 | `FACTORY_INACTIVE` |
 | 같은 Factory 내 코드 중복 | 409 | `PRODUCTION_LINE_CODE_DUPLICATED` |
 
-ProductionLine 조회, 수정 및 삭제는 현재 범위에 포함하지 않습니다.
+### Factory별 ProductionLine 목록
+
+```http
+GET /api/v1/factories/{factoryId}/production-lines?page=0&size=20
+```
+
+- `page` 기본값은 0입니다.
+- `size` 기본값은 20이며 1 이상 100 이하입니다.
+- ProductionLine ID 오름차순으로 반환합니다.
+- Factory가 없으면 `404 FACTORY_NOT_FOUND`를 반환합니다.
+
+ProductionLine 단건 조회, 수정 및 삭제는 현재 범위에 포함하지 않습니다.
 
 ## 8. Machine API
 

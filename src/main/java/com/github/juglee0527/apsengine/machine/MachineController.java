@@ -2,6 +2,8 @@ package com.github.juglee0527.apsengine.machine;
 
 import java.net.URI;
 
+import com.github.juglee0527.apsengine.common.web.PageRequestParameters;
+import com.github.juglee0527.apsengine.common.web.PageResponse;
 import jakarta.validation.Valid;
 
 import org.springframework.data.domain.Page;
@@ -45,15 +47,15 @@ public class MachineController {
     }
 
     @GetMapping("/api/v1/production-lines/{productionLineId}/machines")
-    public MachinePageResponse getPage(
+    public PageResponse<MachineResponse> getPage(
             @PathVariable long productionLineId,
-            @Valid @ModelAttribute MachinePageRequest request
+            @Valid @ModelAttribute PageRequestParameters request
     ) {
         Page<Machine> machinePage = machineService.getPageByProductionLine(
                 productionLineId,
                 request.page(),
                 request.size()
         );
-        return MachinePageResponse.from(machinePage);
+        return PageResponse.from(machinePage, MachineResponse::from);
     }
 }

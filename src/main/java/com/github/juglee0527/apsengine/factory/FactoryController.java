@@ -2,6 +2,8 @@ package com.github.juglee0527.apsengine.factory;
 
 import java.net.URI;
 
+import com.github.juglee0527.apsengine.common.web.PageRequestParameters;
+import com.github.juglee0527.apsengine.common.web.PageResponse;
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -42,11 +44,11 @@ public class FactoryController {
     }
 
     @GetMapping
-    public FactoryPageResponse getPage(
-            @Valid @ModelAttribute FactoryPageRequest request
+    public PageResponse<FactoryResponse> getPage(
+            @Valid @ModelAttribute PageRequestParameters request
     ) {
         Page<Factory> factoryPage =
                 factoryService.getPage(request.page(), request.size());
-        return FactoryPageResponse.from(factoryPage);
+        return PageResponse.from(factoryPage, FactoryResponse::from);
     }
 }
