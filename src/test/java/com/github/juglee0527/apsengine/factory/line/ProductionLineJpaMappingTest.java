@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,9 @@ class ProductionLineJpaMappingTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private ProductionLineRepository productionLineRepository;
 
     @Test
     void persistsProductionLineInFactory() {
@@ -74,5 +79,32 @@ class ProductionLineJpaMappingTest {
         ));
 
         entityManager.flush();
+    }
+
+    @Test
+    void loadsFactoryForPageResponseAfterPersistenceContextCloses() {
+        Factory factory =
+                Factory.create("FACTORY-PL-PAGE", "목록 조회 테스트 공장");
+        entityManager.persist(factory);
+        ProductionLine productionLine = ProductionLine.create(
+                factory,
+                "LINE-PAGE",
+                "목록 조회 테스트 라인"
+        );
+        entityManager.persist(productionLine);
+        entityManager.flush();
+        entityManager.clear();
+
+        Page<ProductionLine> page =
+                productionLineRepository.findAllByFactory_Id(
+                        factory.id(),
+                        PageRequest.of(0, 20)
+                );
+        entityManager.clear();
+
+        ProductionLineResponse response =
+                ProductionLineResponse.from(page.getContent().getFirst());
+
+        assertThat(response.factoryId()).isEqualTo(factory.id());
     }
 }
