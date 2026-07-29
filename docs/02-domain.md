@@ -42,3 +42,20 @@ deactivate()
 
 현재 삭제 정책과 REST API는 정의하지 않습니다. Factory 등록은 007, 조회는 008 단계에서 구현합니다.
 
+## 2. ProductionLine
+
+ProductionLine은 한 Factory 안에서 실제 생산 흐름을 구성하는 논리적 자원 그룹입니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `id` | Long | PostgreSQL Identity로 생성 |
+| `factory` | Factory | 필수, 생성 후 소속 변경 불가 |
+| `code` | String | 공장 안에서 유일, 최대 50자 |
+| `name` | String | 최대 100자 |
+| `active` | boolean | 신규 생성 시 `true` |
+
+- 코드는 Factory 코드와 같은 문자·대문자 정규화 정책을 사용합니다.
+- 코드 중복 범위는 전체 시스템이 아니라 소속 Factory입니다.
+- 같은 `LINE-01`을 서로 다른 Factory에서 사용할 수 있습니다.
+- 비활성 Factory에는 새 ProductionLine을 등록할 수 없습니다.
+- Factory 삭제 시 연쇄 삭제하지 않으며 현재 삭제 기능 자체를 제공하지 않습니다.

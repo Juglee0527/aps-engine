@@ -103,7 +103,7 @@ API 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: add factory query api
 ```
 
-### [ ] 009. ProductionLine 도메인과 등록 API
+### [x] 009. ProductionLine 도메인과 등록 API
 
 ```text
 공장에 속하는 생산라인을 표현하는 ProductionLine 도메인과 등록 API를 구현해 주세요.

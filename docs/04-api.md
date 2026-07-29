@@ -40,6 +40,8 @@
 | `CONFLICT` | 409 | 중복 또는 현재 상태와 충돌하는 요청 |
 | `FACTORY_CODE_DUPLICATED` | 409 | 정규화된 공장 코드가 이미 존재함 |
 | `FACTORY_NOT_FOUND` | 404 | 요청한 ID의 공장이 존재하지 않음 |
+| `FACTORY_INACTIVE` | 409 | 비활성 공장에 생산라인 등록 시도 |
+| `PRODUCTION_LINE_CODE_DUPLICATED` | 409 | 같은 공장 내 생산라인 코드 중복 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
 도메인별 오류 코드가 실제로 필요해지면 해당 기능을 구현하는 커밋에서 추가합니다. 현재 사용되지 않는 오류 코드를 미리 만들지 않습니다.
@@ -145,3 +147,43 @@ GET /api/v1/factories?page=0&size=20
 ```
 
 목록은 Factory ID 오름차순으로 고정합니다. 검색, 복합 필터와 사용자 지정 정렬은 현재 범위에 포함하지 않습니다.
+
+## 7. ProductionLine API
+
+### ProductionLine 등록
+
+```http
+POST /api/v1/factories/{factoryId}/production-lines
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "line-01",
+  "name": "조립 라인"
+}
+```
+
+```http
+HTTP/1.1 201 Created
+Location: /api/v1/factories/1/production-lines/10
+```
+
+```json
+{
+  "id": 10,
+  "factoryId": 1,
+  "code": "LINE-01",
+  "name": "조립 라인",
+  "active": true
+}
+```
+
+| 상황 | HTTP 상태 | 오류 코드 |
+| --- | --- | --- |
+| 요청값 검증 실패 | 400 | `INVALID_REQUEST` |
+| Factory 없음 | 404 | `FACTORY_NOT_FOUND` |
+| Factory 비활성 | 409 | `FACTORY_INACTIVE` |
+| 같은 Factory 내 코드 중복 | 409 | `PRODUCTION_LINE_CODE_DUPLICATED` |
+
+ProductionLine 조회, 수정 및 삭제는 현재 범위에 포함하지 않습니다.
