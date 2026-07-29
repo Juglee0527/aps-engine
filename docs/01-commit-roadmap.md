@@ -157,7 +157,7 @@ Product, Scheduling, CAPA 화면과 인증 기능은 구현하지 마세요.
 
 ## Phase 2. 제품과 공정
 
-### [ ] 012. Product 도메인과 등록 API
+### [x] 012. Product 도메인과 등록 API
 
 ```text
 생산 대상 품목을 나타내는 Product 도메인과 등록 API를 구현해 주세요.
@@ -166,7 +166,7 @@ Product, Scheduling, CAPA 화면과 인증 기능은 구현하지 마세요.
 권장 커밋 메시지: feat: add product creation
 ```
 
-### [ ] 013. Product 조회 API
+### [x] 013. Product 조회 API
 
 ```text
 Product 단건 조회와 페이징 목록 조회 API를 구현해 주세요.

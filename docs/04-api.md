@@ -241,3 +241,35 @@ GET /api/v1/production-lines/{productionLineId}/machines?page=0&size=20
 - ProductionLine이 없으면 `404 PRODUCTION_LINE_NOT_FOUND`를 반환합니다.
 
 Machine 상태 변경, CAPA, Calendar 및 Maintenance API는 현재 범위에 포함하지 않습니다.
+
+## 9. Product API
+
+### Product 등록
+
+```http
+POST /api/v1/products
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "PRODUCT-01",
+  "name": "완제품 A",
+  "unit": "PIECE"
+}
+```
+
+단위는 `PIECE`, `KILOGRAM`, `METER` 중 하나입니다. 성공 시 `201 Created`와
+`/api/v1/products/{productId}` Location을 반환합니다.
+
+### Product 단건 및 목록 조회
+
+```http
+GET /api/v1/products/{productId}
+GET /api/v1/products?page=0&size=20
+```
+
+목록은 Product ID 오름차순으로 반환합니다. 존재하지 않는 ID는
+`404 PRODUCT_NOT_FOUND`, 중복 코드는 `409 PRODUCT_CODE_DUPLICATED`를 반환합니다.
+
+Product 수정, 삭제, BOM과 재고 API는 현재 범위에 포함하지 않습니다.

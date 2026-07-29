@@ -24,6 +24,13 @@ erDiagram
         VARCHAR_100 machine_name
         VARCHAR_20 status
     }
+    PRODUCT {
+        BIGINT product_id PK
+        VARCHAR_50 product_code UK
+        VARCHAR_100 product_name
+        VARCHAR_20 unit
+        BOOLEAN active
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
 ```
@@ -61,3 +68,13 @@ erDiagram
 | `ck_machine_name_not_blank` | `machine_name` | 공백 이름 방지 |
 | `ck_machine_status` | `status` | 정의된 MachineStatus만 허용 |
 | `ix_machine_production_line_id` | `production_line_id` | 라인별 설비 접근 인덱스 |
+
+### Product 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `pk_product` | `product_id` | 품목 내부 식별자 |
+| `uk_product_code` | `product_code` | 정규화된 품목 코드 중복 방지 |
+| `ck_product_code_format` | `product_code` | 품목 코드 형식 검증 |
+| `ck_product_name_not_blank` | `product_name` | 공백 이름 방지 |
+| `ck_product_unit` | `unit` | 정의된 ProductUnit만 허용 |

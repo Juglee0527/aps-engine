@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLineRepository;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
+import com.github.juglee0527.apsengine.product.ProductRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private MachineRepository machineRepository;
+
+    @MockitoBean
+    private ProductRepository productRepository;
 
     @Test
     void contextLoads() {

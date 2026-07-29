@@ -91,3 +91,18 @@ INACTIVE  → AVAILABLE: reactivate()
 정의되지 않은 전이는 예외로 차단합니다. CAPA, WorkingCalendar와 Maintenance 정보는 이후 전용 단계에서 추가합니다.
 
 Factory, ProductionLine, Machine 코드에서 같은 정규화 규칙이 세 번째 반복되어 `BusinessCodeNormalizer`로 검증 함수만 공통화했습니다. JPA 필드는 단순 문자열로 유지해 값 객체·Converter 복잡도는 추가하지 않았습니다.
+
+## 4. Product
+
+Product는 생산오더와 Routing이 참조하는 생산 대상 품목입니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `id` | Long | PostgreSQL Identity로 생성 |
+| `code` | String | 시스템 전체에서 유일, 최대 50자, 생성 후 변경 불가 |
+| `name` | String | 표시 이름, 최대 100자 |
+| `unit` | ProductUnit | `PIECE`, `KILOGRAM`, `METER` 중 하나 |
+| `active` | boolean | 신규 생성 시 `true` |
+
+코드는 다른 기준정보와 같은 대문자 정규화 규칙을 사용합니다. 현재 APS 수직 MVP에서
+수량과 공정시간을 계산할 기준 단위만 관리하며 BOM, 재고, 가격과 단위 환산은 포함하지 않습니다.
