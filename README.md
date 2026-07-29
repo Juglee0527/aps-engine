@@ -50,93 +50,18 @@ APS Engine은 제조업의 생산계획(APS, Advanced Planning & Scheduling)의 
 
 # Roadmap
 
-## Phase 1
+개발은 검증 가능한 39개 커밋 단위로 진행합니다.
 
-- [ ] 프로젝트 초기 구성
-- [ ] Docker 환경 구성
-- [ ] PostgreSQL 연동
-- [ ] Redis 연동
-- [ ] GitHub Actions
+- Phase 0: 프로젝트 기반
+- Phase 1: 공장과 생산 자원
+- Phase 2: 제품과 공정
+- Phase 3: 생산오더
+- Phase 4: CAPA
+- Phase 5: 기본 스케줄링
+- Phase 6: 제조 제약조건
+- Phase 7: 운영 기반
 
----
-
-## Phase 2
-
-생산 마스터 관리
-
-- [ ] Factory
-- [ ] Production Line
-- [ ] Machine
-- [ ] Product
-- [ ] Work Center
-
----
-
-## Phase 3
-
-주문 관리
-
-- [ ] Sales Order
-- [ ] Production Order
-- [ ] Priority
-- [ ] Due Date
-
----
-
-## Phase 4
-
-생산계획
-
-- [ ] Capacity Planning
-- [ ] Machine Assignment
-- [ ] Production Scheduling
-- [ ] Lead Time
-- [ ] Calendar
-
----
-
-## Phase 5
-
-Constraint
-
-- [ ] Machine Capacity
-- [ ] Working Calendar
-- [ ] Maintenance
-- [ ] Changeover Time
-- [ ] Material Availability
-
----
-
-## Phase 6
-
-Optimization
-
-- [ ] Scheduling Algorithm
-- [ ] Priority Rule
-- [ ] Load Balancing
-- [ ] Bottleneck Detection
-
----
-
-## Phase 7
-
-Performance
-
-- [ ] Query Optimization
-- [ ] Index Optimization
-- [ ] Batch Processing
-- [ ] Redis Cache
-
----
-
-## Phase 8
-
-Testing
-
-- [ ] Unit Test
-- [ ] Integration Test
-- [ ] API Test
-- [ ] Performance Test
+상세 범위와 현재 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)에서 관리합니다.
 
 ---
 
@@ -161,25 +86,20 @@ aps-engine
 
 프로젝트 진행 과정은 문서로 함께 관리합니다.
 
-- Architecture
-- ERD
-- API Specification
-- Scheduler Design
-- Capacity Planning
-- Constraint Design
-- Performance Optimization
-- Test Strategy
+- [개발 지침](docs/00-development-guidelines.md)
+- [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)
+- [프로젝트 목표와 범위](docs/01-project.md)
 
 ---
 
 # Development Principles
 
-- Domain-Driven Design(DDD)
-- Clean Architecture
+- Layered Architecture
+- Domain-Centered Design
 - Testable Code
 - Object-Oriented Programming
 - SOLID Principles
-- Continuous Refactoring
+- Small and Verifiable Changes
 
 ---
 
