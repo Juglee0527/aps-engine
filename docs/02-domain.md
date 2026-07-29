@@ -134,3 +134,24 @@ Routing은 한 Product를 생산하는 공정 경로이며, Operation의 순서 
 
 MVP에서는 Operation마다 하나의 설비만 지정합니다. 대체 설비, 병렬 공정, 작업자와
 setup 시간은 첫 순방향 스케줄러 범위에서 제외하고 이후 제약조건 단계에서 확장합니다.
+
+## 6. ProductionOrder
+
+ProductionOrder는 지정 Routing으로 일정 수량을 납기 내 생산해야 하는 스케줄링 입력입니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `orderNumber` | String | 시스템 전체에서 유일 |
+| `routing` | Routing | 활성 상태이며 Operation이 하나 이상 존재 |
+| `quantity` | long | 1~1,000,000 |
+| `releaseAt` | OffsetDateTime | 생산 투입 가능 시각 |
+| `dueAt` | OffsetDateTime | releaseAt보다 이후인 납기시각 |
+| `priority` | int | 1~100, 값이 클수록 우선 |
+| `status` | ProductionOrderStatus | 신규 생성 시 `DRAFT` |
+
+```text
+DRAFT → CONFIRMED → SCHEDULED
+```
+
+사용자가 검토한 DRAFT 오더만 CONFIRMED로 전환할 수 있고 스케줄러는 CONFIRMED 오더만
+입력으로 사용합니다. 취소 상태는 DB 계약에 예약했지만 취소 유스케이스는 현재 범위에 포함하지 않습니다.

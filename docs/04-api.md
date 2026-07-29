@@ -313,3 +313,39 @@ GET /api/v1/products/{productId}/routings
 
 응답의 Operation은 sequence 오름차순으로 반환합니다. Routing 수정과 버전 활성화 전환,
 대체 설비 정의는 현재 범위에 포함하지 않습니다.
+
+## 11. ProductionOrder API
+
+### ProductionOrder 등록
+
+```http
+POST /api/v1/production-orders
+Content-Type: application/json
+```
+
+```json
+{
+  "orderNumber": "PO-2026-001",
+  "routingId": 20,
+  "quantity": 10,
+  "releaseAt": "2026-08-03T08:00:00+09:00",
+  "dueAt": "2026-08-04T18:00:00+09:00",
+  "priority": 80
+}
+```
+
+신규 오더는 `DRAFT`로 생성됩니다. 우선순위는 1~100이며 값이 클수록 스케줄링 시
+먼저 처리합니다.
+
+### 조회와 확정
+
+```http
+GET /api/v1/production-orders/{productionOrderId}
+GET /api/v1/production-orders?page=0&size=20
+POST /api/v1/production-orders/{productionOrderId}/confirm
+```
+
+- DRAFT 오더만 CONFIRMED로 전환할 수 있습니다.
+- 같은 상태 전환을 반복하면 `409 PRODUCTION_ORDER_STATUS_INVALID`를 반환합니다.
+- 중복 오더 번호는 `409 PRODUCTION_ORDER_NUMBER_DUPLICATED`를 반환합니다.
+- 수정, 삭제와 취소 API는 현재 범위에 포함하지 않습니다.

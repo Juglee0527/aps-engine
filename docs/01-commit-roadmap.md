@@ -199,7 +199,7 @@ Routing 버전 관리는 아직 구현하지 마세요.
 
 ## Phase 3. 생산오더
 
-### [ ] 016. ProductionOrder 도메인 모델
+### [x] 016. ProductionOrder 도메인 모델
 
 ```text
 ProductionOrder 도메인을 설계하고 구현해 주세요.
@@ -210,7 +210,7 @@ ERD와 도메인 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: add production order domain
 ```
 
-### [ ] 017. ProductionOrder 등록 API
+### [x] 017. ProductionOrder 등록 API
 
 ```text
 ProductionOrder 등록 유스케이스와 POST API를 구현해 주세요.
@@ -220,7 +220,7 @@ ProductionOrder 등록 유스케이스와 POST API를 구현해 주세요.
 권장 커밋 메시지: feat: add production order creation api
 ```
 
-### [ ] 018. ProductionOrder 조회 API
+### [x] 018. ProductionOrder 조회 API
 
 ```text
 ProductionOrder 단건 조회와 페이징 목록 조회 API를 구현해 주세요.
@@ -230,7 +230,7 @@ API 문서를 갱신해 주세요.
 권장 커밋 메시지: feat: add production order query api
 ```
 
-### [ ] 019. ProductionOrder 상태 변경
+### [x] 019. ProductionOrder 상태 변경
 
 ```text
 ProductionOrder의 확정, 착수, 완료, 취소 상태 변경 유스케이스를 구현해 주세요.

@@ -128,7 +128,11 @@ aps-engine
 - [x] 013. Product 조회 API
 - [x] 014. Routing과 Operation 도메인 모델
 - [x] 015. Routing 등록 및 조회 API
-- [ ] 016. ProductionOrder 도메인 모델
+- [x] 016. ProductionOrder 도메인 모델
+- [x] 017. ProductionOrder 등록 API
+- [x] 018. ProductionOrder 조회 API
+- [x] 019. ProductionOrder 상태 변경
+- [ ] 020. WorkingCalendar 도메인 모델
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 

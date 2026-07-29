@@ -47,11 +47,22 @@ erDiagram
         VARCHAR_100 operation_name
         INTEGER processing_time_minutes
     }
+    PRODUCTION_ORDER {
+        BIGINT production_order_id PK
+        BIGINT routing_id FK
+        VARCHAR_50 order_number UK
+        BIGINT quantity
+        TIMESTAMPTZ release_at
+        TIMESTAMPTZ due_at
+        INTEGER priority
+        VARCHAR_20 status
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
     PRODUCT ||--o{ ROUTING : defines
     ROUTING ||--|{ OPERATION : contains
     MACHINE ||--o{ OPERATION : executes
+    ROUTING ||--o{ PRODUCTION_ORDER : produces
 ```
 
 ### 제약조건
@@ -107,3 +118,13 @@ erDiagram
 | `uk_operation_routing_code` | `routing_id`, `operation_code` | Routing 내 공정 코드 중복 방지 |
 | `ck_operation_processing_time` | `processing_time_minutes` | 1~10080분 범위 보장 |
 | `ix_operation_machine_id` | `machine_id` | 설비별 Operation 접근 인덱스 |
+
+### ProductionOrder 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_production_order_number` | `order_number` | 생산오더 번호 중복 방지 |
+| `ck_production_order_quantity` | `quantity` | 1~1,000,000 수량 범위 |
+| `ck_production_order_dates` | `release_at`, `due_at` | 납기가 투입 가능 시각 이후임을 보장 |
+| `ck_production_order_priority` | `priority` | 1~100 우선순위 범위 |
+| `ix_production_order_status_due` | `status`, `due_at` | 스케줄 대상 오더 조회 지원 |

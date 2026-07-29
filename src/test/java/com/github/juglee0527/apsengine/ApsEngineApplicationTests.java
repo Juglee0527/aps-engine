@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLineRepository;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
+import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.product.ProductRepository;
 import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
 
@@ -41,6 +42,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private RoutingRepository routingRepository;
+
+    @MockitoBean
+    private ProductionOrderRepository productionOrderRepository;
 
     @Test
     void contextLoads() {

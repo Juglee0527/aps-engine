@@ -45,6 +45,18 @@ public enum ErrorCode {
             "해당 품목에 이미 등록된 Routing 코드입니다."
     ),
     ROUTING_NOT_FOUND(HttpStatus.NOT_FOUND, "Routing을 찾을 수 없습니다."),
+    PRODUCTION_ORDER_NUMBER_DUPLICATED(
+            HttpStatus.CONFLICT,
+            "이미 등록된 생산오더 번호입니다."
+    ),
+    PRODUCTION_ORDER_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "생산오더를 찾을 수 없습니다."
+    ),
+    PRODUCTION_ORDER_STATUS_INVALID(
+            HttpStatus.CONFLICT,
+            "현재 생산오더 상태에서는 요청을 처리할 수 없습니다."
+    ),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;
