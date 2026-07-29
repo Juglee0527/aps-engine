@@ -117,7 +117,8 @@ aps-engine
 - [x] 005. 공통 API 오류 응답 구성
 - [x] 006. Factory 도메인 모델
 - [x] 007. Factory 등록 API
-- [ ] 008. Factory 조회 API
+- [x] 008. Factory 조회 API
+- [ ] 009. ProductionLine 도메인과 등록 API
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 

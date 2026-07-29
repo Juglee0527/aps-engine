@@ -93,7 +93,7 @@ Factory 등록 유스케이스와 POST API를 구현해 주세요.
 권장 커밋 메시지: feat: add factory creation api
 ```
 
-### [ ] 008. Factory 조회 API
+### [x] 008. Factory 조회 API
 
 ```text
 Factory 단건 조회와 목록 조회 API를 구현해 주세요.

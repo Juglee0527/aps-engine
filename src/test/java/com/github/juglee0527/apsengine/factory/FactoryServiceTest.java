@@ -16,6 +16,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
+import java.util.List;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class FactoryServiceTest {
@@ -73,5 +79,74 @@ class FactoryServiceTest {
                 )
                 .hasCauseInstanceOf(DataIntegrityViolationException.class);
     }
-}
 
+    @Test
+    void getsFactoryById() {
+        Factory factory = Factory.create("FACTORY-01", "서울 공장");
+        when(factoryRepository.findById(1L)).thenReturn(Optional.of(factory));
+
+        Factory foundFactory = factoryService.getById(1L);
+
+        assertThat(foundFactory).isSameAs(factory);
+    }
+
+    @Test
+    void rejectsInvalidFactoryId() {
+        assertThatThrownBy(() -> factoryService.getById(0L))
+                .isInstanceOfSatisfying(
+                        ApplicationException.class,
+                        exception -> assertThat(exception.errorCode())
+                                .isEqualTo(ErrorCode.INVALID_REQUEST)
+                );
+
+        verify(factoryRepository, never()).findById(any());
+    }
+
+    @Test
+    void throwsNotFoundWhenFactoryDoesNotExist() {
+        when(factoryRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> factoryService.getById(999L))
+                .isInstanceOfSatisfying(
+                        ApplicationException.class,
+                        exception -> assertThat(exception.errorCode())
+                                .isEqualTo(ErrorCode.FACTORY_NOT_FOUND)
+                );
+    }
+
+    @Test
+    void getsFactoryPageOrderedById() {
+        Factory factory = Factory.create("FACTORY-01", "서울 공장");
+        PageRequest expectedPageRequest = PageRequest.of(
+                0,
+                20,
+                org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.ASC,
+                        "id"
+                )
+        );
+        Page<Factory> expectedPage = new PageImpl<>(
+                List.of(factory),
+                expectedPageRequest,
+                1
+        );
+        when(factoryRepository.findAll(expectedPageRequest))
+                .thenReturn(expectedPage);
+
+        Page<Factory> result = factoryService.getPage(0, 20);
+
+        assertThat(result).isSameAs(expectedPage);
+    }
+
+    @Test
+    void rejectsInvalidFactoryPage() {
+        assertThatThrownBy(() -> factoryService.getPage(-1, 101))
+                .isInstanceOfSatisfying(
+                        ApplicationException.class,
+                        exception -> assertThat(exception.errorCode())
+                                .isEqualTo(ErrorCode.INVALID_REQUEST)
+                );
+
+        verify(factoryRepository, never()).findAll(any(PageRequest.class));
+    }
+}

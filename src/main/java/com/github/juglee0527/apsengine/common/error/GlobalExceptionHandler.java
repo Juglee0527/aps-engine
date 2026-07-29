@@ -7,10 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -30,9 +31,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(errorCode.httpStatus()).body(response);
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiErrorResponse> handleValidationException(
-            MethodArgumentNotValidException exception
+            BindException exception
     ) {
         List<FieldValidationError> fieldErrors = new ArrayList<>();
 
@@ -51,6 +52,23 @@ public class GlobalExceptionHandler {
         ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
         ApiErrorResponse response =
                 ApiErrorResponse.withFieldErrors(errorCode, fieldErrors);
+
+        return ResponseEntity.status(errorCode.httpStatus()).body(response);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException exception
+    ) {
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        FieldValidationError fieldError = new FieldValidationError(
+                exception.getName(),
+                "요청값 형식이 올바르지 않습니다."
+        );
+        ApiErrorResponse response = ApiErrorResponse.withFieldErrors(
+                errorCode,
+                List.of(fieldError)
+        );
 
         return ResponseEntity.status(errorCode.httpStatus()).body(response);
     }

@@ -39,6 +39,7 @@
 | `RESOURCE_NOT_FOUND` | 404 | 식별자로 요청한 리소스가 존재하지 않음 |
 | `CONFLICT` | 409 | 중복 또는 현재 상태와 충돌하는 요청 |
 | `FACTORY_CODE_DUPLICATED` | 409 | 정규화된 공장 코드가 이미 존재함 |
+| `FACTORY_NOT_FOUND` | 404 | 요청한 ID의 공장이 존재하지 않음 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
 도메인별 오류 코드가 실제로 필요해지면 해당 기능을 구현하는 커밋에서 추가합니다. 현재 사용되지 않는 오류 코드를 미리 만들지 않습니다.
@@ -102,3 +103,45 @@ Location: /api/v1/factories/1
 | 정규화된 코드 중복 | 409 | `FACTORY_CODE_DUPLICATED` |
 
 Factory 조회, 수정 및 삭제 API는 현재 단계에 포함하지 않습니다.
+
+### Factory 단건 조회
+
+```http
+GET /api/v1/factories/{factoryId}
+```
+
+- 존재하면 `200 OK`와 Factory 응답을 반환합니다.
+- ID가 1보다 작거나 숫자가 아니면 `400 INVALID_REQUEST`를 반환합니다.
+- 존재하지 않으면 `404 FACTORY_NOT_FOUND`를 반환합니다.
+
+### Factory 목록 조회
+
+```http
+GET /api/v1/factories?page=0&size=20
+```
+
+| 매개변수 | 기본값 | 제약 |
+| --- | --- | --- |
+| `page` | 0 | 0 이상 |
+| `size` | 20 | 1 이상 100 이하 |
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "code": "FACTORY-01",
+      "name": "서울 공장",
+      "active": true
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+목록은 Factory ID 오름차순으로 고정합니다. 검색, 복합 필터와 사용자 지정 정렬은 현재 범위에 포함하지 않습니다.
