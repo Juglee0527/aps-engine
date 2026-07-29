@@ -38,6 +38,7 @@
 | `INVALID_REQUEST` | 400 | 요청 본문 파싱 실패 또는 입력값 검증 실패 |
 | `RESOURCE_NOT_FOUND` | 404 | 식별자로 요청한 리소스가 존재하지 않음 |
 | `CONFLICT` | 409 | 중복 또는 현재 상태와 충돌하는 요청 |
+| `FACTORY_CODE_DUPLICATED` | 409 | 정규화된 공장 코드가 이미 존재함 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
 도메인별 오류 코드가 실제로 필요해지면 해당 기능을 구현하는 커밋에서 추가합니다. 현재 사용되지 않는 오류 코드를 미리 만들지 않습니다.
@@ -62,3 +63,42 @@ HTTP 요청
 - 현재 계약은 JSON 요청 본문 검증을 우선 지원합니다.
 - 경로 변수와 쿼리 매개변수의 메서드 검증 오류는 해당 API가 추가되는 단계에서 실제 실패 형태를 확인하고 확장합니다.
 - 인증·인가 오류는 현재 프로젝트 범위에 포함하지 않습니다.
+
+## 6. Factory API
+
+### Factory 등록
+
+```http
+POST /api/v1/factories
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "factory-01",
+  "name": "서울 공장"
+}
+```
+
+성공 시 코드는 대문자로 정규화되며 `201 Created`와 생성된 리소스의 `Location`을 반환합니다.
+
+```http
+HTTP/1.1 201 Created
+Location: /api/v1/factories/1
+```
+
+```json
+{
+  "id": 1,
+  "code": "FACTORY-01",
+  "name": "서울 공장",
+  "active": true
+}
+```
+
+| 상황 | HTTP 상태 | 오류 코드 |
+| --- | --- | --- |
+| 코드 또는 이름 검증 실패 | 400 | `INVALID_REQUEST` |
+| 정규화된 코드 중복 | 409 | `FACTORY_CODE_DUPLICATED` |
+
+Factory 조회, 수정 및 삭제 API는 현재 단계에 포함하지 않습니다.

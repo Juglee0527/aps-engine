@@ -7,11 +7,19 @@ public class ApplicationException extends RuntimeException {
     private final ErrorCode errorCode;
 
     public ApplicationException(ErrorCode errorCode) {
-        this(errorCode, null);
+        this(errorCode, null, null);
     }
 
     public ApplicationException(ErrorCode errorCode, String message) {
-        super(resolveMessage(errorCode, message));
+        this(errorCode, message, null);
+    }
+
+    public ApplicationException(
+            ErrorCode errorCode,
+            String message,
+            Throwable cause
+    ) {
+        super(resolveMessage(errorCode, message), cause);
         this.errorCode = errorCode;
     }
 
@@ -28,4 +36,3 @@ public class ApplicationException extends RuntimeException {
         return message;
     }
 }
-

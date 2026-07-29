@@ -83,7 +83,7 @@ ERD와 도메인 문서를 함께 갱신해 주세요.
 권장 커밋 메시지: feat: add factory domain model
 ```
 
-### [ ] 007. Factory 등록 API
+### [x] 007. Factory 등록 API
 
 ```text
 Factory 등록 유스케이스와 POST API를 구현해 주세요.
