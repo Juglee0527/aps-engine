@@ -92,6 +92,7 @@ aps-engine
 - [도메인 모델](docs/02-domain.md)
 - [ERD](docs/03-erd.md)
 - [API 계약](docs/04-api.md)
+- [APS 운영 화면 MVP](docs/05-mvp-ui.md)
 
 ---
 
@@ -122,7 +123,7 @@ aps-engine
 - [x] 010. Machine 도메인 모델
 - [x] 011. Machine 등록 및 조회 API
 - [x] 011-A. MVP용 ProductionLine 목록 조회 API
-- [ ] 011-B. APS 운영 화면 MVP
+- [x] 011-B. APS 운영 화면 MVP
 - [ ] 012. Product 도메인과 등록 API
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
@@ -170,11 +171,16 @@ $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 ## Run
 
 ```powershell
-.\gradlew.bat bootRun --args="--spring.profiles.active=local"
+.\scripts\run-local.ps1
 ```
 
 애플리케이션은 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` 환경변수로 연결 정보를 받습니다.
+`run-local.ps1`은 Git에서 제외된 `.env`를 현재 프로세스에만 읽어들인 뒤 로컬 프로필로 서버를 실행합니다.
 시작 시 Flyway가 `src/main/resources/db/migration`의 버전 마이그레이션을 순서대로 적용하고, Hibernate는 스키마를 생성하지 않고 매핑만 검증합니다.
+
+서버가 시작되면 브라우저에서 `http://localhost:8080`에 접속해 APS 운영 화면 MVP를 확인할 수 있습니다.
+화면에서는 공장, 생산라인, 설비를 순서대로 등록하고 선택한 상위 자원의 하위 목록을 조회할 수 있습니다.
+상세 설계와 현재 제외 범위는 [APS Operations MVP](docs/05-mvp-ui.md)를 참고해 주세요.
 
 ---
 

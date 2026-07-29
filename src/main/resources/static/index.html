@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="APS Engine 생산 자원 운영 화면">
+    <title>APS Engine · Planning Control Center</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+<header class="topbar">
+    <a class="brand" href="/" aria-label="APS Engine 홈">
+        <span class="brand-mark" aria-hidden="true">AP</span>
+        <span>
+            <strong>APS Engine</strong>
+            <small>Planning Control Center</small>
+        </span>
+    </a>
+    <div class="topbar-meta">
+        <span class="phase-label">RESOURCE FOUNDATION</span>
+        <span id="connection-status" class="connection-status is-checking">
+            <span class="status-dot" aria-hidden="true"></span>
+            <span>서버 확인 중</span>
+        </span>
+    </div>
+</header>
+
+<main>
+    <section class="hero" aria-labelledby="page-title">
+        <div>
+            <p class="eyebrow">MANUFACTURING SYSTEM · MVP 01</p>
+            <h1 id="page-title">생산 자원을<br>한눈에 관리합니다.</h1>
+            <p class="hero-copy">
+                공장부터 생산라인, 설비까지 계층을 따라 선택하고 등록하세요.
+                스케줄링을 시작하기 전, 정확한 생산 자원 구조를 만드는 첫 화면입니다.
+            </p>
+        </div>
+        <div class="hero-index" aria-label="현재 개발 단계">
+            <span>현재 단계</span>
+            <strong>01</strong>
+            <p>Factory<br>Resource Setup</p>
+        </div>
+    </section>
+
+    <section class="metrics" aria-label="생산 자원 요약">
+        <article class="metric-card">
+            <span class="metric-number" id="factory-count">0</span>
+            <div>
+                <strong>Factories</strong>
+                <small>등록 공장</small>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-number" id="line-count">0</span>
+            <div>
+                <strong>Production Lines</strong>
+                <small>선택 공장의 라인</small>
+            </div>
+        </article>
+        <article class="metric-card">
+            <span class="metric-number" id="machine-count">0</span>
+            <div>
+                <strong>Machines</strong>
+                <small>선택 라인의 설비</small>
+            </div>
+        </article>
+        <article class="metric-card metric-card-accent">
+            <span class="metric-number" id="available-count">0</span>
+            <div>
+                <strong>Available</strong>
+                <small>현재 사용 가능</small>
+            </div>
+        </article>
+    </section>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+        <header class="section-heading">
+            <div>
+                <p class="eyebrow">RESOURCE HIERARCHY</p>
+                <h2 id="workspace-title">생산 자원 구성</h2>
+            </div>
+            <p>왼쪽에서 오른쪽으로 자원을 선택하면 하위 구성이 표시됩니다.</p>
+        </header>
+
+        <div class="resource-grid">
+            <article class="resource-panel">
+                <header class="panel-heading">
+                    <div>
+                        <span class="step-number">01</span>
+                        <h3>공장</h3>
+                    </div>
+                    <button class="icon-button" type="button"
+                            data-open-dialog="factory-dialog"
+                            aria-label="공장 등록">+</button>
+                </header>
+                <p class="panel-description">생산 활동이 이루어지는 최상위 사업장</p>
+                <div id="factory-list" class="resource-list" aria-live="polite"></div>
+            </article>
+
+            <article class="resource-panel">
+                <header class="panel-heading">
+                    <div>
+                        <span class="step-number">02</span>
+                        <h3>생산라인</h3>
+                    </div>
+                    <button id="open-line-dialog" class="icon-button"
+                            type="button" data-open-dialog="line-dialog"
+                            aria-label="생산라인 등록" disabled>+</button>
+                </header>
+                <p class="panel-description">공장 안에서 공정이 이어지는 작업 흐름</p>
+                <div id="line-list" class="resource-list" aria-live="polite"></div>
+            </article>
+
+            <article class="resource-panel">
+                <header class="panel-heading">
+                    <div>
+                        <span class="step-number">03</span>
+                        <h3>설비</h3>
+                    </div>
+                    <button id="open-machine-dialog" class="icon-button"
+                            type="button" data-open-dialog="machine-dialog"
+                            aria-label="설비 등록" disabled>+</button>
+                </header>
+                <p class="panel-description">생산라인에 배치된 실제 작업 자원</p>
+                <div id="machine-list" class="resource-list" aria-live="polite"></div>
+            </article>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <span>APS ENGINE / OPEN SOURCE STUDY</span>
+    <span>JAVA 21 · SPRING BOOT · POSTGRESQL</span>
+</footer>
+
+<dialog id="factory-dialog" class="resource-dialog">
+    <form id="factory-form">
+        <header>
+            <div>
+                <span class="dialog-kicker">NEW RESOURCE</span>
+                <h2>공장 등록</h2>
+            </div>
+            <button type="button" class="dialog-close" aria-label="닫기">×</button>
+        </header>
+        <label>
+            공장 코드
+            <input name="code" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
+                   placeholder="FACTORY-01" autocomplete="off" required>
+            <small>영문, 숫자, 하이픈, 밑줄만 사용할 수 있습니다.</small>
+        </label>
+        <label>
+            공장 이름
+            <input name="name" maxlength="100" placeholder="서울 공장"
+                   autocomplete="off" required>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" class="secondary-button dialog-cancel">취소</button>
+            <button type="submit" class="primary-button">공장 등록</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="line-dialog" class="resource-dialog">
+    <form id="line-form">
+        <header>
+            <div>
+                <span class="dialog-kicker">NEW RESOURCE</span>
+                <h2>생산라인 등록</h2>
+            </div>
+            <button type="button" class="dialog-close" aria-label="닫기">×</button>
+        </header>
+        <p class="dialog-context">선택 공장 · <strong id="line-factory-name">-</strong></p>
+        <label>
+            생산라인 코드
+            <input name="code" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
+                   placeholder="LINE-01" autocomplete="off" required>
+        </label>
+        <label>
+            생산라인 이름
+            <input name="name" maxlength="100" placeholder="조립 라인"
+                   autocomplete="off" required>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" class="secondary-button dialog-cancel">취소</button>
+            <button type="submit" class="primary-button">생산라인 등록</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="machine-dialog" class="resource-dialog">
+    <form id="machine-form">
+        <header>
+            <div>
+                <span class="dialog-kicker">NEW RESOURCE</span>
+                <h2>설비 등록</h2>
+            </div>
+            <button type="button" class="dialog-close" aria-label="닫기">×</button>
+        </header>
+        <p class="dialog-context">선택 라인 · <strong id="machine-line-name">-</strong></p>
+        <label>
+            설비 코드
+            <input name="code" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
+                   placeholder="MACHINE-01" autocomplete="off" required>
+        </label>
+        <label>
+            설비 이름
+            <input name="name" maxlength="100" placeholder="절단 설비"
+                   autocomplete="off" required>
+        </label>
+        <label>
+            설비 상태
+            <select name="status" required>
+                <option value="AVAILABLE">사용 가능</option>
+                <option value="STOPPED">일시 정지</option>
+                <option value="INACTIVE">비활성</option>
+            </select>
+        </label>
+        <div class="dialog-actions">
+            <button type="button" class="secondary-button dialog-cancel">취소</button>
+            <button type="submit" class="primary-button">설비 등록</button>
+        </div>
+    </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

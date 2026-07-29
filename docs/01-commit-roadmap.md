@@ -143,7 +143,7 @@ ProductionLine 단건 조회, 수정 및 삭제는 구현하지 마세요.
 권장 커밋 메시지: feat: ProductionLine 목록 조회 API 추가
 ```
 
-### [ ] 011-B. APS 운영 화면 MVP
+### [x] 011-B. APS 운영 화면 MVP
 
 ```text
 사용자가 현재 구현된 Factory, ProductionLine, Machine 기능을 브라우저에서 확인할 수 있는 MVP 화면을 구현해 주세요.
