@@ -77,7 +77,7 @@ class ScheduleRunServiceTest {
         when(productionOrderRepository
                 .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
                         ProductionOrderStatus.CONFIRMED
-                )).thenReturn(List.of(data.order()));
+        )).thenReturn(List.of(data.order(), data.order()));
         when(workingCalendarRepository
                 .findAllByMachine_IdInAndActiveTrue(anyCollection()))
                 .thenReturn(data.calendars());

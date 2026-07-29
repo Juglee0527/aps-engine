@@ -69,7 +69,7 @@ class ApsEngineApplicationTests {
                 .andExpect(content().contentTypeCompatibleWith("text/html"))
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "Planning Control Center"
+                                "Schedule Control Tower"
                         )
                 ));
     }

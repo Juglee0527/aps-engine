@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,10 +59,12 @@ public class ScheduleRunService {
             return existing;
         }
 
-        List<ProductionOrder> orders = productionOrderRepository
-                .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
-                        ProductionOrderStatus.CONFIRMED
-                );
+        List<ProductionOrder> orders = distinctOrders(
+                productionOrderRepository
+                        .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                                ProductionOrderStatus.CONFIRMED
+                        )
+        );
         if (orders.isEmpty()) {
             throw new ApplicationException(
                     ErrorCode.CONFIRMED_PRODUCTION_ORDER_REQUIRED
@@ -107,11 +110,18 @@ public class ScheduleRunService {
         try {
             return scheduleRunRepository.saveAndFlush(scheduleRun);
         } catch (DataIntegrityViolationException exception) {
-            throw new ApplicationException(
-                    ErrorCode.SCHEDULE_EXECUTION_DUPLICATED,
-                    ErrorCode.SCHEDULE_EXECUTION_DUPLICATED.defaultMessage(),
-                    exception
-            );
+            if (hasConstraint(
+                    exception,
+                    "uk_schedule_run_execution_key"
+            )) {
+                throw new ApplicationException(
+                        ErrorCode.SCHEDULE_EXECUTION_DUPLICATED,
+                        ErrorCode.SCHEDULE_EXECUTION_DUPLICATED
+                                .defaultMessage(),
+                        exception
+                );
+            }
+            throw exception;
         }
     }
 
@@ -143,7 +153,9 @@ public class ScheduleRunService {
 
         for (ProductionOrder order : orders) {
             ordersById.put(order.id(), order);
-            for (Operation operation : order.routing().operations()) {
+            for (Operation operation : distinctOperations(
+                    order.routing().operations()
+            )) {
                 if (operation.machine().status()
                         != MachineStatus.AVAILABLE) {
                     throw new ApplicationException(
@@ -162,7 +174,9 @@ public class ScheduleRunService {
         for (ProductionOrder order : orders) {
             List<SchedulingOperationInput> operationInputs =
                     new ArrayList<>();
-            for (Operation operation : order.routing().operations()) {
+            for (Operation operation : distinctOperations(
+                    order.routing().operations()
+            )) {
                 List<WeeklyWorkingTime> workingTimes =
                         workingTimesByMachine.getOrDefault(
                                 operation.machine().id(),
@@ -202,6 +216,26 @@ public class ScheduleRunService {
         );
     }
 
+    private List<ProductionOrder> distinctOrders(
+            List<ProductionOrder> queriedOrders
+    ) {
+        Map<Long, ProductionOrder> ordersById = new LinkedHashMap<>();
+        for (ProductionOrder order : queriedOrders) {
+            ordersById.putIfAbsent(order.id(), order);
+        }
+        return List.copyOf(ordersById.values());
+    }
+
+    private List<Operation> distinctOperations(
+            List<Operation> queriedOperations
+    ) {
+        Map<Long, Operation> operationsById = new LinkedHashMap<>();
+        for (Operation operation : queriedOperations) {
+            operationsById.putIfAbsent(operation.id(), operation);
+        }
+        return List.copyOf(operationsById.values());
+    }
+
     private Map<Long, List<WeeklyWorkingTime>> loadWorkingTimes(
             Set<Long> machineIds
     ) {
@@ -218,6 +252,21 @@ public class ScheduleRunService {
                     .add(calendar.toWeeklyWorkingTime());
         }
         return workingTimesByMachine;
+    }
+
+    private boolean hasConstraint(
+            Throwable exception,
+            String constraintName
+    ) {
+        Throwable cause = exception;
+        while (cause != null) {
+            if (cause.getMessage() != null
+                    && cause.getMessage().contains(constraintName)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     private record SchedulingContext(

@@ -2,9 +2,8 @@
 
 ## 1. 목적
 
-현재 구현된 생산 자원 API를 개발 도구 없이 브라우저에서 확인하기 위한 첫 운영 화면입니다.
-아직 구현되지 않은 Product, CAPA, Scheduling 기능을 화면에서 임의로 표현하지 않고 실제 API가 존재하는
-Factory, ProductionLine, Machine 범위만 제공합니다.
+현재 구현된 APS API를 개발 도구 없이 브라우저에서 운영하고 검증하기 위한 Control Tower 화면입니다.
+화면의 오더, 작업, 납기 지연, CAPA 사용률은 예시 숫자가 아니라 실제 API 응답으로 계산합니다.
 
 ## 2. 기술 선택
 
@@ -20,30 +19,38 @@ MVP 화면은 Spring Boot의 정적 리소스 기능을 사용하며 HTML, CSS, 
 ## 3. 화면 범위
 
 ```text
-Factory 목록/등록
-  → 선택 Factory의 ProductionLine 목록/등록
-    → 선택 ProductionLine의 Machine 목록/등록
+Master Data
+  → Factory · ProductionLine · Machine
+  → Product · Routing · Operation
+  → WorkingCalendar
+  → ProductionOrder 등록·확정
+    → Forward Scheduling 실행
+      → 설비별 Gantt · CAPA · 납기 지연
 ```
 
-- 상단 지표는 현재 불러온 공장, 선택 공장의 생산라인, 선택 라인의 설비 수를 보여줍니다.
-- 설비 상태는 `AVAILABLE`, `STOPPED`, `INACTIVE`로 구분합니다.
-- 빈 목록과 상위 자원 미선택 상태를 서로 다른 안내로 표현합니다.
-- API 오류는 화면 하단 알림으로 표시하고 서버 연결 상태를 상단에서 확인할 수 있습니다.
+- 스케줄 보드는 확정 대기 오더, 배정 작업, 납기 지연, 최대 설비 부하를 보여줍니다.
+- 설비별 간트는 저장된 최신 스케줄의 작업 시작·종료와 오더 구분, 지연 여부를 표현합니다.
+- 설비 부하는 계획기간의 `작업 분 / 가용 분`으로 계산해 병목 후보를 내림차순으로 표시합니다.
+- 간트와 CAPA 조회는 실행에 저장된 계획 UTC offset을 사용하므로 브라우저 위치와 무관하게 공장 현지시각을 유지합니다.
+- 생산오더 화면에서 DRAFT 오더를 확정할 수 있습니다.
+- 마스터 화면에서 공장, 라인, 설비, 품목, Routing과 주간 근무시간을 등록할 수 있습니다.
+- API 오류는 화면 알림으로 표시하고 서버 연결 상태를 왼쪽 하단에서 확인할 수 있습니다.
 
 ## 4. 데이터 흐름
 
 화면은 동일 출처의 `/api/v1/**` API를 호출합니다. 별도 프록시나 CORS 설정은 필요하지 않습니다.
 등록 성공 후 해당 계층을 다시 조회해 서버 데이터를 화면 상태의 기준으로 사용합니다.
 
-최초 로딩과 선택 변경 시 최대 100건을 조회합니다. 이는 운영용 전체 목록 정책이 아니라 현재 MVP의
+최초 로딩 시 각 목록을 최대 100건 조회합니다. 이는 운영용 전체 목록 정책이 아니라 현재 MVP의
 간단한 탐색 범위입니다. 실제 데이터가 100건을 넘는 단계에서는 검색과 페이지 이동 UI를 별도로 설계합니다.
 
 ## 5. 제외 범위
 
 - 사용자 인증과 권한
-- Factory, ProductionLine, Machine 수정 및 삭제
-- Product, Routing, ProductionOrder 화면
-- CAPA와 Scheduling 결과 시각화
+- 기준정보 수정 및 삭제
+- 스케줄 확정, 취소와 재스케줄링 이력 비교
+- Drag & Drop 수동 재배치
+- Changeover, Maintenance와 대체 설비 시각화
 - 서버 푸시 또는 실시간 자동 갱신
 
 ## 6. 실행 및 확인
@@ -56,4 +63,5 @@ docker compose up -d postgres
 .\scripts\run-local.ps1
 ```
 
-공장 등록 후 생산라인과 설비의 `+` 버튼이 순서대로 활성화되는지 확인합니다.
+마스터 데이터를 구성하고 생산오더를 확정한 뒤 스케줄을 실행합니다.
+최신 실행 ID, 설비별 간트, 오더 상태와 CAPA 부하가 API 데이터와 일치하는지 확인합니다.

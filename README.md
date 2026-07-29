@@ -92,7 +92,7 @@ aps-engine
 - [도메인 모델](docs/02-domain.md)
 - [ERD](docs/03-erd.md)
 - [API 계약](docs/04-api.md)
-- [APS 운영 화면 MVP](docs/05-mvp-ui.md)
+- [APS Schedule Control Tower](docs/05-mvp-ui.md)
 - [CAPA 계산](docs/06-capacity.md)
 - [순방향 스케줄링](docs/05-scheduling.md)
 

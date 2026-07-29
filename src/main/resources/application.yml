@@ -1,6 +1,8 @@
 spring:
   application:
     name: aps-engine
+  jackson:
+    deserialization:
+      adjust-dates-to-context-time-zone: false
   jpa:
     open-in-view: false
-

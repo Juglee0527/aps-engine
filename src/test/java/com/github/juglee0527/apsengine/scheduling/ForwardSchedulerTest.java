@@ -141,6 +141,28 @@ class ForwardSchedulerTest {
                 .hasMessageContaining("허용 범위");
     }
 
+    @Test
+    void keepsPlanningOffsetWhenOrderWasLoadedAsUtc() {
+        SchedulingOrderInput order = new SchedulingOrderInput(
+                1L,
+                "PO-UTC",
+                60,
+                MONDAY_EIGHT.withOffsetSameInstant(ZoneOffset.UTC),
+                MONDAY_EIGHT.plusDays(1)
+                        .withOffsetSameInstant(ZoneOffset.UTC),
+                5,
+                List.of(operation(11L, 101L, 1, 1))
+        );
+
+        SchedulingPlan plan =
+                scheduler.schedule(MONDAY_EIGHT, List.of(order));
+
+        assertThat(plan.tasks().getFirst().startAt())
+                .isEqualTo(MONDAY_EIGHT);
+        assertThat(plan.tasks().getFirst().startAt().getOffset())
+                .isEqualTo(OFFSET);
+    }
+
     private SchedulingOrderInput order(
             long id,
             String orderNumber,

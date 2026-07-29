@@ -46,6 +46,10 @@ ProductionOrder
 - 해당 설비의 직전 작업 종료시각
 
 실제 배정은 설비의 근무시간 안에서만 진행하며 비근무시간과 주말은 건너뜁니다.
+PostgreSQL이 오더 시각을 UTC offset으로 복원하더라도, 반복 근무시간은 실행 요청의
+`planningStart` offset으로 정규화해 공장 현지시각 기준을 유지합니다.
+Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도록 명시적으로 설정합니다.
+`ScheduleRun`에는 계획 offset 초를 함께 저장해 DB 재조회 후에도 간트와 CAPA가 같은 공장 현지시각을 사용합니다.
 
 ## 4. 보장사항
 

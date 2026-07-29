@@ -58,8 +58,12 @@ public class ForwardScheduler {
         OffsetDateTime schedulingEnd = planningStart;
 
         for (SchedulingOrderInput order : orderedOrders) {
+            OffsetDateTime normalizedReleaseAt =
+                    order.releaseAt().withOffsetSameInstant(
+                            planningStart.getOffset()
+                    );
             OffsetDateTime precedingOperationEnd =
-                    max(planningStart, order.releaseAt());
+                    max(planningStart, normalizedReleaseAt);
             List<SchedulingOperationInput> operations =
                     new ArrayList<>(order.operations());
             operations.sort(OPERATION_SEQUENCE);
@@ -131,9 +135,9 @@ public class ForwardScheduler {
             OffsetDateTime left,
             OffsetDateTime right
     ) {
-        if (right == null || left.isAfter(right)) {
+        if (right == null || !right.isAfter(left)) {
             return left;
         }
-        return right;
+        return right.withOffsetSameInstant(left.getOffset());
     }
 }

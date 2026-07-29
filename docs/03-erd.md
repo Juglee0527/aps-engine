@@ -70,6 +70,7 @@ erDiagram
         UUID execution_key UK
         TIMESTAMPTZ planning_start
         TIMESTAMPTZ scheduling_end
+        INTEGER planning_offset_seconds
         TIMESTAMPTZ created_at
         VARCHAR_20 status
     }
@@ -177,6 +178,7 @@ erDiagram
 | --- | --- | --- |
 | `uk_schedule_run_execution_key` | `execution_key` | 같은 실행 요청의 중복 저장 방지 |
 | `ck_schedule_run_period` | 계획 시작·스케줄 종료 | 종료가 계획 시작보다 이전이 아님을 보장 |
+| `ck_schedule_run_planning_offset` | `planning_offset_seconds` | UTC offset을 ±18시간 범위로 제한 |
 | `uk_scheduled_operation_run_order_operation` | 실행·오더·공정 | 한 실행에서 같은 오더 공정 중복 방지 |
 | `ck_scheduled_operation_period` | 시작·종료 | 작업 종료가 시작보다 이후임을 보장 |
 | `ix_scheduled_operation_run_start` | 실행·시작 | 간트 보드 시간순 조회 지원 |

@@ -3,225 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="APS Engine 생산 자원 운영 화면">
-    <title>APS Engine · Planning Control Center</title>
+    <meta name="description" content="APS Engine 생산계획 스케줄 보드">
+    <title>APS Engine · Schedule Control Tower</title>
     <link rel="stylesheet" href="/styles.css">
     <script src="/app.js" defer></script>
 </head>
 <body>
-<header class="topbar">
-    <a class="brand" href="/" aria-label="APS Engine 홈">
-        <span class="brand-mark" aria-hidden="true">AP</span>
-        <span>
-            <strong>APS Engine</strong>
-            <small>Planning Control Center</small>
-        </span>
-    </a>
-    <div class="topbar-meta">
-        <span class="phase-label">RESOURCE FOUNDATION</span>
-        <span id="connection-status" class="connection-status is-checking">
-            <span class="status-dot" aria-hidden="true"></span>
-            <span>서버 확인 중</span>
-        </span>
-    </div>
-</header>
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="/" aria-label="APS Engine 홈">
+            <span class="brand-mark">A</span>
+            <span>
+                <strong>APS ENGINE</strong>
+                <small>CONTROL TOWER</small>
+            </span>
+        </a>
 
-<main>
-    <section class="hero" aria-labelledby="page-title">
-        <div>
-            <p class="eyebrow">MANUFACTURING SYSTEM · MVP 01</p>
-            <h1 id="page-title">생산 자원을<br>한눈에 관리합니다.</h1>
-            <p class="hero-copy">
-                공장부터 생산라인, 설비까지 계층을 따라 선택하고 등록하세요.
-                스케줄링을 시작하기 전, 정확한 생산 자원 구조를 만드는 첫 화면입니다.
-            </p>
+        <nav class="primary-nav" aria-label="주 메뉴">
+            <button class="nav-item is-active" data-view="schedule">
+                <span class="nav-icon">▦</span>
+                <span>스케줄 보드</span>
+            </button>
+            <button class="nav-item" data-view="orders">
+                <span class="nav-icon">≡</span>
+                <span>생산오더</span>
+            </button>
+            <button class="nav-item" data-view="master">
+                <span class="nav-icon">◇</span>
+                <span>마스터 데이터</span>
+            </button>
+        </nav>
+
+        <div class="system-card">
+            <span class="section-label">ENGINE STATUS</span>
+            <div id="connection-status" class="connection-status is-checking">
+                <span class="status-dot"></span>
+                <strong>서버 확인 중</strong>
+            </div>
+            <p>Forward Scheduler<br>Priority → Due Date → ID</p>
         </div>
-        <div class="hero-index" aria-label="현재 개발 단계">
-            <span>현재 단계</span>
-            <strong>01</strong>
-            <p>Factory<br>Resource Setup</p>
-        </div>
-    </section>
 
-    <section class="metrics" aria-label="생산 자원 요약">
-        <article class="metric-card">
-            <span class="metric-number" id="factory-count">0</span>
-            <div>
-                <strong>Factories</strong>
-                <small>등록 공장</small>
-            </div>
-        </article>
-        <article class="metric-card">
-            <span class="metric-number" id="line-count">0</span>
-            <div>
-                <strong>Production Lines</strong>
-                <small>선택 공장의 라인</small>
-            </div>
-        </article>
-        <article class="metric-card">
-            <span class="metric-number" id="machine-count">0</span>
-            <div>
-                <strong>Machines</strong>
-                <small>선택 라인의 설비</small>
-            </div>
-        </article>
-        <article class="metric-card metric-card-accent">
-            <span class="metric-number" id="available-count">0</span>
-            <div>
-                <strong>Available</strong>
-                <small>현재 사용 가능</small>
-            </div>
-        </article>
-    </section>
+        <footer class="sidebar-footer">
+            <span>JAVA 21</span>
+            <span>SPRING BOOT</span>
+            <span>POSTGRESQL</span>
+        </footer>
+    </aside>
 
-    <section class="workspace" aria-labelledby="workspace-title">
-        <header class="section-heading">
+    <main class="main-content">
+        <header class="topbar">
             <div>
-                <p class="eyebrow">RESOURCE HIERARCHY</p>
-                <h2 id="workspace-title">생산 자원 구성</h2>
+                <p class="eyebrow">ADVANCED PLANNING &amp; SCHEDULING</p>
+                <h1 id="view-title">생산 스케줄 보드</h1>
             </div>
-            <p>왼쪽에서 오른쪽으로 자원을 선택하면 하위 구성이 표시됩니다.</p>
+            <div class="top-actions">
+                <button id="refresh-button" class="ghost-button" type="button">
+                    ↻ 데이터 새로고침
+                </button>
+                <button class="primary-button" type="button"
+                        data-open-dialog="schedule-dialog">
+                    <span>▶</span> 스케줄 실행
+                </button>
+            </div>
         </header>
 
-        <div class="resource-grid">
-            <article class="resource-panel">
-                <header class="panel-heading">
-                    <div>
-                        <span class="step-number">01</span>
-                        <h3>공장</h3>
+        <section id="schedule-view" class="view is-active">
+            <div id="run-banner" class="run-banner">
+                <div>
+                    <span class="section-label">LATEST SCHEDULE RUN</span>
+                    <strong id="run-title">아직 실행된 스케줄이 없습니다</strong>
+                </div>
+                <div class="run-meta">
+                    <span>계획 시작 <strong id="planning-start">-</strong></span>
+                    <span>완료 시각 <strong id="schedule-end">-</strong></span>
+                    <span id="run-status" class="status-pill neutral">READY</span>
+                </div>
+            </div>
+
+            <section class="kpi-grid" aria-label="계획 지표">
+                <article class="kpi-card">
+                    <div class="kpi-top">
+                        <span>확정 오더</span>
+                        <span class="kpi-index">01</span>
                     </div>
-                    <button class="icon-button" type="button"
-                            data-open-dialog="factory-dialog"
-                            aria-label="공장 등록">+</button>
-                </header>
-                <p class="panel-description">생산 활동이 이루어지는 최상위 사업장</p>
-                <div id="factory-list" class="resource-list" aria-live="polite"></div>
-            </article>
-
-            <article class="resource-panel">
-                <header class="panel-heading">
-                    <div>
-                        <span class="step-number">02</span>
-                        <h3>생산라인</h3>
+                    <strong id="confirmed-count">0</strong>
+                    <small>스케줄링 대기</small>
+                </article>
+                <article class="kpi-card">
+                    <div class="kpi-top">
+                        <span>배정 작업</span>
+                        <span class="kpi-index">02</span>
                     </div>
-                    <button id="open-line-dialog" class="icon-button"
-                            type="button" data-open-dialog="line-dialog"
-                            aria-label="생산라인 등록" disabled>+</button>
-                </header>
-                <p class="panel-description">공장 안에서 공정이 이어지는 작업 흐름</p>
-                <div id="line-list" class="resource-list" aria-live="polite"></div>
-            </article>
-
-            <article class="resource-panel">
-                <header class="panel-heading">
-                    <div>
-                        <span class="step-number">03</span>
-                        <h3>설비</h3>
+                    <strong id="task-count">0</strong>
+                    <small>Operation tasks</small>
+                </article>
+                <article class="kpi-card">
+                    <div class="kpi-top">
+                        <span>납기 지연</span>
+                        <span class="kpi-index">03</span>
                     </div>
-                    <button id="open-machine-dialog" class="icon-button"
-                            type="button" data-open-dialog="machine-dialog"
-                            aria-label="설비 등록" disabled>+</button>
+                    <strong id="delayed-count">0</strong>
+                    <small>Delayed orders</small>
+                </article>
+                <article class="kpi-card accent">
+                    <div class="kpi-top">
+                        <span>최대 설비 부하</span>
+                        <span class="kpi-index">04</span>
+                    </div>
+                    <strong id="peak-load">0%</strong>
+                    <small id="peak-machine">계산 대기</small>
+                </article>
+            </section>
+
+            <section class="panel schedule-panel">
+                <header class="panel-header">
+                    <div>
+                        <span class="section-label">FINITE CAPACITY SCHEDULE</span>
+                        <h2>설비별 작업 간트</h2>
+                    </div>
+                    <div class="legend" id="gantt-legend"></div>
                 </header>
-                <p class="panel-description">생산라인에 배치된 실제 작업 자원</p>
-                <div id="machine-list" class="resource-list" aria-live="polite"></div>
-            </article>
-        </div>
-    </section>
-</main>
+                <div id="gantt" class="gantt" aria-live="polite"></div>
+            </section>
 
-<footer>
-    <span>APS ENGINE / OPEN SOURCE STUDY</span>
-    <span>JAVA 21 · SPRING BOOT · POSTGRESQL</span>
-</footer>
+            <div class="insight-grid">
+                <section class="panel">
+                    <header class="panel-header compact">
+                        <div>
+                            <span class="section-label">ORDER FLOW</span>
+                            <h2>오더 진행 현황</h2>
+                        </div>
+                        <button class="text-button" data-view-jump="orders">
+                            전체 오더 보기 →
+                        </button>
+                    </header>
+                    <div class="table-scroll">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>오더</th>
+                                <th>수량</th>
+                                <th>납기</th>
+                                <th>우선순위</th>
+                                <th>상태</th>
+                            </tr>
+                            </thead>
+                            <tbody id="order-summary-body"></tbody>
+                        </table>
+                    </div>
+                </section>
 
-<dialog id="factory-dialog" class="resource-dialog">
+                <section class="panel load-panel">
+                    <header class="panel-header compact">
+                        <div>
+                            <span class="section-label">BOTTLENECK WATCH</span>
+                            <h2>설비 부하 순위</h2>
+                        </div>
+                    </header>
+                    <div id="load-ranking" class="load-ranking"></div>
+                </section>
+            </div>
+        </section>
+
+        <section id="orders-view" class="view">
+            <section class="panel page-panel">
+                <header class="panel-header">
+                    <div>
+                        <span class="section-label">PRODUCTION ORDERS</span>
+                        <h2>생산오더 큐</h2>
+                    </div>
+                    <button class="primary-button" data-open-dialog="order-dialog">
+                        + 생산오더 등록
+                    </button>
+                </header>
+                <div class="table-scroll">
+                    <table class="wide-table">
+                        <thead>
+                        <tr>
+                            <th>오더번호</th>
+                            <th>품목 / Routing</th>
+                            <th>수량</th>
+                            <th>투입 가능</th>
+                            <th>납기</th>
+                            <th>우선순위</th>
+                            <th>상태</th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="order-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+
+        <section id="master-view" class="view">
+            <div class="master-toolbar">
+                <div>
+                    <span class="section-label">MASTER DATA</span>
+                    <h2>생산 기준정보</h2>
+                    <p>스케줄 계산에 직접 사용되는 자원, 품목, 공정, 근무시간입니다.</p>
+                </div>
+                <div class="master-actions">
+                    <button class="ghost-button" data-open-dialog="factory-dialog">+ 공장</button>
+                    <button class="ghost-button" data-open-dialog="line-dialog">+ 라인</button>
+                    <button class="ghost-button" data-open-dialog="machine-dialog">+ 설비</button>
+                    <button class="ghost-button" data-open-dialog="product-dialog">+ 품목</button>
+                    <button class="primary-button" data-open-dialog="routing-dialog">+ Routing</button>
+                </div>
+            </div>
+
+            <div class="master-grid">
+                <section class="panel master-panel">
+                    <header class="panel-header compact">
+                        <div>
+                            <span class="section-label">FACILITIES</span>
+                            <h2>공장 · 라인 · 설비</h2>
+                        </div>
+                        <button class="text-button" data-open-dialog="calendar-dialog">
+                            근무시간 설정
+                        </button>
+                    </header>
+                    <div id="facility-tree" class="facility-tree"></div>
+                </section>
+                <section class="panel master-panel">
+                    <header class="panel-header compact">
+                        <div>
+                            <span class="section-label">PRODUCT &amp; PROCESS</span>
+                            <h2>품목 · Routing</h2>
+                        </div>
+                    </header>
+                    <div id="product-tree" class="product-tree"></div>
+                </section>
+            </div>
+        </section>
+    </main>
+</div>
+
+<dialog id="schedule-dialog" class="modal">
+    <form id="schedule-form">
+        <header><div><span class="section-label">RUN ENGINE</span><h2>스케줄 실행</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">CONFIRMED 오더를 우선순위 순으로 배치하고 결과를 저장합니다.</p>
+        <label>계획 시작시각<input id="schedule-start-input" name="planningStart" type="datetime-local" required></label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">엔진 실행</button></div>
+    </form>
+</dialog>
+
+<dialog id="factory-dialog" class="modal">
     <form id="factory-form">
-        <header>
-            <div>
-                <span class="dialog-kicker">NEW RESOURCE</span>
-                <h2>공장 등록</h2>
-            </div>
-            <button type="button" class="dialog-close" aria-label="닫기">×</button>
-        </header>
-        <label>
-            공장 코드
-            <input name="code" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
-                   placeholder="FACTORY-01" autocomplete="off" required>
-            <small>영문, 숫자, 하이픈, 밑줄만 사용할 수 있습니다.</small>
-        </label>
-        <label>
-            공장 이름
-            <input name="name" maxlength="100" placeholder="서울 공장"
-                   autocomplete="off" required>
-        </label>
-        <div class="dialog-actions">
-            <button type="button" class="secondary-button dialog-cancel">취소</button>
-            <button type="submit" class="primary-button">공장 등록</button>
-        </div>
+        <header><div><span class="section-label">FACILITY</span><h2>공장 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <label>공장 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="FACTORY-01" required></label>
+        <label>공장 이름<input name="name" placeholder="서울 공장" required></label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">등록</button></div>
     </form>
 </dialog>
 
-<dialog id="line-dialog" class="resource-dialog">
+<dialog id="line-dialog" class="modal">
     <form id="line-form">
-        <header>
-            <div>
-                <span class="dialog-kicker">NEW RESOURCE</span>
-                <h2>생산라인 등록</h2>
-            </div>
-            <button type="button" class="dialog-close" aria-label="닫기">×</button>
-        </header>
-        <p class="dialog-context">선택 공장 · <strong id="line-factory-name">-</strong></p>
-        <label>
-            생산라인 코드
-            <input name="code" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
-                   placeholder="LINE-01" autocomplete="off" required>
-        </label>
-        <label>
-            생산라인 이름
-            <input name="name" maxlength="100" placeholder="조립 라인"
-                   autocomplete="off" required>
-        </label>
-        <div class="dialog-actions">
-            <button type="button" class="secondary-button dialog-cancel">취소</button>
-            <button type="submit" class="primary-button">생산라인 등록</button>
-        </div>
+        <header><div><span class="section-label">FACILITY</span><h2>생산라인 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <label>공장<select name="factoryId" id="line-factory-select" required></select></label>
+        <label>라인 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="LINE-01" required></label>
+        <label>라인 이름<input name="name" placeholder="조립 라인" required></label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">등록</button></div>
     </form>
 </dialog>
 
-<dialog id="machine-dialog" class="resource-dialog">
+<dialog id="machine-dialog" class="modal">
     <form id="machine-form">
-        <header>
-            <div>
-                <span class="dialog-kicker">NEW RESOURCE</span>
-                <h2>설비 등록</h2>
-            </div>
-            <button type="button" class="dialog-close" aria-label="닫기">×</button>
-        </header>
-        <p class="dialog-context">선택 라인 · <strong id="machine-line-name">-</strong></p>
-        <label>
-            설비 코드
-            <input name="code" maxlength="50" pattern="[A-Za-z0-9][A-Za-z0-9_-]*"
-                   placeholder="MACHINE-01" autocomplete="off" required>
-        </label>
-        <label>
-            설비 이름
-            <input name="name" maxlength="100" placeholder="절단 설비"
-                   autocomplete="off" required>
-        </label>
-        <label>
-            설비 상태
-            <select name="status" required>
-                <option value="AVAILABLE">사용 가능</option>
-                <option value="STOPPED">일시 정지</option>
-                <option value="INACTIVE">비활성</option>
-            </select>
-        </label>
-        <div class="dialog-actions">
-            <button type="button" class="secondary-button dialog-cancel">취소</button>
-            <button type="submit" class="primary-button">설비 등록</button>
-        </div>
+        <header><div><span class="section-label">FACILITY</span><h2>설비 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <label>생산라인<select name="productionLineId" id="machine-line-select" required></select></label>
+        <label>설비 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="CUTTER-01" required></label>
+        <label>설비 이름<input name="name" placeholder="절단 설비" required></label>
+        <label>상태<select name="status"><option value="AVAILABLE">AVAILABLE</option><option value="STOPPED">STOPPED</option><option value="INACTIVE">INACTIVE</option></select></label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">등록</button></div>
     </form>
 </dialog>
+
+<dialog id="product-dialog" class="modal">
+    <form id="product-form">
+        <header><div><span class="section-label">PRODUCT</span><h2>품목 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <label>품목 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="PANEL-01" required></label>
+        <label>품목 이름<input name="name" placeholder="스마트 제어 패널" required></label>
+        <label>단위<select name="unit"><option value="PIECE">PIECE</option><option value="KILOGRAM">KILOGRAM</option><option value="METER">METER</option></select></label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">등록</button></div>
+    </form>
+</dialog>
+
+<dialog id="routing-dialog" class="modal modal-wide">
+    <form id="routing-form">
+        <header><div><span class="section-label">PROCESS</span><h2>Routing 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <div class="form-grid">
+            <label>품목<select name="productId" id="routing-product-select" required></select></label>
+            <label>Routing 코드<input name="code" placeholder="ROUTING-STD" required></label>
+            <label>Routing 이름<input name="name" placeholder="표준 생산 공정" required></label>
+        </div>
+        <div class="operation-heading"><strong>공정 목록</strong><button id="add-operation-button" type="button" class="text-button">+ 공정 추가</button></div>
+        <div id="operation-rows" class="operation-rows"></div>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">Routing 등록</button></div>
+    </form>
+</dialog>
+
+<dialog id="order-dialog" class="modal">
+    <form id="order-form">
+        <header><div><span class="section-label">ORDER</span><h2>생산오더 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <label>오더번호<input name="orderNumber" placeholder="PO-2026-001" required></label>
+        <label>Routing<select name="routingId" id="order-routing-select" required></select></label>
+        <div class="form-grid two">
+            <label>수량<input name="quantity" type="number" min="1" max="1000000" value="10" required></label>
+            <label>우선순위<input name="priority" type="number" min="1" max="100" value="50" required></label>
+        </div>
+        <label>투입 가능시각<input id="order-release-input" name="releaseAt" type="datetime-local" required></label>
+        <label>납기시각<input id="order-due-input" name="dueAt" type="datetime-local" required></label>
+        <label class="check-label"><input name="confirm" type="checkbox" checked> 등록 후 바로 확정</label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">등록</button></div>
+    </form>
+</dialog>
+
+<dialog id="calendar-dialog" class="modal">
+    <form id="calendar-form">
+        <header><div><span class="section-label">CAPACITY</span><h2>설비 근무시간 설정</h2></div><button type="button" class="modal-close">×</button></header>
+        <label>설비<select name="machineId" id="calendar-machine-select" required></select></label>
+        <div class="form-grid two">
+            <label>시작시각<input name="startTime" type="time" value="08:00" required></label>
+            <label>종료시각<input name="endTime" type="time" value="17:00" required></label>
+        </div>
+        <p class="modal-copy">월요일부터 금요일까지 동일한 근무시간을 한 번에 등록합니다.</p>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">주간 캘린더 등록</button></div>
+    </form>
+</dialog>
+
+<template id="operation-row-template">
+    <div class="operation-row">
+        <input data-field="sequence" type="number" min="1" placeholder="순서" required>
+        <input data-field="code" placeholder="공정 코드" required>
+        <input data-field="name" placeholder="공정 이름" required>
+        <input data-field="processingTimeMinutes" type="number" min="1" max="10080" placeholder="분/개" required>
+        <select data-field="machineId" required></select>
+        <button type="button" class="remove-operation" aria-label="공정 삭제">×</button>
+    </div>
+</template>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>

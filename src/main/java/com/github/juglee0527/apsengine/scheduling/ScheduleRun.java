@@ -48,6 +48,13 @@ public class ScheduleRun {
     @Column(name = "scheduling_end", nullable = false, updatable = false)
     private OffsetDateTime schedulingEnd;
 
+    @Column(
+            name = "planning_offset_seconds",
+            nullable = false,
+            updatable = false
+    )
+    private int planningOffsetSeconds;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
 
@@ -90,6 +97,8 @@ public class ScheduleRun {
                     "스케줄 종료시각은 계획 시작시각보다 이전일 수 없습니다."
             );
         }
+        this.planningOffsetSeconds =
+                planningStart.getOffset().getTotalSeconds();
         this.createdAt = Objects.requireNonNull(
                 createdAt,
                 "createdAt must not be null"
@@ -140,6 +149,10 @@ public class ScheduleRun {
 
     public OffsetDateTime schedulingEnd() {
         return schedulingEnd;
+    }
+
+    public int planningOffsetSeconds() {
+        return planningOffsetSeconds;
     }
 
     public OffsetDateTime createdAt() {

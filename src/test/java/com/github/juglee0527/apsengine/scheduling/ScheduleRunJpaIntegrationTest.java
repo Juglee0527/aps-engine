@@ -61,6 +61,17 @@ class ScheduleRunJpaIntegrationTest {
     @Test
     void persistsScheduleAndMarksOrderAsScheduled() {
         ProductionOrder order = persistConfirmedOrder();
+        ProductionOrder secondOrder = ProductionOrder.create(
+                order.routing(),
+                "PO-SCHEDULE-SECOND",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusDays(3),
+                50
+        );
+        secondOrder.confirm();
+        entityManager.persist(secondOrder);
+        entityManager.flush();
         UUID executionKey = UUID.randomUUID();
 
         ScheduleRun created = scheduleRunService.execute(
@@ -69,6 +80,7 @@ class ScheduleRunJpaIntegrationTest {
         );
         Long scheduleRunId = created.id();
         Long orderId = order.id();
+        Long secondOrderId = secondOrder.id();
         entityManager.flush();
         entityManager.clear();
 
@@ -78,10 +90,22 @@ class ScheduleRunJpaIntegrationTest {
         ProductionOrder storedOrder = productionOrderRepository
                 .findById(orderId)
                 .orElseThrow();
+        ProductionOrder storedSecondOrder = productionOrderRepository
+                .findById(secondOrderId)
+                .orElseThrow();
 
         assertThat(stored.executionKey()).isEqualTo(executionKey);
-        assertThat(stored.scheduledOperations()).hasSize(2);
+        assertThat(stored.planningOffsetSeconds()).isEqualTo(32_400);
+        assertThat(stored.scheduledOperations())
+                .filteredOn(scheduledOperation ->
+                        scheduledOperation.productionOrder().id()
+                                .equals(orderId)
+                                || scheduledOperation.productionOrder().id()
+                                .equals(secondOrderId))
+                .hasSize(4);
         assertThat(storedOrder.status())
+                .isEqualTo(ProductionOrderStatus.SCHEDULED);
+        assertThat(storedSecondOrder.status())
                 .isEqualTo(ProductionOrderStatus.SCHEDULED);
     }
 

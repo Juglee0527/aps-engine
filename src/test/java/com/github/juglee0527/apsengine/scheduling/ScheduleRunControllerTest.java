@@ -3,6 +3,7 @@ package com.github.juglee0527.apsengine.scheduling;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -58,6 +59,11 @@ class ScheduleRunControllerTest {
                 .andExpect(jsonPath("$.id").value(10))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.taskCount").value(0));
+
+        verify(scheduleRunService).execute(
+                executionKey,
+                OffsetDateTime.parse("2026-07-27T08:00:00+09:00")
+        );
     }
 
     @Test

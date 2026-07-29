@@ -1,413 +1,709 @@
 const API = {
     factories: "/api/v1/factories",
-    lines: (factoryId) =>
-        `/api/v1/factories/${factoryId}/production-lines`,
-    machines: (productionLineId) =>
-        `/api/v1/production-lines/${productionLineId}/machines`
+    lines: (factoryId) => `/api/v1/factories/${factoryId}/production-lines`,
+    machines: (lineId) => `/api/v1/production-lines/${lineId}/machines`,
+    products: "/api/v1/products",
+    routings: (productId) => `/api/v1/products/${productId}/routings`,
+    orders: "/api/v1/production-orders",
+    confirmOrder: (orderId) => `/api/v1/production-orders/${orderId}/confirm`,
+    calendars: (machineId) => `/api/v1/machines/${machineId}/working-calendars`,
+    availability: (machineId, from, to) => {
+        const query = new URLSearchParams({from, to});
+        return `/api/v1/machines/${machineId}/availability?${query}`;
+    },
+    schedules: "/api/v1/schedules",
+    latestSchedule: "/api/v1/schedules/latest"
 };
 
 const state = {
     factories: [],
     lines: [],
     machines: [],
-    selectedFactoryId: null,
-    selectedLineId: null
+    products: [],
+    routings: [],
+    orders: [],
+    latestSchedule: null,
+    capacity: new Map()
 };
 
-const elements = {
-    connectionStatus: document.querySelector("#connection-status"),
-    factoryCount: document.querySelector("#factory-count"),
-    lineCount: document.querySelector("#line-count"),
-    machineCount: document.querySelector("#machine-count"),
-    availableCount: document.querySelector("#available-count"),
-    factoryList: document.querySelector("#factory-list"),
-    lineList: document.querySelector("#line-list"),
-    machineList: document.querySelector("#machine-list"),
-    openLineDialog: document.querySelector("#open-line-dialog"),
-    openMachineDialog: document.querySelector("#open-machine-dialog"),
-    lineFactoryName: document.querySelector("#line-factory-name"),
-    machineLineName: document.querySelector("#machine-line-name"),
-    toast: document.querySelector("#toast")
-};
-
+const colors = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"];
 let toastTimer;
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+    bindNavigation();
     bindDialogs();
     bindForms();
-    loadFactories();
+    bindActions();
+    setDefaultDates();
+    await loadAll();
 });
 
 async function request(url, options = {}) {
+    const {allowNotFound = false, ...fetchOptions} = options;
     const response = await fetch(url, {
-        headers: {
-            "Content-Type": "application/json",
-            ...options.headers
-        },
-        ...options
+        headers: {"Content-Type": "application/json", ...fetchOptions.headers},
+        ...fetchOptions
     });
-
+    if (allowNotFound && response.status === 404) {
+        return null;
+    }
     if (!response.ok) {
         const error = await response.json().catch(() => null);
-        throw new Error(error?.message || `요청에 실패했습니다. (${response.status})`);
+        const message = error?.message
+            || error?.detail
+            || `요청에 실패했습니다. (${response.status})`;
+        throw new Error(message);
     }
-
-    if (response.status === 204) {
-        return null;
-    }
-    return response.json();
+    return response.status === 204 ? null : response.json();
 }
 
-async function loadFactories(preferredFactoryId = null) {
+async function loadAll() {
+    setConnection("checking");
     try {
-        const page = await request(`${API.factories}?page=0&size=100`);
-        state.factories = page.content;
-        setConnection(true);
+        const [factoryPage, productPage, orderPage, latestSchedule] =
+            await Promise.all([
+                request(`${API.factories}?page=0&size=100`),
+                request(`${API.products}?page=0&size=100`),
+                request(`${API.orders}?page=0&size=100`),
+                request(API.latestSchedule, {allowNotFound: true})
+            ]);
+        state.factories = factoryPage.content;
+        state.products = productPage.content;
+        state.orders = orderPage.content;
+        state.latestSchedule = latestSchedule;
 
-        const nextFactoryId = resolveSelectedId(
-            state.factories,
-            preferredFactoryId ?? state.selectedFactoryId
+        const linePages = await Promise.all(
+            state.factories.map((factory) =>
+                request(`${API.lines(factory.id)}?page=0&size=100`)
+            )
         );
-        await selectFactory(nextFactoryId);
+        state.lines = linePages.flatMap((page) => page.content);
+
+        const machinePages = await Promise.all(
+            state.lines.map((line) =>
+                request(`${API.machines(line.id)}?page=0&size=100`)
+            )
+        );
+        state.machines = machinePages.flatMap((page) => page.content);
+
+        const routingLists = await Promise.all(
+            state.products.map((product) => request(API.routings(product.id)))
+        );
+        state.routings = routingLists.flat();
+        await loadCapacity();
+        setConnection("online");
+        render();
     } catch (error) {
-        setConnection(false);
-        state.factories = [];
-        state.lines = [];
-        state.machines = [];
-        state.selectedFactoryId = null;
-        state.selectedLineId = null;
-        renderAll();
+        setConnection("offline");
         showToast(error.message, true);
+        render();
     }
 }
 
-async function selectFactory(factoryId) {
-    state.selectedFactoryId = factoryId;
-    state.selectedLineId = null;
-    state.lines = [];
-    state.machines = [];
-    renderAll();
-
-    if (factoryId === null) {
+async function loadCapacity() {
+    state.capacity = new Map();
+    const schedule = state.latestSchedule;
+    if (!schedule || schedule.tasks.length === 0) {
         return;
     }
-
-    try {
-        const page = await request(`${API.lines(factoryId)}?page=0&size=100`);
-        state.lines = page.content;
-        const nextLineId = resolveSelectedId(state.lines, null);
-        await selectLine(nextLineId);
-    } catch (error) {
-        renderAll();
-        showToast(error.message, true);
-    }
+    const machineIds = [...new Set(schedule.tasks.map((task) => task.machineId))];
+    const results = await Promise.all(machineIds.map(async (machineId) => {
+        const workingMinutes = schedule.tasks
+            .filter((task) => task.machineId === machineId)
+            .reduce((sum, task) => sum + task.workingMinutes, 0);
+        try {
+            const availability = await request(API.availability(
+                machineId,
+                withOffset(
+                    schedule.planningStart,
+                    schedule.planningOffsetSeconds
+                ),
+                withOffset(
+                    schedule.schedulingEnd,
+                    schedule.planningOffsetSeconds
+                )
+            ));
+            const utilization = availability.availableMinutes === 0
+                ? 0
+                : Math.round(workingMinutes / availability.availableMinutes * 100);
+            return [machineId, {
+                availableMinutes: availability.availableMinutes,
+                workingMinutes,
+                utilization
+            }];
+        } catch {
+            return [machineId, {availableMinutes: 0, workingMinutes, utilization: 0}];
+        }
+    }));
+    state.capacity = new Map(results);
 }
 
-async function selectLine(productionLineId) {
-    state.selectedLineId = productionLineId;
-    state.machines = [];
-    renderAll();
-
-    if (productionLineId === null) {
-        return;
-    }
-
-    try {
-        const page = await request(
-            `${API.machines(productionLineId)}?page=0&size=100`
-        );
-        state.machines = page.content;
-        renderAll();
-    } catch (error) {
-        renderAll();
-        showToast(error.message, true);
-    }
-}
-
-function resolveSelectedId(resources, preferredId) {
-    if (resources.length === 0) {
-        return null;
-    }
-    if (resources.some((resource) => resource.id === preferredId)) {
-        return preferredId;
-    }
-    return resources[0].id;
-}
-
-function renderAll() {
-    renderFactories();
-    renderLines();
-    renderMachines();
+function render() {
+    renderRunSummary();
     renderMetrics();
-    renderDialogContext();
+    renderGantt();
+    renderOrderTables();
+    renderLoadRanking();
+    renderMasterData();
+    populateSelects();
 }
 
-function renderFactories() {
-    renderResourceList({
-        container: elements.factoryList,
-        resources: state.factories,
-        selectedId: state.selectedFactoryId,
-        emptyTitle: "등록된 공장이 없습니다",
-        emptyDescription: "오른쪽 위 + 버튼으로 첫 공장을 등록해 주세요.",
-        onSelect: selectFactory,
-        itemMeta: (factory) => factory.active ? "운영 중" : "비활성"
-    });
+function renderRunSummary() {
+    const schedule = state.latestSchedule;
+    text("#run-title", schedule
+        ? `RUN #${schedule.id} · ${schedule.orderCount}개 오더 계획 완료`
+        : "아직 실행된 스케줄이 없습니다");
+    text("#planning-start", schedule ? formatDateTime(schedule.planningStart) : "-");
+    text("#schedule-end", schedule ? formatDateTime(schedule.schedulingEnd) : "-");
+    const status = document.querySelector("#run-status");
+    status.textContent = schedule?.status || "READY";
+    status.className = `status-pill ${schedule ? "completed" : "neutral"}`;
 }
 
-function renderLines() {
-    const hasFactory = state.selectedFactoryId !== null;
-    renderResourceList({
-        container: elements.lineList,
-        resources: state.lines,
-        selectedId: state.selectedLineId,
-        emptyTitle: hasFactory
-            ? "등록된 생산라인이 없습니다"
-            : "공장을 먼저 선택해 주세요",
-        emptyDescription: hasFactory
-            ? "선택한 공장에 첫 생산라인을 등록해 주세요."
-            : "공장을 선택하면 해당 생산라인을 불러옵니다.",
-        onSelect: selectLine,
-        itemMeta: (line) => line.active ? "운영 중" : "비활성"
-    });
+function renderMetrics() {
+    const confirmed = state.orders.filter((order) => order.status === "CONFIRMED").length;
+    text("#confirmed-count", confirmed);
+    text("#task-count", state.latestSchedule?.taskCount || 0);
+    text("#delayed-count", state.latestSchedule?.delayedOrderCount || 0);
+    const loads = [...state.capacity.entries()]
+        .sort((left, right) => right[1].utilization - left[1].utilization);
+    const peak = loads[0];
+    text("#peak-load", peak ? `${peak[1].utilization}%` : "0%");
+    const machine = peak && state.machines.find((item) => item.id === peak[0]);
+    text("#peak-machine", machine ? `${machine.code} · 계획기간 CAPA` : "계산 대기");
 }
 
-function renderMachines() {
-    const hasLine = state.selectedLineId !== null;
-    renderResourceList({
-        container: elements.machineList,
-        resources: state.machines,
-        selectedId: null,
-        emptyTitle: hasLine
-            ? "등록된 설비가 없습니다"
-            : "생산라인을 먼저 선택해 주세요",
-        emptyDescription: hasLine
-            ? "선택한 라인에 첫 설비를 등록해 주세요."
-            : "생산라인을 선택하면 소속 설비를 불러옵니다.",
-        itemMeta: (machine) => `설비 #${machine.id}`,
-        status: (machine) => machine.status
-    });
-}
-
-function renderResourceList({
-    container,
-    resources,
-    selectedId,
-    emptyTitle,
-    emptyDescription,
-    onSelect,
-    itemMeta,
-    status
-}) {
+function renderGantt() {
+    const container = document.querySelector("#gantt");
+    const legend = document.querySelector("#gantt-legend");
     container.replaceChildren();
-
-    if (resources.length === 0) {
-        container.append(createEmptyState(emptyTitle, emptyDescription));
+    legend.replaceChildren();
+    const schedule = state.latestSchedule;
+    if (!schedule || schedule.tasks.length === 0) {
+        container.innerHTML = `
+            <div class="gantt-empty">
+                <div><strong>표시할 스케줄이 없습니다</strong>
+                <p>생산오더를 확정하고 오른쪽 위의 스케줄 실행 버튼을 눌러 주세요.</p></div>
+            </div>`;
         return;
     }
 
-    for (const resource of resources) {
-        const item = document.createElement(onSelect ? "button" : "div");
-        item.className = "resource-item";
-        if (resource.id === selectedId) {
-            item.classList.add("is-selected");
+    const start = new Date(schedule.planningStart).getTime();
+    const end = Math.max(new Date(schedule.schedulingEnd).getTime(), start + 3600000);
+    const duration = end - start;
+    const chart = document.createElement("div");
+    chart.className = "gantt-chart";
+    chart.append(createGanttHeader(start, duration));
+
+    const tasksByMachine = groupBy(schedule.tasks, (task) => task.machineId);
+    for (const [machineId, tasks] of tasksByMachine) {
+        const row = document.createElement("div");
+        row.className = "gantt-row";
+        const first = tasks[0];
+        const label = document.createElement("div");
+        label.className = "machine-label";
+        label.innerHTML = `<strong>${escapeHtml(first.machineName)}</strong>
+            <span>${escapeHtml(first.machineCode)} · ${tasks.length} TASKS</span>`;
+        const timeline = document.createElement("div");
+        timeline.className = "timeline";
+        for (const task of tasks) {
+            const bar = document.createElement("div");
+            const taskStart = new Date(task.startAt).getTime();
+            const taskEnd = new Date(task.endAt).getTime();
+            bar.className = `gantt-bar${task.delayed ? " is-delayed" : ""}`;
+            bar.style.left = `${Math.max(0, (taskStart - start) / duration * 100)}%`;
+            bar.style.width = `${Math.max(1.2, (taskEnd - taskStart) / duration * 100)}%`;
+            bar.style.background = colorFor(task.productionOrderId);
+            bar.title = `${task.orderNumber} / ${task.operationName}\n${formatDateTime(task.startAt)} → ${formatDateTime(task.endAt)}\n작업 ${task.workingMinutes}분`;
+            bar.innerHTML = `<strong>${escapeHtml(task.orderNumber)} · ${escapeHtml(task.operationCode)}</strong>
+                <span>${formatTime(task.startAt)}–${formatTime(task.endAt)} · ${task.workingMinutes}m</span>`;
+            timeline.append(bar);
         }
-        if (onSelect) {
-            item.type = "button";
-            item.addEventListener("click", () => onSelect(resource.id));
-        }
+        row.append(label, timeline);
+        chart.append(row);
+    }
+    container.append(chart);
 
-        const top = document.createElement("span");
-        top.className = "resource-item-top";
+    const distinctOrders = new Map();
+    for (const task of schedule.tasks) {
+        distinctOrders.set(task.productionOrderId, task.orderNumber);
+    }
+    for (const [orderId, orderNumber] of distinctOrders) {
+        const item = document.createElement("span");
+        item.className = "legend-item";
+        item.innerHTML = `<span class="legend-color" style="background:${colorFor(orderId)}"></span>${escapeHtml(orderNumber)}`;
+        legend.append(item);
+    }
+}
 
-        const code = document.createElement("span");
-        code.className = "resource-code";
-        code.textContent = resource.code;
-        top.append(code);
+function createGanttHeader(start, duration) {
+    const header = document.createElement("div");
+    header.className = "gantt-header";
+    const label = document.createElement("div");
+    label.className = "machine-heading";
+    label.textContent = "MACHINE / TIMELINE";
+    const timeline = document.createElement("div");
+    timeline.className = "timeline-header";
+    for (let index = 0; index < 5; index++) {
+        const tick = document.createElement("span");
+        tick.className = "time-tick";
+        tick.style.left = `${index * 20}%`;
+        tick.textContent = formatAxisTime(new Date(start + duration * index / 5));
+        timeline.append(tick);
+    }
+    header.append(label, timeline);
+    return header;
+}
 
-        if (status) {
-            top.append(createStatusChip(status(resource)));
-        }
+function renderOrderTables() {
+    const summary = document.querySelector("#order-summary-body");
+    const full = document.querySelector("#order-table-body");
+    summary.replaceChildren();
+    full.replaceChildren();
+    if (state.orders.length === 0) {
+        summary.innerHTML = `<tr><td colspan="5"><div class="table-empty">등록된 생산오더가 없습니다.</div></td></tr>`;
+        full.innerHTML = `<tr><td colspan="8"><div class="table-empty">마스터 데이터를 구성한 뒤 첫 생산오더를 등록해 주세요.</div></td></tr>`;
+        return;
+    }
+    const ordered = [...state.orders].sort(compareOrders);
+    for (const order of ordered.slice(0, 6)) {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${escapeHtml(order.orderNumber)}</strong><small>ROUTING #${order.routingId}</small></td>
+            <td>${number(order.quantity)}</td>
+            <td>${formatDateTime(order.dueAt)}</td>
+            <td><strong>P${order.priority}</strong></td>
+            <td>${statusBadge(order.status)}</td>`;
+        summary.append(row);
+    }
+    for (const order of ordered) {
+        const routing = state.routings.find((item) => item.id === order.routingId);
+        const product = state.products.find((item) => item.id === order.productId);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td><strong>${escapeHtml(order.orderNumber)}</strong><small>#${order.id}</small></td>
+            <td><strong>${escapeHtml(product?.name || "-")}</strong><small>${escapeHtml(routing?.code || "-")}</small></td>
+            <td>${number(order.quantity)}</td>
+            <td>${formatDateTime(order.releaseAt)}</td>
+            <td>${formatDateTime(order.dueAt)}</td>
+            <td><strong>P${order.priority}</strong></td>
+            <td>${statusBadge(order.status)}</td>
+            <td>${order.status === "DRAFT" ? `<button class="row-action" data-confirm-order="${order.id}">확정</button>` : ""}</td>`;
+        full.append(row);
+    }
+    full.querySelectorAll("[data-confirm-order]").forEach((button) => {
+        button.addEventListener("click", () => confirmOrder(Number(button.dataset.confirmOrder)));
+    });
+}
 
-        const name = document.createElement("span");
-        name.className = "resource-name";
-        name.textContent = resource.name;
-
-        const meta = document.createElement("span");
-        meta.className = "resource-meta";
-        meta.textContent = itemMeta(resource);
-
-        item.append(top, name, meta);
+function renderLoadRanking() {
+    const container = document.querySelector("#load-ranking");
+    container.replaceChildren();
+    const loads = [...state.capacity.entries()]
+        .sort((left, right) => right[1].utilization - left[1].utilization);
+    if (loads.length === 0) {
+        container.innerHTML = `<div class="load-empty">스케줄 실행 후 설비별<br>CAPA 사용률을 계산합니다.</div>`;
+        return;
+    }
+    for (const [machineId, load] of loads) {
+        const machine = state.machines.find((item) => item.id === machineId);
+        const item = document.createElement("div");
+        item.className = "load-item";
+        item.innerHTML = `
+            <div class="load-item-top"><span>${escapeHtml(machine?.code || `MACHINE #${machineId}`)}</span><strong>${load.utilization}%</strong></div>
+            <div class="load-track"><div class="load-fill" style="width:${Math.min(100, load.utilization)}%"></div></div>
+            <div class="load-item-top"><span>LOAD ${number(load.workingMinutes)}m</span><span>CAPA ${number(load.availableMinutes)}m</span></div>`;
         container.append(item);
     }
 }
 
-function createEmptyState(title, description) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "empty-state";
+function renderMasterData() {
+    const facilities = document.querySelector("#facility-tree");
+    const products = document.querySelector("#product-tree");
+    facilities.replaceChildren();
+    products.replaceChildren();
 
-    const content = document.createElement("div");
-    const heading = document.createElement("strong");
-    heading.textContent = title;
-    const copy = document.createElement("p");
-    copy.textContent = description;
-
-    content.append(heading, copy);
-    wrapper.append(content);
-    return wrapper;
-}
-
-function createStatusChip(status) {
-    const labels = {
-        AVAILABLE: "AVAILABLE",
-        STOPPED: "STOPPED",
-        INACTIVE: "INACTIVE"
-    };
-    const chip = document.createElement("span");
-    chip.className = "status-chip";
-    if (status === "STOPPED") {
-        chip.classList.add("is-stopped");
+    if (state.factories.length === 0) {
+        facilities.innerHTML = `<div class="table-empty">공장과 생산 자원을 등록해 주세요.</div>`;
     }
-    if (status === "INACTIVE") {
-        chip.classList.add("is-inactive");
+    for (const factory of state.factories) {
+        const group = document.createElement("article");
+        group.className = "tree-group";
+        const lines = state.lines.filter((line) => line.factoryId === factory.id);
+        group.innerHTML = `<div class="tree-group-header"><strong>${escapeHtml(factory.name)}</strong><span>${escapeHtml(factory.code)} · ${lines.length} LINES</span></div>`;
+        for (const line of lines) {
+            const machines = state.machines.filter((machine) => machine.productionLineId === line.id);
+            const lineElement = document.createElement("div");
+            lineElement.className = "tree-line";
+            lineElement.innerHTML = `<strong>${escapeHtml(line.name)}</strong><div class="tree-children">${
+                machines.map((machine) => `<span class="resource-chip ${machine.status.toLowerCase()}">${escapeHtml(machine.code)} · ${machine.status}</span>`).join("")
+            }</div>`;
+            group.append(lineElement);
+        }
+        facilities.append(group);
     }
-    chip.textContent = labels[status] || status;
-    return chip;
+
+    if (state.products.length === 0) {
+        products.innerHTML = `<div class="table-empty">품목과 Routing을 등록해 주세요.</div>`;
+    }
+    for (const product of state.products) {
+        const group = document.createElement("article");
+        group.className = "tree-group";
+        const routings = state.routings.filter((routing) => routing.productId === product.id);
+        group.innerHTML = `<div class="tree-group-header"><strong>${escapeHtml(product.name)}</strong><span>${escapeHtml(product.code)} · ${product.unit}</span></div>`;
+        const body = document.createElement("div");
+        body.className = "tree-line";
+        for (const routing of routings) {
+            const card = document.createElement("div");
+            card.className = "routing-card";
+            card.innerHTML = `<strong>${escapeHtml(routing.code)} · ${escapeHtml(routing.name)}</strong>
+                <div class="operation-chain">${routing.operations.map((operation, index) =>
+                    `${index > 0 ? `<span class="operation-arrow">→</span>` : ""}<span class="operation-node">${escapeHtml(operation.code)} · ${operation.processingTimeMinutes}m</span>`
+                ).join("")}</div>`;
+            body.append(card);
+        }
+        if (routings.length === 0) {
+            body.innerHTML = `<span class="load-empty">등록된 Routing이 없습니다.</span>`;
+        }
+        group.append(body);
+        products.append(group);
+    }
 }
 
-function renderMetrics() {
-    elements.factoryCount.textContent = state.factories.length;
-    elements.lineCount.textContent = state.lines.length;
-    elements.machineCount.textContent = state.machines.length;
-    elements.availableCount.textContent = state.machines.filter(
-        (machine) => machine.status === "AVAILABLE"
-    ).length;
+function populateSelects() {
+    setOptions("#line-factory-select", state.factories, (item) => `${item.code} · ${item.name}`);
+    setOptions("#machine-line-select", state.lines, (item) => `${item.code} · ${item.name}`);
+    setOptions("#routing-product-select", state.products, (item) => `${item.code} · ${item.name}`);
+    setOptions("#calendar-machine-select", state.machines.filter((item) => item.status !== "INACTIVE"), (item) => `${item.code} · ${item.name}`);
+    const routingOptions = state.routings.map((routing) => {
+        const product = state.products.find((item) => item.id === routing.productId);
+        return {...routing, label: `${product?.code || "-"} / ${routing.code}`};
+    });
+    setOptions("#order-routing-select", routingOptions, (item) => item.label);
+    document.querySelectorAll(".operation-row select[data-field='machineId']")
+        .forEach((select) => fillSelect(select, state.machines.filter((item) => item.status === "AVAILABLE"), (item) => `${item.code} · ${item.name}`));
 }
 
-function renderDialogContext() {
-    const factory = state.factories.find(
-        (item) => item.id === state.selectedFactoryId
-    );
-    const line = state.lines.find(
-        (item) => item.id === state.selectedLineId
-    );
+function bindNavigation() {
+    document.querySelectorAll("[data-view]").forEach((button) => {
+        button.addEventListener("click", () => showView(button.dataset.view));
+    });
+    document.querySelectorAll("[data-view-jump]").forEach((button) => {
+        button.addEventListener("click", () => showView(button.dataset.viewJump));
+    });
+}
 
-    elements.openLineDialog.disabled = !factory;
-    elements.openMachineDialog.disabled = !line;
-    elements.lineFactoryName.textContent = factory?.name || "-";
-    elements.machineLineName.textContent = line?.name || "-";
+function showView(view) {
+    const titles = {schedule: "생산 스케줄 보드", orders: "생산오더 관리", master: "마스터 데이터"};
+    document.querySelectorAll(".view").forEach((element) => element.classList.remove("is-active"));
+    document.querySelector(`#${view}-view`)?.classList.add("is-active");
+    document.querySelectorAll(".nav-item").forEach((item) =>
+        item.classList.toggle("is-active", item.dataset.view === view));
+    text("#view-title", titles[view]);
 }
 
 function bindDialogs() {
     document.querySelectorAll("[data-open-dialog]").forEach((button) => {
         button.addEventListener("click", () => {
-            const dialog = document.querySelector(
-                `#${button.dataset.openDialog}`
-            );
-            if (dialog && !button.disabled) {
-                dialog.showModal();
-                dialog.querySelector("input")?.focus();
+            const dialog = document.querySelector(`#${button.dataset.openDialog}`);
+            if (!dialog) return;
+            if (dialog.id === "routing-dialog" && document.querySelectorAll(".operation-row").length === 0) {
+                addOperationRow();
             }
+            setDefaultDates();
+            populateSelects();
+            dialog.showModal();
+            dialog.querySelector("input, select")?.focus();
         });
     });
-
-    document.querySelectorAll(".resource-dialog").forEach((dialog) => {
-        dialog.querySelectorAll(".dialog-close, .dialog-cancel")
-            .forEach((button) => {
-                button.addEventListener("click", () => dialog.close());
-            });
-
+    document.querySelectorAll(".modal").forEach((dialog) => {
+        dialog.querySelectorAll(".modal-close, .modal-cancel").forEach((button) =>
+            button.addEventListener("click", () => dialog.close()));
         dialog.addEventListener("click", (event) => {
-            if (event.target === dialog) {
-                dialog.close();
-            }
+            if (event.target === dialog) dialog.close();
         });
     });
+}
+
+function bindActions() {
+    document.querySelector("#refresh-button").addEventListener("click", loadAll);
+    document.querySelector("#add-operation-button").addEventListener("click", addOperationRow);
 }
 
 function bindForms() {
-    bindCreateForm("#factory-form", async (form) => {
-        const created = await request(API.factories, {
+    bindForm("#schedule-form", async (form) => {
+        const planningStart = new Date(new FormData(form).get("planningStart")).toISOString();
+        await request(API.schedules, {
             method: "POST",
-            body: JSON.stringify(formValues(form, ["code", "name"]))
+            body: JSON.stringify({executionKey: crypto.randomUUID(), planningStart})
         });
-        await loadFactories(created.id);
-        return "공장이 등록되었습니다.";
+        await loadAll();
+        return "스케줄 계산과 결과 저장을 완료했습니다.";
     });
-
-    bindCreateForm("#line-form", async (form) => {
-        if (state.selectedFactoryId === null) {
-            throw new Error("생산라인을 등록할 공장을 먼저 선택해 주세요.");
-        }
-        const created = await request(API.lines(state.selectedFactoryId), {
-            method: "POST",
-            body: JSON.stringify(formValues(form, ["code", "name"]))
-        });
-        const page = await request(
-            `${API.lines(state.selectedFactoryId)}?page=0&size=100`
-        );
-        state.lines = page.content;
-        await selectLine(created.id);
-        return "생산라인이 등록되었습니다.";
+    bindForm("#factory-form", async (form) => {
+        await request(API.factories, {method: "POST", body: JSON.stringify(values(form, ["code", "name"]))});
+        await loadAll();
+        return "공장을 등록했습니다.";
     });
-
-    bindCreateForm("#machine-form", async (form) => {
-        if (state.selectedLineId === null) {
-            throw new Error("설비를 등록할 생산라인을 먼저 선택해 주세요.");
-        }
-        await request(API.machines(state.selectedLineId), {
+    bindForm("#line-form", async (form) => {
+        const data = values(form, ["factoryId", "code", "name"]);
+        await request(API.lines(Number(data.factoryId)), {method: "POST", body: JSON.stringify({code: data.code, name: data.name})});
+        await loadAll();
+        return "생산라인을 등록했습니다.";
+    });
+    bindForm("#machine-form", async (form) => {
+        const data = values(form, ["productionLineId", "code", "name", "status"]);
+        await request(API.machines(Number(data.productionLineId)), {method: "POST", body: JSON.stringify({code: data.code, name: data.name, status: data.status})});
+        await loadAll();
+        return "설비를 등록했습니다.";
+    });
+    bindForm("#product-form", async (form) => {
+        await request(API.products, {method: "POST", body: JSON.stringify(values(form, ["code", "name", "unit"]))});
+        await loadAll();
+        return "품목을 등록했습니다.";
+    });
+    bindForm("#routing-form", async (form) => {
+        const data = values(form, ["productId", "code", "name"]);
+        const operations = [...form.querySelectorAll(".operation-row")].map((row) => ({
+            sequence: Number(row.querySelector("[data-field='sequence']").value),
+            code: row.querySelector("[data-field='code']").value,
+            name: row.querySelector("[data-field='name']").value,
+            processingTimeMinutes: Number(row.querySelector("[data-field='processingTimeMinutes']").value),
+            machineId: Number(row.querySelector("[data-field='machineId']").value)
+        }));
+        await request(API.routings(Number(data.productId)), {method: "POST", body: JSON.stringify({code: data.code, name: data.name, operations})});
+        document.querySelector("#operation-rows").replaceChildren();
+        await loadAll();
+        return "Routing과 공정을 등록했습니다.";
+    });
+    bindForm("#order-form", async (form) => {
+        const formData = new FormData(form);
+        const created = await request(API.orders, {
             method: "POST",
-            body: JSON.stringify(
-                formValues(form, ["code", "name", "status"])
-            )
+            body: JSON.stringify({
+                orderNumber: formData.get("orderNumber"),
+                routingId: Number(formData.get("routingId")),
+                quantity: Number(formData.get("quantity")),
+                releaseAt: new Date(formData.get("releaseAt")).toISOString(),
+                dueAt: new Date(formData.get("dueAt")).toISOString(),
+                priority: Number(formData.get("priority"))
+            })
         });
-        await selectLine(state.selectedLineId);
-        return "설비가 등록되었습니다.";
+        if (formData.get("confirm")) {
+            await request(API.confirmOrder(created.id), {method: "POST"});
+        }
+        await loadAll();
+        return "생산오더를 등록했습니다.";
+    });
+    bindForm("#calendar-form", async (form) => {
+        const data = values(form, ["machineId", "startTime", "endTime"]);
+        const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
+        await request(API.calendars(Number(data.machineId)), {
+            method: "POST",
+            body: JSON.stringify({entries: days.map((dayOfWeek) => ({
+                dayOfWeek,
+                startTime: `${data.startTime}:00`,
+                endTime: `${data.endTime}:00`
+            }))})
+        });
+        await loadAll();
+        return "월~금 근무시간을 등록했습니다.";
     });
 }
 
-function bindCreateForm(selector, submitAction) {
+function bindForm(selector, action) {
     const form = document.querySelector(selector);
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
-        const submitButton = form.querySelector("[type='submit']");
-        submitButton.disabled = true;
-
+        const submit = form.querySelector("[type='submit']");
+        submit.disabled = true;
         try {
-            const successMessage = await submitAction(form);
+            const message = await action(form);
             form.reset();
             form.closest("dialog").close();
-            showToast(successMessage);
+            setDefaultDates();
+            showToast(message);
         } catch (error) {
             showToast(error.message, true);
         } finally {
-            submitButton.disabled = false;
+            submit.disabled = false;
         }
     });
 }
 
-function formValues(form, fields) {
+async function confirmOrder(orderId) {
+    try {
+        await request(API.confirmOrder(orderId), {method: "POST"});
+        await loadAll();
+        showToast("생산오더를 확정했습니다.");
+    } catch (error) {
+        showToast(error.message, true);
+    }
+}
+
+function addOperationRow() {
+    const template = document.querySelector("#operation-row-template");
+    const row = template.content.firstElementChild.cloneNode(true);
+    const count = document.querySelectorAll(".operation-row").length;
+    row.querySelector("[data-field='sequence']").value = (count + 1) * 10;
+    fillSelect(row.querySelector("select"), state.machines.filter((item) => item.status === "AVAILABLE"), (item) => `${item.code} · ${item.name}`);
+    row.querySelector(".remove-operation").addEventListener("click", () => row.remove());
+    document.querySelector("#operation-rows").append(row);
+}
+
+function setDefaultDates() {
+    const start = new Date();
+    start.setMinutes(0, 0, 0);
+    start.setHours(start.getHours() + 1);
+    const due = new Date(start);
+    due.setDate(due.getDate() + 3);
+    setInputIfEmpty("#schedule-start-input", toLocalInput(start));
+    setInputIfEmpty("#order-release-input", toLocalInput(start));
+    setInputIfEmpty("#order-due-input", toLocalInput(due));
+}
+
+function setOptions(selector, items, label) {
+    const select = document.querySelector(selector);
+    if (select) fillSelect(select, items, label);
+}
+
+function fillSelect(select, items, label) {
+    const current = select.value;
+    select.replaceChildren();
+    if (items.length === 0) {
+        const option = new Option("선택 가능한 항목 없음", "");
+        option.disabled = true;
+        option.selected = true;
+        select.append(option);
+        return;
+    }
+    for (const item of items) {
+        select.append(new Option(label(item), item.id));
+    }
+    if (items.some((item) => String(item.id) === current)) {
+        select.value = current;
+    }
+}
+
+function setConnection(status) {
+    const element = document.querySelector("#connection-status");
+    element.className = `connection-status ${status === "online" ? "" : `is-${status}`}`.trim();
+    element.querySelector("strong").textContent = {
+        online: "API ONLINE",
+        offline: "API OFFLINE",
+        checking: "서버 확인 중"
+    }[status];
+}
+
+function compareOrders(left, right) {
+    const statusRank = {CONFIRMED: 0, DRAFT: 1, SCHEDULED: 2, CANCELLED: 3};
+    return (statusRank[left.status] ?? 9) - (statusRank[right.status] ?? 9)
+        || right.priority - left.priority
+        || new Date(left.dueAt) - new Date(right.dueAt);
+}
+
+function statusBadge(status) {
+    return `<span class="status-pill ${status.toLowerCase()}">${escapeHtml(status)}</span>`;
+}
+
+function groupBy(items, keyFunction) {
+    const groups = new Map();
+    for (const item of items) {
+        const key = keyFunction(item);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(item);
+    }
+    return groups;
+}
+
+function colorFor(id) {
+    return colors[Math.abs(Number(id)) % colors.length];
+}
+
+function values(form, fields) {
     const data = new FormData(form);
     return Object.fromEntries(fields.map((field) => [field, data.get(field)]));
 }
 
-function setConnection(connected) {
-    elements.connectionStatus.classList.remove(
-        "is-checking",
-        "is-offline"
-    );
-    if (!connected) {
-        elements.connectionStatus.classList.add("is-offline");
-    }
-    elements.connectionStatus.lastElementChild.textContent =
-        connected ? "서버 연결됨" : "서버 연결 끊김";
+function text(selector, value) {
+    document.querySelector(selector).textContent = value;
+}
+
+function formatDateTime(value) {
+    if (!value) return "-";
+    const parts = offsetDateParts(value, displayOffsetSeconds());
+    return `${pad(parts.month)}. ${pad(parts.day)}. ${pad(parts.hour)}:${pad(parts.minute)}`;
+}
+
+function formatTime(value) {
+    const parts = offsetDateParts(value, displayOffsetSeconds());
+    return `${pad(parts.hour)}:${pad(parts.minute)}`;
+}
+
+function formatAxisTime(value) {
+    const parts = offsetDateParts(value, displayOffsetSeconds());
+    return `${pad(parts.month)}. ${pad(parts.day)}. ${pad(parts.hour)}:${pad(parts.minute)}`;
+}
+
+function displayOffsetSeconds() {
+    return state.latestSchedule?.planningOffsetSeconds
+        ?? -new Date().getTimezoneOffset() * 60;
+}
+
+function withOffset(value, offsetSeconds) {
+    const parts = offsetDateParts(value, offsetSeconds);
+    const sign = offsetSeconds >= 0 ? "+" : "-";
+    const absoluteMinutes = Math.abs(offsetSeconds) / 60;
+    const offsetHour = Math.floor(absoluteMinutes / 60);
+    const offsetMinute = absoluteMinutes % 60;
+    return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}:${pad(parts.second)}${sign}${pad(offsetHour)}:${pad(offsetMinute)}`;
+}
+
+function offsetDateParts(value, offsetSeconds) {
+    const date = value instanceof Date ? value : new Date(value);
+    const shifted = new Date(date.getTime() + offsetSeconds * 1000);
+    return {
+        year: shifted.getUTCFullYear(),
+        month: shifted.getUTCMonth() + 1,
+        day: shifted.getUTCDate(),
+        hour: shifted.getUTCHours(),
+        minute: shifted.getUTCMinutes(),
+        second: shifted.getUTCSeconds()
+    };
+}
+
+function pad(value) {
+    return String(value).padStart(2, "0");
+}
+
+function toLocalInput(date) {
+    const offset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+}
+
+function setInputIfEmpty(selector, value) {
+    const input = document.querySelector(selector);
+    if (input && !input.value) input.value = value;
+}
+
+function number(value) {
+    return new Intl.NumberFormat("ko-KR").format(value);
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
 function showToast(message, isError = false) {
     window.clearTimeout(toastTimer);
-    elements.toast.textContent = message;
-    elements.toast.classList.toggle("is-error", isError);
-    elements.toast.classList.add("is-visible");
-    toastTimer = window.setTimeout(() => {
-        elements.toast.classList.remove("is-visible");
-    }, 3200);
+    const toast = document.querySelector("#toast");
+    toast.textContent = message;
+    toast.classList.toggle("is-error", isError);
+    toast.classList.add("is-visible");
+    toastTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 3600);
 }
