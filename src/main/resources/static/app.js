@@ -145,7 +145,33 @@ function render() {
     renderOrderTables();
     renderLoadRanking();
     renderMasterData();
+    renderGuide();
     populateSelects();
+}
+
+function renderGuide() {
+    const availableMachines = state.machines.filter(
+        (machine) => machine.status === "AVAILABLE"
+    ).length;
+    const confirmedOrders = state.orders.filter(
+        (order) => order.status === "CONFIRMED"
+    ).length;
+
+    text(
+        "#guide-facility-count",
+        `${state.factories.length}개 공장 · ${state.lines.length}개 라인 · ${availableMachines}대 가용 설비`
+    );
+    text(
+        "#guide-process-count",
+        `${state.products.length}개 품목 · ${state.routings.length}개 Routing`
+    );
+    text("#guide-order-count", `확정 오더 ${confirmedOrders}건`);
+    text(
+        "#guide-run-count",
+        state.latestSchedule
+            ? `RUN #${state.latestSchedule.id} · 작업 ${state.latestSchedule.taskCount}건`
+            : "실행 결과 없음"
+    );
 }
 
 function renderRunSummary() {
@@ -394,7 +420,12 @@ function bindNavigation() {
 }
 
 function showView(view) {
-    const titles = {schedule: "생산 스케줄 보드", orders: "생산오더 관리", master: "마스터 데이터"};
+    const titles = {
+        schedule: "생산 스케줄 보드",
+        orders: "생산오더 관리",
+        master: "마스터 데이터",
+        guide: "APS 사용자 가이드"
+    };
     document.querySelectorAll(".view").forEach((element) => element.classList.remove("is-active"));
     document.querySelector(`#${view}-view`)?.classList.add("is-active");
     document.querySelectorAll(".nav-item").forEach((item) =>

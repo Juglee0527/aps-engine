@@ -32,6 +32,10 @@
                 <span class="nav-icon">◇</span>
                 <span>마스터 데이터</span>
             </button>
+            <button class="nav-item" data-view="guide">
+                <span class="nav-icon">?</span>
+                <span>사용자 가이드</span>
+            </button>
         </nav>
 
         <div class="system-card">
@@ -235,6 +239,177 @@
                     <div id="product-tree" class="product-tree"></div>
                 </section>
             </div>
+        </section>
+
+        <section id="guide-view" class="view">
+            <section class="guide-hero">
+                <div class="guide-hero-copy">
+                    <span class="section-label">START HERE</span>
+                    <h2>APS는 생산오더를<br>실행 가능한 시간표로 바꿉니다.</h2>
+                    <p>
+                        어떤 주문을 먼저 만들고, 어느 설비에서 언제 작업할지
+                        근무시간과 공정 순서를 반영해 계산합니다.
+                    </p>
+                    <button class="primary-button" type="button" data-view-jump="master">
+                        첫 계획 준비하기 →
+                    </button>
+                </div>
+                <div class="guide-question-grid" aria-label="APS가 답하는 질문">
+                    <article>
+                        <span>01</span>
+                        <strong>무엇을 먼저?</strong>
+                        <p>우선순위와 납기를 기준으로 생산오더 순서를 정합니다.</p>
+                    </article>
+                    <article>
+                        <span>02</span>
+                        <strong>어디에서 언제?</strong>
+                        <p>공정별 설비와 근무시간 안에서 가장 이른 시간을 찾습니다.</p>
+                    </article>
+                    <article>
+                        <span>03</span>
+                        <strong>어디가 위험한가?</strong>
+                        <p>납기 지연과 설비 부하를 보여줘 먼저 볼 문제를 좁힙니다.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="guide-section">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">CURRENT DATA</span>
+                        <h2>지금 계획할 수 있는 데이터</h2>
+                    </div>
+                    <p>숫자가 부족하면 아래 순서에 따라 필요한 정보를 먼저 등록하세요.</p>
+                </header>
+                <div class="guide-status-grid">
+                    <article class="guide-status-card">
+                        <span class="guide-status-index">01 · 생산 자원</span>
+                        <strong id="guide-facility-count">0개 공장 · 0대 설비</strong>
+                        <p>공장, 라인, 가용 설비와 설비별 근무시간이 필요합니다.</p>
+                    </article>
+                    <article class="guide-status-card">
+                        <span class="guide-status-index">02 · 생산 방법</span>
+                        <strong id="guide-process-count">0개 품목 · 0개 Routing</strong>
+                        <p>품목이 어떤 공정을 어떤 설비에서 거치는지 정의합니다.</p>
+                    </article>
+                    <article class="guide-status-card">
+                        <span class="guide-status-index">03 · 계획 대상</span>
+                        <strong id="guide-order-count">확정 오더 0건</strong>
+                        <p>CONFIRMED 상태인 오더만 다음 스케줄 실행에 포함됩니다.</p>
+                    </article>
+                    <article class="guide-status-card">
+                        <span class="guide-status-index">04 · 최근 결과</span>
+                        <strong id="guide-run-count">실행 결과 없음</strong>
+                        <p>최근 실행 결과가 스케줄 보드의 간트와 부하 기준입니다.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="panel guide-section">
+                <header class="panel-header guide-panel-header">
+                    <div>
+                        <span class="section-label">FIRST SCHEDULE</span>
+                        <h2>첫 생산계획 만들기</h2>
+                    </div>
+                    <p>왼쪽부터 한 번씩 설정하면 스케줄을 실행할 수 있습니다.</p>
+                </header>
+                <div class="guide-flow">
+                    <article class="guide-step">
+                        <span class="guide-step-number">1</span>
+                        <div>
+                            <strong>생산 자원 등록</strong>
+                            <p>공장 → 라인 → 설비 순서로 등록하고, 각 설비의 월~금 근무시간을 설정합니다.</p>
+                            <button class="text-button" type="button" data-view-jump="master">마스터 데이터로 이동 →</button>
+                        </div>
+                    </article>
+                    <article class="guide-step">
+                        <span class="guide-step-number">2</span>
+                        <div>
+                            <strong>품목과 공정 정의</strong>
+                            <p>품목을 등록한 뒤 Routing에 공정 순서, 분/개, 사용할 설비를 입력합니다.</p>
+                            <button class="text-button" type="button" data-open-dialog="routing-dialog">Routing 등록 열기 →</button>
+                        </div>
+                    </article>
+                    <article class="guide-step">
+                        <span class="guide-step-number">3</span>
+                        <div>
+                            <strong>생산오더 확정</strong>
+                            <p>수량, 투입 가능시각, 납기, 우선순위를 입력하고 CONFIRMED 상태로 만듭니다.</p>
+                            <button class="text-button" type="button" data-view-jump="orders">생산오더로 이동 →</button>
+                        </div>
+                    </article>
+                    <article class="guide-step">
+                        <span class="guide-step-number">4</span>
+                        <div>
+                            <strong>계획 시작시각 선택</strong>
+                            <p>스케줄 실행을 누르면 계획 시작 이후 가능한 가장 이른 시간부터 작업을 배치합니다.</p>
+                            <button class="text-button" type="button" data-open-dialog="schedule-dialog">스케줄 실행 열기 →</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="guide-section">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">READ THE RESULT</span>
+                        <h2>결과는 이 순서로 보세요</h2>
+                    </div>
+                    <button class="ghost-button" type="button" data-view-jump="schedule">스케줄 보드 보기 →</button>
+                </header>
+                <div class="guide-reading-grid">
+                    <article class="guide-reading-card is-delay">
+                        <span>STEP 1</span>
+                        <strong>납기 지연부터 확인</strong>
+                        <p><b>납기 지연</b> 숫자와 간트의 빨간 테두리를 봅니다. 작업 종료가 오더 납기보다 늦다는 뜻입니다.</p>
+                        <small>먼저 우선순위·납기·투입 가능시각이 현실적인지 확인하세요.</small>
+                    </article>
+                    <article class="guide-reading-card is-load">
+                        <span>STEP 2</span>
+                        <strong>설비 부하 비교</strong>
+                        <p><b>최대 설비 부하</b>와 부하 순위를 봅니다. 작업 분을 계획기간의 가용 분으로 나눈 값입니다.</p>
+                        <small>가장 높은 설비는 병목 후보이지만, 아직 정식 병목 판정은 아닙니다.</small>
+                    </article>
+                    <article class="guide-reading-card is-flow">
+                        <span>STEP 3</span>
+                        <strong>간트에서 흐름 확인</strong>
+                        <p>같은 색은 같은 오더입니다. 위에서 아래로 설비별 작업 겹침과 공정 진행 순서를 확인합니다.</p>
+                        <small>빈 구간은 비근무시간, 투입 대기 또는 선행 공정 대기일 수 있습니다.</small>
+                    </article>
+                </div>
+            </section>
+
+            <section class="guide-reference-grid">
+                <section class="panel guide-glossary">
+                    <header class="panel-header compact">
+                        <div>
+                            <span class="section-label">APS WORDS</span>
+                            <h2>화면에서 자주 보는 말</h2>
+                        </div>
+                    </header>
+                    <dl>
+                        <div><dt>Routing</dt><dd>한 품목을 만드는 공정의 순서와 방법</dd></div>
+                        <div><dt>Operation</dt><dd>특정 설비에서 수행하는 하나의 작업 단계</dd></div>
+                        <div><dt>투입 가능</dt><dd>해당 오더의 첫 공정을 시작할 수 있는 가장 이른 시각</dd></div>
+                        <div><dt>납기</dt><dd>해당 오더의 마지막 공정이 끝나야 하는 시각</dd></div>
+                        <div><dt>CAPA</dt><dd>계획기간 동안 설비가 실제로 일할 수 있는 가용시간</dd></div>
+                    </dl>
+                </section>
+                <aside class="guide-limitations">
+                    <span class="section-label">MVP SCOPE</span>
+                    <h2>결과를 확정 계획으로 보기 전 확인하세요.</h2>
+                    <p>
+                        현재 결과는 기본 제약만 반영한 비교·검토용 계획입니다.
+                        현장 지시로 사용하기 전 실제 제약과 기준정보를 별도로 확인해야 합니다.
+                    </p>
+                    <ul>
+                        <li>우선순위가 높고 납기가 빠른 오더부터 배치합니다.</li>
+                        <li>공휴일, 휴게시간, 정비, 교대조 예외는 반영하지 않습니다.</li>
+                        <li>품목 전환시간과 대체 설비는 반영하지 않습니다.</li>
+                        <li>Drag &amp; Drop 조정과 실행 결과 비교 기능은 아직 없습니다.</li>
+                    </ul>
+                </aside>
+            </section>
         </section>
     </main>
 </div>
