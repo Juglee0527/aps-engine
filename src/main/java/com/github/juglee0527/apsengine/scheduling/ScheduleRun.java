@@ -17,9 +17,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
@@ -58,6 +61,13 @@ public class ScheduleRun {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_schedule_run_id", updatable = false)
+    private ScheduleRun sourceScheduleRun;
+
+    @Column(name = "frozen_at", updatable = false)
+    private OffsetDateTime frozenAt;
 
     @Enumerated(EnumType.STRING)
     @Column(
@@ -120,7 +130,9 @@ public class ScheduleRun {
             OffsetDateTime schedulingEnd,
             OffsetDateTime createdAt,
             DispatchingRule dispatchingRule,
-            ScheduleKpis kpis
+            ScheduleKpis kpis,
+            ScheduleRun sourceScheduleRun,
+            OffsetDateTime frozenAt
     ) {
         this.executionKey = Objects.requireNonNull(
                 executionKey,
@@ -155,6 +167,18 @@ public class ScheduleRun {
         this.makespanMinutes = kpis.makespanMinutes();
         this.machineUtilizationPercent =
                 kpis.machineUtilizationPercent();
+        if ((sourceScheduleRun == null) != (frozenAt == null)) {
+            throw new IllegalArgumentException(
+                    "원본 실행과 동결 기준시각은 함께 지정해야 합니다."
+            );
+        }
+        if (frozenAt != null && frozenAt.isBefore(planningStart)) {
+            throw new IllegalArgumentException(
+                    "동결 기준시각은 계획 시작시각보다 이전일 수 없습니다."
+            );
+        }
+        this.sourceScheduleRun = sourceScheduleRun;
+        this.frozenAt = frozenAt;
         this.status = ScheduleRunStatus.COMPLETED;
     }
 
@@ -186,7 +210,37 @@ public class ScheduleRun {
                 plan.schedulingEnd(),
                 createdAt,
                 dispatchingRule,
-                kpis
+                kpis,
+                null,
+                null
+        );
+    }
+
+    public static ScheduleRun createRescheduled(
+            UUID executionKey,
+            SchedulingPlan plan,
+            OffsetDateTime createdAt,
+            DispatchingRule dispatchingRule,
+            ScheduleKpis kpis,
+            ScheduleRun sourceScheduleRun,
+            OffsetDateTime frozenAt
+    ) {
+        Objects.requireNonNull(plan, "plan must not be null");
+        return new ScheduleRun(
+                executionKey,
+                plan.planningStart(),
+                plan.schedulingEnd(),
+                createdAt,
+                dispatchingRule,
+                kpis,
+                Objects.requireNonNull(
+                        sourceScheduleRun,
+                        "sourceScheduleRun must not be null"
+                ),
+                Objects.requireNonNull(
+                        frozenAt,
+                        "frozenAt must not be null"
+                )
         );
     }
 
@@ -231,6 +285,16 @@ public class ScheduleRun {
 
     public ScheduleRunStatus status() {
         return status;
+    }
+
+    public Long sourceScheduleRunId() {
+        return sourceScheduleRun == null
+                ? null
+                : sourceScheduleRun.id();
+    }
+
+    public OffsetDateTime frozenAt() {
+        return frozenAt;
     }
 
     public DispatchingRule dispatchingRule() {

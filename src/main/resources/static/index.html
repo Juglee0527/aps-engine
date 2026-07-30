@@ -64,6 +64,11 @@
                 <button id="refresh-button" class="ghost-button" type="button">
                     ↻ 데이터 새로고침
                 </button>
+                <button id="reschedule-button" class="ghost-button"
+                        type="button" data-open-dialog="reschedule-dialog"
+                        disabled>
+                    동결 후 재스케줄
+                </button>
                 <button class="primary-button" type="button"
                         data-open-dialog="schedule-dialog">
                     <span>▶</span> 스케줄 실행
@@ -80,6 +85,8 @@
                 <div class="run-meta">
                     <span>계획 시작 <strong id="planning-start">-</strong></span>
                     <span>완료 시각 <strong id="schedule-end">-</strong></span>
+                    <span>원본 실행 <strong id="source-run">-</strong></span>
+                    <span>동결 기준 <strong id="frozen-at">-</strong></span>
                     <span>규칙 <strong id="dispatching-rule">-</strong></span>
                     <span>총 지연 <strong id="total-tardiness">-</strong></span>
                     <span>Makespan <strong id="makespan">-</strong></span>
@@ -469,10 +476,10 @@
                         현장 지시로 사용하기 전 실제 제약과 기준정보를 별도로 확인해야 합니다.
                     </p>
                     <ul>
-                        <li>우선순위가 높고 납기가 빠른 오더부터 배치합니다.</li>
-                        <li>공휴일, 휴게시간, 정비, 교대조 예외는 반영하지 않습니다.</li>
-                        <li>품목 전환시간과 대체 설비는 반영하지 않습니다.</li>
-                        <li>Drag &amp; Drop 조정과 실행 결과 비교 기능은 아직 없습니다.</li>
+                        <li>선택한 우선순위, EDD 또는 SPT 규칙으로 오더를 배치합니다.</li>
+                        <li>주간 근무시간과 계획 정비를 반영하며 공휴일·휴게시간 예외는 아직 없습니다.</li>
+                        <li>품목 전환시간과 Operation별 대체 설비를 반영합니다.</li>
+                        <li>Frozen Horizon 재스케줄링은 지원하지만 Drag &amp; Drop 조정은 아직 없습니다.</li>
                     </ul>
                 </aside>
             </section>
@@ -493,6 +500,23 @@
             </select>
         </label>
         <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">엔진 실행</button></div>
+    </form>
+</dialog>
+
+<dialog id="reschedule-dialog" class="modal">
+    <form id="reschedule-form">
+        <header><div><span class="section-label">FROZEN HORIZON</span><h2>재스케줄링</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">원본 실행의 동결 기준 이전 작업은 그대로 유지하고 이후 작업과 새 확정 오더만 다시 배치합니다.</p>
+        <p>원본 실행 <strong id="reschedule-source-run">선택된 실행 없음</strong></p>
+        <label>동결 기준시각<input id="frozen-at-input" name="frozenAt" type="datetime-local" required></label>
+        <label>Dispatching Rule
+            <select name="dispatchingRule" required>
+                <option value="EXPLICIT_PRIORITY">명시적 우선순위 · 긴급 오더 우선</option>
+                <option value="EDD">EDD · 납기가 빠른 오더 우선</option>
+                <option value="SPT">SPT · 총 가공시간이 짧은 오더 우선</option>
+            </select>
+        </label>
+        <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">재스케줄 실행</button></div>
     </form>
 </dialog>
 

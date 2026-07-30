@@ -466,6 +466,8 @@ GET /api/v1/schedules/{scheduleRunId}
   "schedulingEnd": "2026-07-30T07:30:00Z",
   "planningOffsetSeconds": 32400,
   "createdAt": "2026-07-30T00:00:00Z",
+  "sourceScheduleRunId": null,
+  "frozenAt": null,
   "dispatchingRule": "EDD",
   "orderCount": 4,
   "taskCount": 12,
@@ -509,6 +511,30 @@ GET /api/v1/schedules/{scheduleRunId}
 `makespanMinutes`는 계획 시작부터 마지막 작업 종료까지의 경과 분입니다.
 `machineUtilizationPercent`는 선택된 설비들의 실제 가용시간 대비
 `(가공 분 + Changeover 분)` 비율이며 소수 둘째 자리까지 반환합니다.
+
+### Frozen Horizon 재스케줄링
+
+```http
+POST /api/v1/schedules/{sourceScheduleRunId}/reschedule
+Content-Type: application/json
+```
+
+```json
+{
+  "executionKey": "8743f2eb-5b06-43f8-ac75-31f0d43aaf0c",
+  "frozenAt": "2026-07-30T10:00:00+09:00",
+  "dispatchingRule": "SPT"
+}
+```
+
+- `frozenAt`은 원본 실행의 계획 시작과 같거나 이후여야 합니다.
+- Changeover 또는 가공 시작이 동결 기준보다 이른 작업은 진행 중이거나 경계와 겹쳐도
+  원래 설비·시각 그대로 유지합니다.
+- 기준시각 이후의 원본 작업만 다시 배치하고, 새 `CONFIRMED` 오더도 기준시각 이후에 포함합니다.
+- `CANCELLED` 오더의 고정 작업은 이력으로 남기되 미래 작업은 새 실행에서 제외합니다.
+- `dispatchingRule`을 생략하면 원본 실행의 규칙을 재사용합니다.
+- 응답의 `sourceScheduleRunId`, `frozenAt`으로 원본과 동결 기준을 추적하며 원본 실행은 변경하지 않습니다.
+- 수동 Drag & Drop과 실시간 MES 이벤트 반영은 이 API 범위에 없습니다.
 
 ## 14. Changeover Time API
 

@@ -126,6 +126,78 @@ class ScheduleRunJpaIntegrationTest {
     }
 
     @Test
+    void persistsRescheduleTraceAndKeepsFrozenOperation() {
+        ProductionOrder sourceOrder = persistConfirmedOrder();
+        ScheduleRun source = scheduleRunService.execute(
+                UUID.randomUUID(),
+                PLANNING_START,
+                DispatchingRule.EXPLICIT_PRIORITY
+        );
+        ScheduledOperation frozenSourceOperation =
+                source.scheduledOperations().getFirst();
+        OffsetDateTime frozenAt = frozenSourceOperation.endAt();
+
+        ProductionOrder newOrder = ProductionOrder.create(
+                sourceOrder.routing(),
+                "PO-RESCHEDULE-NEW",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusDays(3),
+                90
+        );
+        newOrder.confirm();
+        entityManager.persist(newOrder);
+        entityManager.flush();
+
+        ScheduleRun rescheduled = scheduleRunService.reschedule(
+                source.id(),
+                UUID.randomUUID(),
+                frozenAt,
+                DispatchingRule.EDD
+        );
+        Long rescheduledId = rescheduled.id();
+        entityManager.flush();
+        entityManager.clear();
+
+        ScheduleRun stored = scheduleRunRepository
+                .findById(rescheduledId)
+                .orElseThrow();
+        ScheduleRun storedSource = scheduleRunRepository
+                .findById(source.id())
+                .orElseThrow();
+        ProductionOrder storedNewOrder = productionOrderRepository
+                .findById(newOrder.id())
+                .orElseThrow();
+
+        assertThat(stored.sourceScheduleRunId()).isEqualTo(source.id());
+        assertThat(stored.frozenAt().toInstant())
+                .isEqualTo(frozenAt.toInstant());
+        assertThat(stored.dispatchingRule()).isEqualTo(DispatchingRule.EDD);
+        assertThat(storedSource.scheduledOperations()).hasSize(2);
+        assertThat(stored.scheduledOperations()).hasSize(4);
+        assertThat(stored.scheduledOperations())
+                .filteredOn(operation ->
+                        operation.productionOrder().id()
+                                .equals(sourceOrder.id())
+                        && operation.operation().id().equals(
+                                frozenSourceOperation.operation().id()
+                        ))
+                .singleElement()
+                .satisfies(operation -> {
+                    assertThat(operation.startAt().toInstant())
+                            .isEqualTo(
+                                    frozenSourceOperation.startAt().toInstant()
+                            );
+                    assertThat(operation.endAt().toInstant())
+                            .isEqualTo(
+                                    frozenSourceOperation.endAt().toInstant()
+                            );
+                });
+        assertThat(storedNewOrder.status())
+                .isEqualTo(ProductionOrderStatus.SCHEDULED);
+    }
+
+    @Test
     void persistsAppliedChangeoverTime() {
         Factory factory =
                 Factory.create("FACTORY-CHANGEOVER-RUN", "전환 실행 공장");

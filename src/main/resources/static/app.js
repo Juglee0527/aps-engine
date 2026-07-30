@@ -12,6 +12,8 @@ const API = {
         return `/api/v1/machines/${machineId}/availability?${query}`;
     },
     schedules: "/api/v1/schedules",
+    reschedule: (scheduleRunId) =>
+        `/api/v1/schedules/${scheduleRunId}/reschedule`,
     latestSchedule: "/api/v1/schedules/latest",
     bottlenecks: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/bottlenecks`
@@ -315,6 +317,16 @@ function renderRunSummary() {
     text("#planning-start", schedule ? formatDateTime(schedule.planningStart) : "-");
     text("#schedule-end", schedule ? formatDateTime(schedule.schedulingEnd) : "-");
     text(
+        "#source-run",
+        schedule?.sourceScheduleRunId
+            ? `RUN #${schedule.sourceScheduleRunId}`
+            : "-"
+    );
+    text(
+        "#frozen-at",
+        schedule?.frozenAt ? formatDateTime(schedule.frozenAt) : "-"
+    );
+    text(
         "#dispatching-rule",
         schedule?.dispatchingRule || "-"
     );
@@ -333,6 +345,7 @@ function renderRunSummary() {
     const status = document.querySelector("#run-status");
     status.textContent = schedule?.status || "READY";
     status.className = `status-pill ${schedule ? "completed" : "neutral"}`;
+    document.querySelector("#reschedule-button").disabled = !schedule;
 }
 
 function renderMetrics() {
@@ -660,6 +673,17 @@ function bindDialogs() {
             if (dialog.id === "routing-dialog" && document.querySelectorAll(".operation-row").length === 0) {
                 addOperationRow();
             }
+            if (dialog.id === "reschedule-dialog") {
+                text(
+                    "#reschedule-source-run",
+                    state.latestSchedule
+                        ? `RUN #${state.latestSchedule.id}`
+                        : "선택된 실행 없음"
+                );
+                dialog.querySelector("[name='dispatchingRule']").value =
+                    state.latestSchedule?.dispatchingRule
+                    || "EXPLICIT_PRIORITY";
+            }
             setDefaultDates();
             populateSelects();
             dialog.showModal();
@@ -704,6 +728,25 @@ function bindForms() {
         });
         await loadAll();
         return "스케줄 계산과 결과 저장을 완료했습니다.";
+    });
+    bindForm("#reschedule-form", async (form) => {
+        const source = state.latestSchedule;
+        if (!source) {
+            throw new Error("재스케줄링할 원본 실행이 없습니다.");
+        }
+        const formData = new FormData(form);
+        await request(API.reschedule(source.id), {
+            method: "POST",
+            body: JSON.stringify({
+                executionKey: crypto.randomUUID(),
+                frozenAt: new Date(
+                    formData.get("frozenAt")
+                ).toISOString(),
+                dispatchingRule: formData.get("dispatchingRule")
+            })
+        });
+        await loadAll();
+        return "동결 작업을 유지한 새 스케줄을 저장했습니다.";
     });
     bindForm("#factory-form", async (form) => {
         await request(API.factories, {method: "POST", body: JSON.stringify(values(form, ["code", "name"]))});
@@ -1182,6 +1225,7 @@ function setDefaultDates() {
     const due = new Date(start);
     due.setDate(due.getDate() + 3);
     setInputIfEmpty("#schedule-start-input", toLocalInput(start));
+    setInputIfEmpty("#frozen-at-input", toLocalInput(start));
     setInputIfEmpty("#order-release-input", toLocalInput(start));
     setInputIfEmpty("#order-due-input", toLocalInput(due));
 }

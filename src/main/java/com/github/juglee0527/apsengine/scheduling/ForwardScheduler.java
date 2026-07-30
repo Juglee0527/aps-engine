@@ -57,6 +57,20 @@ public class ForwardScheduler {
             List<SchedulingOrderInput> orders,
             List<SchedulingChangeoverInput> changeoverInputs
     ) {
+        return schedule(
+                planningStart,
+                orders,
+                changeoverInputs,
+                FrozenScheduleSeed.empty()
+        );
+    }
+
+    SchedulingPlan schedule(
+            OffsetDateTime planningStart,
+            List<SchedulingOrderInput> orders,
+            List<SchedulingChangeoverInput> changeoverInputs,
+            FrozenScheduleSeed seed
+    ) {
         if (planningStart == null) {
             throw new IllegalArgumentException(
                     "계획 시작시각은 필수입니다."
@@ -67,6 +81,11 @@ public class ForwardScheduler {
                     "생산오더 목록은 null일 수 없습니다."
             );
         }
+        if (seed == null) {
+            throw new IllegalArgumentException(
+                    "동결 작업 초기 상태는 필수입니다."
+            );
+        }
         ChangeoverTimeLookup changeoverTimeLookup =
                 ChangeoverTimeLookup.from(changeoverInputs);
 
@@ -74,11 +93,16 @@ public class ForwardScheduler {
                 new ArrayList<>(orders);
         orderedOrders.sort(priorityRule);
 
-        List<ScheduledTask> tasks = new ArrayList<>();
+        List<ScheduledTask> tasks =
+                new ArrayList<>(seed.tasks());
         Map<Long, OffsetDateTime> machineAvailableAt =
-                new HashMap<>();
-        Map<Long, Long> lastProductByMachine = new HashMap<>();
+                new HashMap<>(seed.machineAvailableAt());
+        Map<Long, Long> lastProductByMachine =
+                new HashMap<>(seed.lastProductByMachine());
         OffsetDateTime schedulingEnd = planningStart;
+        for (ScheduledTask task : seed.tasks()) {
+            schedulingEnd = max(schedulingEnd, task.endAt());
+        }
 
         for (SchedulingOrderInput order : orderedOrders) {
             OffsetDateTime normalizedReleaseAt =
@@ -87,6 +111,10 @@ public class ForwardScheduler {
                     );
             OffsetDateTime precedingOperationEnd =
                     max(planningStart, normalizedReleaseAt);
+            precedingOperationEnd = max(
+                    precedingOperationEnd,
+                    seed.orderAvailableAt().get(order.orderId())
+            );
             List<SchedulingOperationInput> operations =
                     new ArrayList<>(order.operations());
             operations.sort(OPERATION_SEQUENCE);

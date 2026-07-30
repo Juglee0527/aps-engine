@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V15__add_schedule_rule_and_kpis.sql`입니다.
+현재 스키마 기준은 Flyway `V16__add_frozen_horizon_trace.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -96,6 +96,8 @@ erDiagram
         TIMESTAMPTZ planning_start
         TIMESTAMPTZ scheduling_end
         INTEGER planning_offset_seconds
+        BIGINT source_schedule_run_id FK
+        TIMESTAMPTZ frozen_at
         VARCHAR_30 dispatching_rule
         BIGINT total_tardiness_minutes
         INTEGER delayed_order_count
@@ -132,6 +134,7 @@ erDiagram
     PRODUCT ||--o{ CHANGEOVER_TIME : from_product
     PRODUCT ||--o{ CHANGEOVER_TIME : to_product
     SCHEDULE_RUN ||--o{ SCHEDULED_OPERATION : contains
+    SCHEDULE_RUN o|--o{ SCHEDULE_RUN : source_of
     PRODUCTION_ORDER ||--o{ SCHEDULED_OPERATION : scheduled
     OPERATION ||--o{ SCHEDULED_OPERATION : plans
     MACHINE ||--o{ SCHEDULED_OPERATION : occupies
@@ -224,6 +227,9 @@ erDiagram
 | `uk_schedule_run_execution_key` | `execution_key` | 같은 실행 요청의 중복 저장 방지 |
 | `ck_schedule_run_period` | 계획 시작·스케줄 종료 | 종료가 계획 시작보다 이전이 아님을 보장 |
 | `ck_schedule_run_planning_offset` | `planning_offset_seconds` | UTC offset을 ±18시간 범위로 제한 |
+| `fk_schedule_run_source` | `source_schedule_run_id` | 재스케줄링 원본 실행을 참조하고 삭제를 제한 |
+| `ck_schedule_run_reschedule_trace` | 원본 실행·동결 기준시각 | 두 값의 동시 존재, 계획 시작 이후 동결, 자기 참조 방지 |
+| `ix_schedule_run_source_id` | `source_schedule_run_id` | 원본별 재스케줄 실행 조회 지원 |
 | `ck_schedule_run_dispatching_rule` | `dispatching_rule` | `EXPLICIT_PRIORITY`, `EDD`, `SPT`만 허용 |
 | `ck_schedule_run_total_tardiness` | `total_tardiness_minutes` | 총 납기 지연시간이 0분 이상임을 보장 |
 | `ck_schedule_run_delayed_order_count` | `delayed_order_count` | 지연 오더 수가 0건 이상임을 보장 |
@@ -240,6 +246,9 @@ erDiagram
 지연 오더 수와 Makespan을 백필합니다. 과거 실행은 당시 후보 설비의 가용시간 스냅샷을
 복원할 수 없으므로 설비 가동률은 `0`을 유지합니다. 신규 실행은 선택한 규칙과 네 KPI를
 계획 결과와 함께 저장합니다.
+
+`V16`은 일반 실행에는 null인 `source_schedule_run_id`, `frozen_at`을 추가합니다.
+재스케줄링 실행은 두 값을 함께 저장해 원본을 변경하지 않고 계획 계보를 남깁니다.
 
 ### ChangeoverTime 제약조건
 

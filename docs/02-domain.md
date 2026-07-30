@@ -205,6 +205,8 @@ ScheduleRun은 한 번의 스케줄 실행과 결과 집합을 나타냅니다.
 | `schedulingEnd` | OffsetDateTime | 마지막 작업 종료 instant |
 | `planningOffsetSeconds` | int | 실행 당시 고정 UTC offset, ±18시간 |
 | `createdAt` | OffsetDateTime | 결과 생성시각 |
+| `sourceScheduleRun` | ScheduleRun? | 재스케줄링 원본 실행, 일반 실행은 null |
+| `frozenAt` | OffsetDateTime? | 동결 기준시각, 원본 실행과 함께 존재 |
 | `dispatchingRule` | DispatchingRule | `EXPLICIT_PRIORITY`, `EDD`, `SPT` |
 | `totalTardinessMinutes` | long | 오더별 납기 초과분 합계 |
 | `delayedOrderCount` | int | 완료시각이 납기를 초과한 오더 수 |
@@ -219,6 +221,11 @@ PostgreSQL `TIMESTAMP WITH TIME ZONE`은 원래 offset을 보존하지 않으므
 규칙과 KPI는 실행 시점 스냅샷으로 저장하므로 이후 근무시간이나 정비 기준정보가 바뀌어도 과거
 비교 결과는 유지됩니다. 같은 `executionKey`의 완료 결과가 있으면 새 결과를 만들지 않고 기존
 실행을 반환합니다.
+
+재스케줄링은 원본 실행을 수정하지 않고 새 ScheduleRun을 만듭니다. Changeover 또는 가공 시작이
+`frozenAt`보다 이른 작업은 경계와 겹치더라도 전체를 고정하며, 이후 작업만 다시 배치합니다.
+취소 오더는 이미 고정된 작업만 유지하고 미래 작업을 제거하며, 새 `CONFIRMED` 오더는 동결
+기준시각 이후 계획에 포함합니다.
 
 ## 10. ScheduledOperation
 

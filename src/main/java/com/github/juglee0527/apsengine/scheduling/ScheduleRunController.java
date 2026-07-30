@@ -32,6 +32,20 @@ public class ScheduleRunController {
         return ResponseEntity.ok(ScheduleRunResponse.from(scheduleRun));
     }
 
+    @PostMapping("/{scheduleRunId}/reschedule")
+    public ResponseEntity<ScheduleRunResponse> reschedule(
+            @PathVariable long scheduleRunId,
+            @Valid @RequestBody ScheduleRescheduleRequest request
+    ) {
+        ScheduleRun scheduleRun = scheduleRunService.reschedule(
+                scheduleRunId,
+                request.executionKey(),
+                request.frozenAt(),
+                request.dispatchingRule()
+        );
+        return ResponseEntity.ok(ScheduleRunResponse.from(scheduleRun));
+    }
+
     @GetMapping("/latest")
     public ScheduleRunResponse getLatest() {
         return ScheduleRunResponse.from(scheduleRunService.getLatest());

@@ -136,7 +136,28 @@ Routing의 Operation과 후보 설비는 ordered `Set`으로 fetch join 행 증�
 실행 서비스도 여러 ProductionOrder가 같은 Routing을 공유하는 경우를 위해 오더와 공정을 ID 기준으로
 정규화해 같은 오더·공정이 중복 저장되지 않도록 방어합니다.
 
-## 8. 계획 Lead Time
+## 8. Frozen Horizon 재스케줄링
+
+재스케줄링은 원본 ScheduleRun과 `frozenAt`을 입력받아 별도의 ScheduleRun으로 저장합니다.
+고정 여부는 공정 가공 시작뿐 아니라 Changeover 시작까지 포함한 실제 설비 점유 시작으로 판단합니다.
+
+| 상황 | 정책 |
+| --- | --- |
+| 동결 기준 전에 끝난 작업 | 원래 설비와 시각 그대로 유지 |
+| 기준 전에 시작해 경계와 겹친 작업 | 진행 중인 전체 작업을 유지하고 종료까지 설비 점유 |
+| 기준 이후 시작 작업 | 선택한 Dispatching Rule로 다시 배치 |
+| 취소된 기존 오더 | 고정 작업만 유지하고 미래 작업 제외 |
+| 새 `CONFIRMED` 오더 | 동결 기준 이후 계획에 추가하고 성공 시 `SCHEDULED` 전환 |
+
+고정 작업의 마지막 설비 종료시각과 직전 품목을 새 Forward Scheduling의 초기 상태로 전달하므로
+재배치 작업이 고정 작업과 겹치거나 필요한 Changeover를 건너뛰지 않습니다. 같은 오더의 후속
+공정은 마지막 고정 공정 종료 이후에만 시작합니다. 원본 실행은 수정하지 않으며 새 실행의
+`sourceScheduleRunId`, `frozenAt`으로 추적합니다.
+
+현재 재스케줄링은 사용자가 요청한 시점의 기준정보로 미래 작업을 다시 계산합니다.
+수동 Drag & Drop과 실시간 MES 이벤트 연동은 포함하지 않습니다.
+
+## 9. 계획 Lead Time
 
 저장된 ScheduleRun의 생산오더별 Lead Time은 `releaseAt`부터 마지막 공정 종료까지의 경과 분입니다.
 가공시간과 Changeover Time은 저장된 작업 분을 합산하고, 나머지를 계획 대기시간으로 계산합니다.

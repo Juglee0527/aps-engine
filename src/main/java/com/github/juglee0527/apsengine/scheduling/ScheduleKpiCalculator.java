@@ -19,6 +19,19 @@ public class ScheduleKpiCalculator {
             SchedulingPlan plan,
             List<SchedulingOrderInput> orders
     ) {
+        List<SchedulingMachineCandidateInput> candidates = orders.stream()
+                .flatMap(order -> order.operations().stream())
+                .flatMap(operation ->
+                        operation.machineCandidates().stream())
+                .toList();
+        return calculate(plan, orders, candidates);
+    }
+
+    ScheduleKpis calculate(
+            SchedulingPlan plan,
+            List<SchedulingOrderInput> orders,
+            List<SchedulingMachineCandidateInput> capacityCandidates
+    ) {
         if (plan.tasks().isEmpty()) {
             return ScheduleKpis.empty();
         }
@@ -29,19 +42,18 @@ public class ScheduleKpiCalculator {
                 new HashMap<>();
         for (SchedulingOrderInput order : orders) {
             dueAtByOrder.put(order.orderId(), order.dueAt());
-            for (SchedulingOperationInput operation : order.operations()) {
-                for (SchedulingMachineCandidateInput candidate
-                        : operation.machineCandidates()) {
-                    candidatesByMachine.putIfAbsent(
-                            candidate.machineId(),
-                            candidate
-                    );
-                }
-            }
+        }
+        for (SchedulingMachineCandidateInput candidate
+                : capacityCandidates) {
+            candidatesByMachine.putIfAbsent(
+                    candidate.machineId(),
+                    candidate
+            );
         }
 
         Map<Long, Long> loadByMachine = new HashMap<>();
         for (ScheduledTask task : plan.tasks()) {
+            dueAtByOrder.putIfAbsent(task.orderId(), task.dueAt());
             completionByOrder.merge(
                     task.orderId(),
                     task.endAt(),

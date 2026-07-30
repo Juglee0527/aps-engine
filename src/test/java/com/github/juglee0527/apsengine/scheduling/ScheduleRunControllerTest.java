@@ -112,6 +112,40 @@ class ScheduleRunControllerTest {
     }
 
     @Test
+    void reschedulesFromExistingRunWithFrozenHorizon() throws Exception {
+        UUID executionKey =
+                UUID.fromString("8743f2eb-5b06-43f8-ac75-31f0d43aaf0c");
+        OffsetDateTime frozenAt = PLANNING_START.plusHours(1);
+        ScheduleRun result = rescheduledRun(
+                executionKey,
+                frozenAt,
+                DispatchingRule.SPT
+        );
+        when(scheduleRunService.reschedule(
+                9L,
+                executionKey,
+                frozenAt,
+                DispatchingRule.SPT
+        )).thenReturn(result);
+
+        mockMvc.perform(post("/api/v1/schedules/9/reschedule")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "executionKey": "8743f2eb-5b06-43f8-ac75-31f0d43aaf0c",
+                                  "frozenAt": "2026-07-27T09:00:00+09:00",
+                                  "dispatchingRule": "SPT"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.sourceScheduleRunId").value(9))
+                .andExpect(jsonPath("$.frozenAt").value(
+                        "2026-07-27T09:00:00+09:00"
+                ))
+                .andExpect(jsonPath("$.dispatchingRule").value("SPT"));
+    }
+
+    @Test
     void getsLatestSchedule() throws Exception {
         when(scheduleRunService.getLatest())
                 .thenReturn(scheduleRun(UUID.randomUUID()));
@@ -150,5 +184,29 @@ class ScheduleRunControllerTest {
         );
         ReflectionTestUtils.setField(scheduleRun, "id", 10L);
         return scheduleRun;
+    }
+
+    private ScheduleRun rescheduledRun(
+            UUID executionKey,
+            OffsetDateTime frozenAt,
+            DispatchingRule dispatchingRule
+    ) {
+        ScheduleRun source = scheduleRun(UUID.randomUUID());
+        ReflectionTestUtils.setField(source, "id", 9L);
+        ScheduleRun result = ScheduleRun.createRescheduled(
+                executionKey,
+                new SchedulingPlan(
+                        PLANNING_START,
+                        PLANNING_START,
+                        List.of()
+                ),
+                PLANNING_START,
+                dispatchingRule,
+                ScheduleKpis.empty(),
+                source,
+                frozenAt
+        );
+        ReflectionTestUtils.setField(result, "id", 10L);
+        return result;
     }
 }

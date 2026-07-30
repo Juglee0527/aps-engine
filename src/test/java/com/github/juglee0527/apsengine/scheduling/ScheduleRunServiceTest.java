@@ -137,6 +137,123 @@ class ScheduleRunServiceTest {
     }
 
     @Test
+    void reschedulesOnlyFutureTasksAndIncludesNewConfirmedOrder() {
+        TestData data = testData();
+        ScheduleRun source = sourceScheduleRun(data);
+        ReflectionTestUtils.setField(source, "id", 10L);
+        data.order().markScheduled();
+
+        ProductionOrder newOrder = ProductionOrder.create(
+                data.order().routing(),
+                "PO-NEW",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusMinutes(30),
+                90
+        );
+        ReflectionTestUtils.setField(newOrder, "id", 20L);
+        newOrder.confirm();
+        UUID executionKey = UUID.randomUUID();
+        OffsetDateTime frozenAt = PLANNING_START.plusHours(1);
+
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(scheduleRunRepository.findById(10L))
+                .thenReturn(Optional.of(source));
+        when(productionOrderRepository
+                .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                        ProductionOrderStatus.CONFIRMED
+                )).thenReturn(List.of(newOrder));
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(data.calendars());
+        when(scheduleRunRepository.saveAndFlush(any(ScheduleRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleRun result = scheduleRunService.reschedule(
+                10L,
+                executionKey,
+                frozenAt,
+                null
+        );
+
+        assertThat(source.scheduledOperations()).hasSize(2);
+        assertThat(result.sourceScheduleRunId()).isEqualTo(10L);
+        assertThat(result.frozenAt()).isEqualTo(frozenAt);
+        assertThat(result.dispatchingRule())
+                .isEqualTo(DispatchingRule.EXPLICIT_PRIORITY);
+        assertThat(result.scheduledOperations()).hasSize(4);
+        assertThat(result.scheduledOperations())
+                .filteredOn(operation ->
+                        operation.productionOrder().id().equals(
+                                data.order().id()
+                        )
+                        && operation.operation().sequence() == 1)
+                .singleElement()
+                .satisfies(operation -> {
+                    assertThat(operation.startAt())
+                            .isEqualTo(PLANNING_START);
+                    assertThat(operation.endAt())
+                            .isEqualTo(frozenAt);
+                });
+        assertThat(result.scheduledOperations())
+                .filteredOn(operation ->
+                        operation.changeoverStartAt() == null
+                                ? !operation.startAt().isBefore(frozenAt)
+                                : !operation.changeoverStartAt()
+                                        .isBefore(frozenAt))
+                .hasSize(3);
+        assertThat(newOrder.status())
+                .isEqualTo(ProductionOrderStatus.SCHEDULED);
+        assertThat(result.totalTardinessMinutes()).isPositive();
+    }
+
+    @Test
+    void keepsStartedTaskButDropsCancelledOrderFutureTask() {
+        TestData data = testData();
+        ScheduleRun source = sourceScheduleRun(data);
+        ReflectionTestUtils.setField(source, "id", 11L);
+        data.order().markScheduled();
+        ReflectionTestUtils.setField(
+                data.order(),
+                "status",
+                ProductionOrderStatus.CANCELLED
+        );
+        UUID executionKey = UUID.randomUUID();
+        OffsetDateTime frozenAt = PLANNING_START.plusMinutes(30);
+
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(scheduleRunRepository.findById(11L))
+                .thenReturn(Optional.of(source));
+        when(productionOrderRepository
+                .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                        ProductionOrderStatus.CONFIRMED
+                )).thenReturn(List.of());
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(data.calendars());
+        when(scheduleRunRepository.saveAndFlush(any(ScheduleRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleRun result = scheduleRunService.reschedule(
+                11L,
+                executionKey,
+                frozenAt,
+                DispatchingRule.EDD
+        );
+
+        assertThat(result.scheduledOperations())
+                .singleElement()
+                .satisfies(operation ->
+                        assertThat(operation.operation().sequence())
+                                .isEqualTo(1));
+        assertThat(result.dispatchingRule()).isEqualTo(DispatchingRule.EDD);
+        assertThat(data.order().status())
+                .isEqualTo(ProductionOrderStatus.CANCELLED);
+    }
+
+    @Test
     void rejectsMachineWithoutWorkingCalendar() {
         TestData data = testData();
         UUID executionKey = UUID.randomUUID();
@@ -403,6 +520,64 @@ class ScheduleRunServiceTest {
             ));
         }
         return new TestData(order, List.copyOf(calendars));
+    }
+
+    private ScheduleRun sourceScheduleRun(TestData data) {
+        List<Operation> operations = data.order().routing().operations();
+        ScheduledTask firstTask = new ScheduledTask(
+                data.order().id(),
+                data.order().orderNumber(),
+                operations.get(0).id(),
+                operations.get(0).machine().id(),
+                operations.get(0).sequence(),
+                operations.get(0).code(),
+                operations.get(0).name(),
+                null,
+                0,
+                PLANNING_START,
+                PLANNING_START.plusHours(1),
+                60,
+                data.order().dueAt(),
+                false
+        );
+        ScheduledTask secondTask = new ScheduledTask(
+                data.order().id(),
+                data.order().orderNumber(),
+                operations.get(1).id(),
+                operations.get(1).machine().id(),
+                operations.get(1).sequence(),
+                operations.get(1).code(),
+                operations.get(1).name(),
+                null,
+                0,
+                PLANNING_START.plusHours(1),
+                PLANNING_START.plusHours(2),
+                60,
+                data.order().dueAt(),
+                false
+        );
+        ScheduleRun source = ScheduleRun.create(
+                UUID.randomUUID(),
+                new SchedulingPlan(
+                        PLANNING_START,
+                        secondTask.endAt(),
+                        List.of(firstTask, secondTask)
+                ),
+                PLANNING_START
+        );
+        source.addScheduledOperation(
+                data.order(),
+                operations.get(0),
+                operations.get(0).machine(),
+                firstTask
+        );
+        source.addScheduledOperation(
+                data.order(),
+                operations.get(1),
+                operations.get(1).machine(),
+                secondTask
+        );
+        return source;
     }
 
     private ProductionOrder confirmedOrder(

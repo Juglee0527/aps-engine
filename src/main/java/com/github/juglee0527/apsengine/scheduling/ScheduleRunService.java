@@ -100,72 +100,104 @@ public class ScheduleRunService {
         }
 
         SchedulingContext context = createContext(orders, planningStart);
-        SchedulingPlan plan;
-        ScheduleKpis kpis;
-        try {
-            ForwardScheduler forwardScheduler = new ForwardScheduler(
-                    dispatchingRule.priorityRule()
-            );
-            plan = forwardScheduler.schedule(
-                    planningStart,
-                    context.inputs(),
-                    context.changeoverInputs()
-            );
-            kpis = kpiCalculator.calculate(plan, context.inputs());
-        } catch (IllegalArgumentException | IllegalStateException exception) {
-            throw new ApplicationException(
-                    ErrorCode.INVALID_REQUEST,
-                    exception.getMessage(),
-                    exception
-            );
-        }
+        ScheduleCalculation calculation = calculateSchedule(
+                planningStart,
+                dispatchingRule,
+                context,
+                FrozenScheduleSeed.empty()
+        );
 
         ScheduleRun scheduleRun = ScheduleRun.create(
                 executionKey,
-                plan,
+                calculation.plan(),
                 OffsetDateTime.now(),
                 dispatchingRule,
-                kpis
+                calculation.kpis()
         );
-        for (ScheduledTask task : plan.tasks()) {
-            ProductionOrder order = context.ordersById()
-                    .get(task.orderId());
-            Operation operation = context.operationsById()
-                    .get(task.operationId());
-            Machine selectedMachine = context.machinesById()
-                    .get(task.machineId());
-            if (selectedMachine == null) {
-                throw new IllegalStateException(
-                        "선택된 후보 설비를 찾을 수 없습니다."
-                );
-            }
-            scheduleRun.addScheduledOperation(
-                    order,
-                    operation,
-                    selectedMachine,
-                    task
-            );
-        }
+        addScheduledOperations(
+                scheduleRun,
+                calculation.plan().tasks(),
+                context.ordersById(),
+                context.operationsById(),
+                context.machinesById()
+        );
         for (ProductionOrder order : orders) {
             order.markScheduled();
         }
+        return saveScheduleRun(scheduleRun);
+    }
 
-        try {
-            return scheduleRunRepository.saveAndFlush(scheduleRun);
-        } catch (DataIntegrityViolationException exception) {
-            if (hasConstraint(
-                    exception,
-                    "uk_schedule_run_execution_key"
-            )) {
-                throw new ApplicationException(
-                        ErrorCode.SCHEDULE_EXECUTION_DUPLICATED,
-                        ErrorCode.SCHEDULE_EXECUTION_DUPLICATED
-                                .defaultMessage(),
-                        exception
-                );
-            }
-            throw exception;
+    @Transactional
+    public ScheduleRun reschedule(
+            long sourceScheduleRunId,
+            UUID executionKey,
+            OffsetDateTime frozenAt,
+            DispatchingRule requestedRule
+    ) {
+        if (sourceScheduleRunId < 1
+                || executionKey == null
+                || frozenAt == null) {
+            throw new ApplicationException(ErrorCode.INVALID_REQUEST);
         }
+        ScheduleRun existing = scheduleRunRepository
+                .findByExecutionKey(executionKey)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+
+        ScheduleRun source = scheduleRunRepository
+                .findById(sourceScheduleRunId)
+                .orElseThrow(() -> new ApplicationException(
+                        ErrorCode.SCHEDULE_RUN_NOT_FOUND
+                ));
+        if (frozenAt.isBefore(source.planningStart())) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "동결 기준시각은 원본 계획 시작시각보다 이전일 수 없습니다."
+            );
+        }
+        DispatchingRule dispatchingRule = requestedRule == null
+                ? source.dispatchingRule()
+                : requestedRule;
+        ReschedulingPreparation preparation =
+                prepareRescheduling(source, frozenAt);
+        SchedulingContext context = createContext(
+                preparation.planningOrders(),
+                source.planningStart(),
+                preparation.frozenResources().machines()
+        );
+        ScheduleCalculation calculation = calculateSchedule(
+                source.planningStart(),
+                dispatchingRule,
+                context,
+                preparation.frozenResources().seed()
+        );
+        ScheduleRun scheduleRun = ScheduleRun.createRescheduled(
+                executionKey,
+                calculation.plan(),
+                OffsetDateTime.now(),
+                dispatchingRule,
+                calculation.kpis(),
+                source,
+                frozenAt
+        );
+        ScheduleReferences references = addFrozenReferences(
+                context,
+                preparation.frozenOperations()
+        );
+        addScheduledOperations(
+                scheduleRun,
+                calculation.plan().tasks(),
+                references.ordersById(),
+                references.operationsById(),
+                references.machinesById()
+        );
+        for (ProductionOrder order
+                : preparation.newlyConfirmedOrders()) {
+            order.markScheduled();
+        }
+        return saveScheduleRun(scheduleRun);
     }
 
     @Transactional(readOnly = true)
@@ -187,20 +219,263 @@ public class ScheduleRunService {
                         ));
     }
 
+    private ReschedulingPreparation prepareRescheduling(
+            ScheduleRun source,
+            OffsetDateTime frozenAt
+    ) {
+        List<ScheduledOperation> sourceOperations =
+                source.scheduledOperations();
+        List<ScheduledOperation> frozenOperations = sourceOperations.stream()
+                .filter(operation -> isFrozen(operation, frozenAt))
+                .toList();
+        List<PlanningOrder> planningOrders = new ArrayList<>();
+        Map<Long, OffsetDateTime> orderAvailableAt = new HashMap<>();
+        Set<Long> sourceOrderIds = addSourcePlanningOrders(
+                groupByOrder(sourceOperations),
+                frozenAt,
+                planningOrders,
+                orderAvailableAt
+        );
+        List<ProductionOrder> newlyConfirmedOrders =
+                findNewlyConfirmedOrders(sourceOrderIds);
+        for (ProductionOrder order : newlyConfirmedOrders) {
+            planningOrders.add(PlanningOrder.all(order));
+            orderAvailableAt.put(order.id(), frozenAt);
+        }
+        FrozenResources frozenResources = createFrozenResources(
+                frozenOperations,
+                orderAvailableAt
+        );
+        return new ReschedulingPreparation(
+                List.copyOf(planningOrders),
+                frozenOperations,
+                newlyConfirmedOrders,
+                frozenResources
+        );
+    }
+
+    private Map<Long, List<ScheduledOperation>> groupByOrder(
+            List<ScheduledOperation> operations
+    ) {
+        Map<Long, List<ScheduledOperation>> grouped =
+                new LinkedHashMap<>();
+        for (ScheduledOperation operation : operations) {
+            grouped.computeIfAbsent(
+                    operation.productionOrder().id(),
+                    ignored -> new ArrayList<>()
+            ).add(operation);
+        }
+        return grouped;
+    }
+
+    private Set<Long> addSourcePlanningOrders(
+            Map<Long, List<ScheduledOperation>> sourceByOrder,
+            OffsetDateTime frozenAt,
+            List<PlanningOrder> planningOrders,
+            Map<Long, OffsetDateTime> orderAvailableAt
+    ) {
+        Set<Long> sourceOrderIds = new HashSet<>();
+        for (List<ScheduledOperation> operations
+                : sourceByOrder.values()) {
+            ProductionOrder order =
+                    operations.getFirst().productionOrder();
+            sourceOrderIds.add(order.id());
+            if (order.status() == ProductionOrderStatus.CANCELLED) {
+                continue;
+            }
+            Set<Long> futureOperationIds = new HashSet<>();
+            OffsetDateTime availableAt = frozenAt;
+            for (ScheduledOperation operation : operations) {
+                if (isFrozen(operation, frozenAt)) {
+                    availableAt = max(availableAt, operation.endAt());
+                } else {
+                    futureOperationIds.add(operation.operation().id());
+                }
+            }
+            if (!futureOperationIds.isEmpty()) {
+                planningOrders.add(new PlanningOrder(
+                        order,
+                        futureOperationIds
+                ));
+                orderAvailableAt.put(order.id(), availableAt);
+            }
+        }
+        return sourceOrderIds;
+    }
+
+    private List<ProductionOrder> findNewlyConfirmedOrders(
+            Set<Long> sourceOrderIds
+    ) {
+        return distinctOrders(
+                productionOrderRepository
+                        .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                                ProductionOrderStatus.CONFIRMED
+                        )
+        ).stream()
+                .filter(order -> !sourceOrderIds.contains(order.id()))
+                .toList();
+    }
+
+    private FrozenResources createFrozenResources(
+            List<ScheduledOperation> frozenOperations,
+            Map<Long, OffsetDateTime> orderAvailableAt
+    ) {
+        Map<Long, Machine> machines = new HashMap<>();
+        Map<Long, OffsetDateTime> machineAvailableAt = new HashMap<>();
+        Map<Long, ScheduledOperation> lastOperationByMachine =
+                new HashMap<>();
+        List<ScheduledTask> tasks =
+                new ArrayList<>(frozenOperations.size());
+        for (ScheduledOperation operation : frozenOperations) {
+            long machineId = operation.machine().id();
+            machines.put(machineId, operation.machine());
+            tasks.add(toScheduledTask(operation));
+            machineAvailableAt.merge(
+                    machineId,
+                    operation.endAt(),
+                    this::max
+            );
+            lastOperationByMachine.merge(
+                    machineId,
+                    operation,
+                    (left, right) -> right.endAt().isAfter(left.endAt())
+                            ? right
+                            : left
+            );
+        }
+        Map<Long, Long> lastProductByMachine = new HashMap<>();
+        for (Map.Entry<Long, ScheduledOperation> entry
+                : lastOperationByMachine.entrySet()) {
+            lastProductByMachine.put(
+                    entry.getKey(),
+                    entry.getValue()
+                            .productionOrder()
+                            .routing()
+                            .product()
+                            .id()
+            );
+        }
+        return new FrozenResources(
+                Map.copyOf(machines),
+                new FrozenScheduleSeed(
+                        tasks,
+                        machineAvailableAt,
+                        lastProductByMachine,
+                        orderAvailableAt
+                )
+        );
+    }
+
+    private ScheduleCalculation calculateSchedule(
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            SchedulingContext context,
+            FrozenScheduleSeed seed
+    ) {
+        try {
+            ForwardScheduler scheduler = new ForwardScheduler(
+                    dispatchingRule.priorityRule()
+            );
+            SchedulingPlan plan = scheduler.schedule(
+                    planningStart,
+                    context.inputs(),
+                    context.changeoverInputs(),
+                    seed
+            );
+            ScheduleKpis kpis = kpiCalculator.calculate(
+                    plan,
+                    context.inputs(),
+                    context.capacityCandidates()
+            );
+            return new ScheduleCalculation(plan, kpis);
+        } catch (IllegalArgumentException | IllegalStateException exception) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    exception.getMessage(),
+                    exception
+            );
+        }
+    }
+
+    private ScheduleReferences addFrozenReferences(
+            SchedulingContext context,
+            List<ScheduledOperation> frozenOperations
+    ) {
+        Map<Long, ProductionOrder> ordersById =
+                new HashMap<>(context.ordersById());
+        Map<Long, Operation> operationsById =
+                new HashMap<>(context.operationsById());
+        Map<Long, Machine> machinesById =
+                new HashMap<>(context.machinesById());
+        for (ScheduledOperation operation : frozenOperations) {
+            ordersById.put(
+                    operation.productionOrder().id(),
+                    operation.productionOrder()
+            );
+            operationsById.put(
+                    operation.operation().id(),
+                    operation.operation()
+            );
+            machinesById.put(
+                    operation.machine().id(),
+                    operation.machine()
+            );
+        }
+        return new ScheduleReferences(
+                Map.copyOf(ordersById),
+                Map.copyOf(operationsById),
+                Map.copyOf(machinesById)
+        );
+    }
+
+    private ScheduleRun saveScheduleRun(ScheduleRun scheduleRun) {
+        try {
+            return scheduleRunRepository.saveAndFlush(scheduleRun);
+        } catch (DataIntegrityViolationException exception) {
+            if (hasConstraint(
+                    exception,
+                    "uk_schedule_run_execution_key"
+            )) {
+                throw new ApplicationException(
+                        ErrorCode.SCHEDULE_EXECUTION_DUPLICATED,
+                        ErrorCode.SCHEDULE_EXECUTION_DUPLICATED
+                                .defaultMessage(),
+                        exception
+                );
+            }
+            throw exception;
+        }
+    }
+
     private SchedulingContext createContext(
             List<ProductionOrder> orders,
             OffsetDateTime planningStart
     ) {
+        return createContext(
+                orders.stream()
+                        .map(PlanningOrder::all)
+                        .toList(),
+                planningStart,
+                Map.of()
+        );
+    }
+
+    private SchedulingContext createContext(
+            List<PlanningOrder> planningOrders,
+            OffsetDateTime planningStart,
+            Map<Long, Machine> additionalMachines
+    ) {
         Set<Long> machineIds = new HashSet<>();
         Map<Long, ProductionOrder> ordersById = new HashMap<>();
         Map<Long, Operation> operationsById = new HashMap<>();
-        Map<Long, Machine> machinesById = new HashMap<>();
+        Map<Long, Machine> machinesById =
+                new HashMap<>(additionalMachines);
+        machineIds.addAll(additionalMachines.keySet());
 
-        for (ProductionOrder order : orders) {
+        for (PlanningOrder planningOrder : planningOrders) {
+            ProductionOrder order = planningOrder.order();
             ordersById.put(order.id(), order);
-            for (Operation operation : distinctOperations(
-                    order.routing().operations()
-            )) {
+            for (Operation operation : selectedOperations(planningOrder)) {
                 int availableCandidateCount = 0;
                 for (OperationMachineCandidate candidate
                         : operation.machineCandidates()) {
@@ -231,14 +506,46 @@ public class ScheduleRunService {
                 loadChangeoverInputs(machineIds);
         Map<Long, List<UnavailableInterval>> unavailableByMachine =
                 loadUnavailableIntervals(machineIds, planningStart);
+        for (Long machineId : additionalMachines.keySet()) {
+            if (workingTimesByMachine.getOrDefault(
+                    machineId,
+                    List.of()
+            ).isEmpty()) {
+                throw new ApplicationException(
+                        ErrorCode.WORKING_CALENDAR_REQUIRED,
+                        "동결 작업 설비의 근무시간이 필요합니다."
+                );
+            }
+        }
+        List<SchedulingMachineCandidateInput> capacityCandidates =
+                new ArrayList<>();
+        for (Long machineId : machineIds) {
+            List<WeeklyWorkingTime> workingTimes =
+                    workingTimesByMachine.getOrDefault(
+                            machineId,
+                            List.of()
+                    );
+            if (!workingTimes.isEmpty()) {
+                capacityCandidates.add(
+                        new SchedulingMachineCandidateInput(
+                                machineId,
+                                1,
+                                workingTimes,
+                                unavailableByMachine.getOrDefault(
+                                        machineId,
+                                        List.of()
+                                )
+                        )
+                );
+            }
+        }
         List<SchedulingOrderInput> inputs =
-                new ArrayList<>(orders.size());
-        for (ProductionOrder order : orders) {
+                new ArrayList<>(planningOrders.size());
+        for (PlanningOrder planningOrder : planningOrders) {
+            ProductionOrder order = planningOrder.order();
             List<SchedulingOperationInput> operationInputs =
                     new ArrayList<>();
-            for (Operation operation : distinctOperations(
-                    order.routing().operations()
-            )) {
+            for (Operation operation : selectedOperations(planningOrder)) {
                 List<SchedulingMachineCandidateInput> candidateInputs =
                         new ArrayList<>();
                 for (OperationMachineCandidate candidate
@@ -309,6 +616,7 @@ public class ScheduleRunService {
         return new SchedulingContext(
                 List.copyOf(inputs),
                 changeoverInputs,
+                List.copyOf(capacityCandidates),
                 Map.copyOf(ordersById),
                 Map.copyOf(operationsById),
                 Map.copyOf(machinesById)
@@ -319,6 +627,9 @@ public class ScheduleRunService {
             Set<Long> machineIds,
             OffsetDateTime planningStart
     ) {
+        if (machineIds.isEmpty()) {
+            return Map.of();
+        }
         List<MachineMaintenance> maintenances = maintenanceRepository
                 .findAllByMachine_IdInAndActiveTrueAndEndAtGreaterThanOrderByStartAtAsc(
                         machineIds,
@@ -340,6 +651,9 @@ public class ScheduleRunService {
     private List<SchedulingChangeoverInput> loadChangeoverInputs(
             Set<Long> machineIds
     ) {
+        if (machineIds.isEmpty()) {
+            return List.of();
+        }
         List<ChangeoverTime> changeoverTimes = changeoverTimeRepository
                 .findAllByMachine_IdInAndActiveTrue(machineIds);
         List<SchedulingChangeoverInput> inputs =
@@ -365,6 +679,17 @@ public class ScheduleRunService {
         return List.copyOf(ordersById.values());
     }
 
+    private List<Operation> selectedOperations(
+            PlanningOrder planningOrder
+    ) {
+        return distinctOperations(
+                planningOrder.order().routing().operations()
+        ).stream()
+                .filter(operation ->
+                        planningOrder.operationIds().contains(operation.id()))
+                .toList();
+    }
+
     private List<Operation> distinctOperations(
             List<Operation> queriedOperations
     ) {
@@ -378,6 +703,9 @@ public class ScheduleRunService {
     private Map<Long, List<WeeklyWorkingTime>> loadWorkingTimes(
             Set<Long> machineIds
     ) {
+        if (machineIds.isEmpty()) {
+            return Map.of();
+        }
         List<WorkingCalendar> calendars = workingCalendarRepository
                 .findAllByMachine_IdInAndActiveTrue(machineIds);
         Map<Long, List<WeeklyWorkingTime>> workingTimesByMachine =
@@ -391,6 +719,72 @@ public class ScheduleRunService {
                     .add(calendar.toWeeklyWorkingTime());
         }
         return workingTimesByMachine;
+    }
+
+    private void addScheduledOperations(
+            ScheduleRun scheduleRun,
+            List<ScheduledTask> tasks,
+            Map<Long, ProductionOrder> ordersById,
+            Map<Long, Operation> operationsById,
+            Map<Long, Machine> machinesById
+    ) {
+        for (ScheduledTask task : tasks) {
+            ProductionOrder order = ordersById.get(task.orderId());
+            Operation operation = operationsById.get(task.operationId());
+            Machine machine = machinesById.get(task.machineId());
+            if (order == null || operation == null || machine == null) {
+                throw new IllegalStateException(
+                        "스케줄 저장에 필요한 오더·공정·설비를 찾을 수 없습니다."
+                );
+            }
+            scheduleRun.addScheduledOperation(
+                    order,
+                    operation,
+                    machine,
+                    task
+            );
+        }
+    }
+
+    private ScheduledTask toScheduledTask(
+            ScheduledOperation operation
+    ) {
+        ProductionOrder order = operation.productionOrder();
+        Operation routingOperation = operation.operation();
+        return new ScheduledTask(
+                order.id(),
+                order.orderNumber(),
+                routingOperation.id(),
+                operation.machine().id(),
+                operation.sequence(),
+                routingOperation.code(),
+                routingOperation.name(),
+                operation.changeoverStartAt(),
+                operation.changeoverMinutes(),
+                operation.startAt(),
+                operation.endAt(),
+                operation.workingMinutes(),
+                order.dueAt(),
+                operation.delayed()
+        );
+    }
+
+    private boolean isFrozen(
+            ScheduledOperation operation,
+            OffsetDateTime frozenAt
+    ) {
+        OffsetDateTime effectiveStart =
+                operation.changeoverStartAt() == null
+                        ? operation.startAt()
+                        : operation.changeoverStartAt();
+        return effectiveStart.isBefore(frozenAt);
+    }
+
+    private OffsetDateTime max(
+            OffsetDateTime left,
+            OffsetDateTime right
+    ) {
+        return right.isAfter(left) ? right : left;
     }
 
     private boolean hasConstraint(
@@ -411,6 +805,53 @@ public class ScheduleRunService {
     private record SchedulingContext(
             List<SchedulingOrderInput> inputs,
             List<SchedulingChangeoverInput> changeoverInputs,
+            List<SchedulingMachineCandidateInput> capacityCandidates,
+            Map<Long, ProductionOrder> ordersById,
+            Map<Long, Operation> operationsById,
+            Map<Long, Machine> machinesById
+    ) {
+    }
+
+    private record PlanningOrder(
+            ProductionOrder order,
+            Set<Long> operationIds
+    ) {
+
+        private PlanningOrder {
+            operationIds = Set.copyOf(operationIds);
+        }
+
+        private static PlanningOrder all(ProductionOrder order) {
+            return new PlanningOrder(
+                    order,
+                    order.routing().operations().stream()
+                            .map(Operation::id)
+                            .collect(java.util.stream.Collectors.toSet())
+            );
+        }
+    }
+
+    private record ReschedulingPreparation(
+            List<PlanningOrder> planningOrders,
+            List<ScheduledOperation> frozenOperations,
+            List<ProductionOrder> newlyConfirmedOrders,
+            FrozenResources frozenResources
+    ) {
+    }
+
+    private record FrozenResources(
+            Map<Long, Machine> machines,
+            FrozenScheduleSeed seed
+    ) {
+    }
+
+    private record ScheduleCalculation(
+            SchedulingPlan plan,
+            ScheduleKpis kpis
+    ) {
+    }
+
+    private record ScheduleReferences(
             Map<Long, ProductionOrder> ordersById,
             Map<Long, Operation> operationsById,
             Map<Long, Machine> machinesById
