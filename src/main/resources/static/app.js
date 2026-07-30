@@ -163,7 +163,11 @@ async function loadCapacity() {
     const results = await Promise.all(machineIds.map(async (machineId) => {
         const workingMinutes = schedule.tasks
             .filter((task) => task.machineId === machineId)
-            .reduce((sum, task) => sum + task.workingMinutes, 0);
+            .reduce(
+                (sum, task) =>
+                    sum + task.workingMinutes + (task.changeoverMinutes || 0),
+                0
+            );
         try {
             const availability = await request(API.availability(
                 machineId,
@@ -348,6 +352,34 @@ function renderGantt() {
         const timeline = document.createElement("div");
         timeline.className = "timeline";
         for (const task of tasks) {
+            if (task.changeoverStartAt && task.changeoverMinutes > 0) {
+                const changeoverBar = document.createElement("div");
+                const changeoverStart =
+                    new Date(task.changeoverStartAt).getTime();
+                const operationStart = new Date(task.startAt).getTime();
+                changeoverBar.className =
+                    "gantt-bar gantt-changeover";
+                changeoverBar.style.left =
+                    `${Math.max(
+                        0,
+                        (changeoverStart - start) / duration * 100
+                    )}%`;
+                changeoverBar.style.width =
+                    `${Math.max(
+                        1.2,
+                        (operationStart - changeoverStart)
+                            / duration * 100
+                    )}%`;
+                changeoverBar.title =
+                    `${task.orderNumber} / Changeover\n`
+                    + `${formatDateTime(task.changeoverStartAt)}`
+                    + ` → ${formatDateTime(task.startAt)}\n`
+                    + `준비작업 ${task.changeoverMinutes}분`;
+                changeoverBar.innerHTML =
+                    `<strong>CHANGEOVER</strong>`
+                    + `<span>${task.changeoverMinutes}m</span>`;
+                timeline.append(changeoverBar);
+            }
             const bar = document.createElement("div");
             const taskStart = new Date(task.startAt).getTime();
             const taskEnd = new Date(task.endAt).getTime();
@@ -375,6 +407,11 @@ function renderGantt() {
         item.innerHTML = `<span class="legend-color" style="background:${colorFor(orderId)}"></span>${escapeHtml(orderNumber)}`;
         legend.append(item);
     }
+    const changeoverLegend = document.createElement("span");
+    changeoverLegend.className = "legend-item";
+    changeoverLegend.innerHTML =
+        '<i class="legend-color changeover-color"></i>Changeover';
+    legend.append(changeoverLegend);
 }
 
 function createGanttHeader(start, duration) {

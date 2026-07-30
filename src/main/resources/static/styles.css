@@ -131,6 +131,28 @@ h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.025em; }
 .gantt-bar strong, .gantt-bar span { display: block; overflow: hidden; text-overflow: ellipsis; }
 .gantt-bar span { margin-top: 3px; opacity: .78; font: 8px Consolas, monospace; }
 .gantt-bar.is-delayed { outline: 2px solid var(--red); outline-offset: 1px; }
+.gantt-bar.gantt-changeover {
+    color: #49390d;
+    background: repeating-linear-gradient(
+        135deg,
+        #f8c64e,
+        #f8c64e 7px,
+        #ffe19a 7px,
+        #ffe19a 14px
+    );
+    border-left-color: #b68510;
+    z-index: 1;
+}
+.changeover-color {
+    background: repeating-linear-gradient(
+        135deg,
+        #f8c64e,
+        #f8c64e 3px,
+        #ffe19a 3px,
+        #ffe19a 6px
+    );
+    border: 1px solid #b68510;
+}
 
 .insight-grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, .7fr); gap: 14px; }
 .table-scroll { overflow: auto; }

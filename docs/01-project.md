@@ -179,7 +179,7 @@ Spring Boot(local profile)
 
 ## 6. 현재 구현 스냅샷
 
-2026년 7월 30일 기준 로드맵 `001~029`와 APS Schedule Control Tower가 구현되어 있습니다.
+2026년 7월 30일 기준 로드맵 `001~030`과 APS Schedule Control Tower가 구현되어 있습니다.
 
 | 영역 | 구현 상태 |
 | --- | --- |
@@ -187,12 +187,12 @@ Spring Boot(local profile)
 | 품목과 공정 | Product, Routing, Operation 등록·조회 |
 | 생산오더 | 등록·조회, DRAFT → CONFIRMED → SCHEDULED |
 | CAPA | WorkingCalendar, 가용 구간·가용 분, 화면 사용률 |
-| 스케줄링 | 우선순위 기반 다중 오더·다중 Operation 순방향 배정 |
-| 결과 | ScheduleRun, ScheduledOperation 저장과 최신·상세 조회 |
-| 제조 제약 | 설비·이전 품목·다음 품목별 방향성 Changeover Time 기준정보 |
-| 화면 | 오더 큐, 설비별 간트, 납기 지연, 병목 후보, 기준정보 등록 |
+| 스케줄링 | 우선순위 기반 다중 오더·다중 Operation 순방향 배정과 Changeover 반영 |
+| 결과 | ScheduleRun, Changeover 포함 ScheduledOperation 저장과 최신·상세 조회 |
+| 제조 제약 | 설비·이전 품목·다음 품목별 방향성 Changeover Time 기준정보와 배정 |
+| 화면 | 오더 큐, 작업·Changeover 간트, 납기 지연, 병목 후보, 기준정보 등록 |
 
-다음 구현 대상은 `030. 스케줄러에 Changeover Time 적용`입니다. 제조 제약조건 `030~033`, 운영 기반
+다음 구현 대상은 `031. Maintenance 제약조건`입니다. 제조 제약조건 `031~033`, 운영 기반
 `034~039`, APS 엔진 고도화 `040~043`, 데이터 처리와 실행 운영 `044~047`은 아직 구현되지 않았습니다.
 
 ## 7. 아키텍처 경계

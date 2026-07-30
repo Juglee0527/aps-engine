@@ -6,6 +6,7 @@ import java.util.List;
 public record SchedulingOrderInput(
         long orderId,
         String orderNumber,
+        long productId,
         long quantity,
         OffsetDateTime releaseAt,
         OffsetDateTime dueAt,
@@ -14,9 +15,9 @@ public record SchedulingOrderInput(
 ) {
 
     public SchedulingOrderInput {
-        if (orderId < 1) {
+        if (orderId < 1 || productId < 1) {
             throw new IllegalArgumentException(
-                    "생산오더 식별자는 1 이상이어야 합니다."
+                    "생산오더와 품목 식별자는 1 이상이어야 합니다."
             );
         }
         if (quantity < 1) {

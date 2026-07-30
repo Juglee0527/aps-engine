@@ -444,13 +444,38 @@ GET /api/v1/schedules/{scheduleRunId}
   "orderCount": 4,
   "taskCount": 12,
   "delayedOrderCount": 2,
-  "tasks": []
+  "tasks": [
+    {
+      "id": 101,
+      "productionOrderId": 21,
+      "orderNumber": "PO-2026-001",
+      "productId": 20,
+      "productCode": "PRODUCT-B",
+      "productName": "완제품 B",
+      "operationId": 31,
+      "sequence": 10,
+      "operationCode": "CUT",
+      "operationName": "절단",
+      "machineId": 41,
+      "machineCode": "MACHINE-01",
+      "machineName": "절단 설비",
+      "changeoverStartAt": "2026-07-30T00:00:00Z",
+      "changeoverMinutes": 30,
+      "startAt": "2026-07-30T00:30:00Z",
+      "endAt": "2026-07-30T01:30:00Z",
+      "workingMinutes": 60,
+      "dueAt": "2026-07-31T09:00:00Z",
+      "delayed": false
+    }
+  ]
 }
 ```
 
 `planningStart`와 작업 시각은 DB 재조회 시 UTC로 반환될 수 있습니다.
 클라이언트는 `planningOffsetSeconds`를 적용해 실행 당시 공장 현지시각으로 표시하고,
 같은 offset을 설비 가용시간 조회에 전달해야 합니다.
+`changeoverStartAt`은 다른 품목으로 전환하는 준비작업이 있을 때만 존재하며,
+`changeoverMinutes`는 설비 근무시간 기준 실제 준비작업 분입니다.
 
 ## 14. Changeover Time API
 
@@ -483,4 +508,4 @@ GET /api/v1/machines/{machineId}/changeover-times
 - 단건 조회는 활성 기준정보만 반환하며 없으면 `404 CHANGEOVER_TIME_NOT_FOUND`를 반환합니다.
 - 설비별 목록은 활성 기준정보를 이전 품목 ID, 다음 품목 ID 오름차순으로 반환합니다.
 - 동일 품목의 전환시간과 등록되지 않은 방향성 조합은 스케줄링 정책에서 기본값 0분으로 해석합니다.
-- 스케줄러 반영은 다음 개발 단위 `030`의 범위입니다.
+- 스케줄러는 활성 기준정보를 실행 시점 스냅샷으로 읽어 다음 가공 전에 반영합니다.

@@ -60,7 +60,7 @@ Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.c
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 Changeover Time 기준정보까지 로드맵 `001~029`를 구현했습니다.
+2026년 7월 30일 기준으로 Factory부터 Changeover Time 스케줄 반영까지 로드맵 `001~030`을 구현했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -71,10 +71,11 @@ Machine + Product 전환 방향 → ChangeoverTime
 
 - 명시적 우선순위, 납기와 식별자를 적용하는 순방향 스케줄러
 - 설비 근무시간과 공정 선후관계를 반영한 유한 CAPA 배정
+- 방향성 Changeover Time을 설비 근무시간 안에서 배정하고 결과에 저장
 - 실행 키 기반 중복 방지와 스케줄 결과 원자적 저장
 - 설비·이전 품목·다음 품목별 방향성 Changeover Time 기준정보
-- 실제 API 데이터 기반 설비 간트, 납기 지연 및 병목 후보 화면
-- 다음 개발 단위: `030. 스케줄러에 Changeover Time 적용`
+- 실제 API 데이터 기반 작업·Changeover 간트, 납기 지연 및 병목 후보 화면
+- 다음 개발 단위: `031. Maintenance 제약조건`
 
 # Tech Stack
 
@@ -194,7 +195,7 @@ aps-engine
 - [x] 027. 스케줄 실행 유스케이스
 - [x] 028. 스케줄 결과 저장
 - [x] 029. Changeover Time 모델
-- [ ] 030. 스케줄러에 Changeover Time 적용
+- [x] 030. 스케줄러에 Changeover Time 적용
 - [ ] 031. Maintenance 제약조건
 - [ ] 032. Lead Time 계산
 - [ ] 033. Bottleneck 탐지

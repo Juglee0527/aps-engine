@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V11__create_changeover_time_table.sql`입니다.
+현재 스키마 기준은 Flyway `V12__add_changeover_to_scheduled_operation.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -92,6 +92,8 @@ erDiagram
         BIGINT operation_id FK
         BIGINT machine_id FK
         INTEGER operation_sequence
+        TIMESTAMPTZ changeover_start_at
+        BIGINT changeover_minutes
         TIMESTAMPTZ start_at
         TIMESTAMPTZ end_at
         BIGINT working_minutes
@@ -195,6 +197,8 @@ erDiagram
 | `ck_schedule_run_planning_offset` | `planning_offset_seconds` | UTC offset을 ±18시간 범위로 제한 |
 | `uk_scheduled_operation_run_order_operation` | 실행·오더·공정 | 한 실행에서 같은 오더 공정 중복 방지 |
 | `ck_scheduled_operation_period` | 시작·종료 | 작업 종료가 시작보다 이후임을 보장 |
+| `ck_scheduled_operation_changeover_minutes` | `changeover_minutes` | Changeover Time이 0분 이상임을 보장 |
+| `ck_scheduled_operation_changeover_period` | 전환 시작·가공 시작 | 전환이 있으면 시작시각이 가공 시작보다 이전임을 보장 |
 | `ix_scheduled_operation_run_start` | 실행·시작 | 간트 보드 시간순 조회 지원 |
 | `ix_scheduled_operation_machine_start` | 설비·시작 | 설비별 부하 조회 지원 |
 

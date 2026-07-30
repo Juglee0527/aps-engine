@@ -37,6 +37,14 @@ public class ForwardScheduler {
             OffsetDateTime planningStart,
             List<SchedulingOrderInput> orders
     ) {
+        return schedule(planningStart, orders, List.of());
+    }
+
+    public SchedulingPlan schedule(
+            OffsetDateTime planningStart,
+            List<SchedulingOrderInput> orders,
+            List<SchedulingChangeoverInput> changeoverInputs
+    ) {
         if (planningStart == null) {
             throw new IllegalArgumentException(
                     "계획 시작시각은 필수입니다."
@@ -47,6 +55,8 @@ public class ForwardScheduler {
                     "생산오더 목록은 null일 수 없습니다."
             );
         }
+        ChangeoverTimeLookup changeoverTimeLookup =
+                ChangeoverTimeLookup.from(changeoverInputs);
 
         List<SchedulingOrderInput> orderedOrders =
                 new ArrayList<>(orders);
@@ -55,6 +65,7 @@ public class ForwardScheduler {
         List<ScheduledTask> tasks = new ArrayList<>();
         Map<Long, OffsetDateTime> machineAvailableAt =
                 new HashMap<>();
+        Map<Long, Long> lastProductByMachine = new HashMap<>();
         OffsetDateTime schedulingEnd = planningStart;
 
         for (SchedulingOrderInput order : orderedOrders) {
@@ -73,6 +84,24 @@ public class ForwardScheduler {
                         precedingOperationEnd,
                         machineAvailableAt.get(operation.machineId())
                 );
+                long changeoverMinutes = changeoverMinutes(
+                        changeoverTimeLookup,
+                        lastProductByMachine.get(operation.machineId()),
+                        order.productId(),
+                        operation.machineId()
+                );
+                OffsetDateTime changeoverStartAt = null;
+                if (changeoverMinutes > 0) {
+                    WorkingAllocation changeoverAllocation =
+                            workingTimeCalculator.allocate(
+                                    operation.workingTimes(),
+                                    earliestStart,
+                                    changeoverMinutes
+                            );
+                    changeoverStartAt =
+                            changeoverAllocation.startAt();
+                    earliestStart = changeoverAllocation.endAt();
+                }
                 long requiredMinutes = requiredMinutes(order, operation);
                 WorkingAllocation allocation =
                         workingTimeCalculator.allocate(
@@ -90,6 +119,8 @@ public class ForwardScheduler {
                         operation.sequence(),
                         operation.operationCode(),
                         operation.operationName(),
+                        changeoverStartAt,
+                        changeoverMinutes,
                         allocation.startAt(),
                         allocation.endAt(),
                         allocation.workingMinutes(),
@@ -101,6 +132,10 @@ public class ForwardScheduler {
                         operation.machineId(),
                         allocation.endAt()
                 );
+                lastProductByMachine.put(
+                        operation.machineId(),
+                        order.productId()
+                );
                 schedulingEnd = max(
                         schedulingEnd,
                         allocation.endAt()
@@ -111,6 +146,22 @@ public class ForwardScheduler {
                 planningStart,
                 schedulingEnd,
                 tasks
+        );
+    }
+
+    private long changeoverMinutes(
+            ChangeoverTimeLookup changeoverTimeLookup,
+            Long previousProductId,
+            long nextProductId,
+            long machineId
+    ) {
+        if (previousProductId == null) {
+            return 0;
+        }
+        return changeoverTimeLookup.minutesFor(
+                machineId,
+                previousProductId,
+                nextProductId
         );
     }
 

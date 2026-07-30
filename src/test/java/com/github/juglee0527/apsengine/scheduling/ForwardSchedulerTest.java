@@ -146,6 +146,7 @@ class ForwardSchedulerTest {
         SchedulingOrderInput order = new SchedulingOrderInput(
                 1L,
                 "PO-UTC",
+                10L,
                 60,
                 MONDAY_EIGHT.withOffsetSameInstant(ZoneOffset.UTC),
                 MONDAY_EIGHT.plusDays(1)
@@ -163,6 +164,153 @@ class ForwardSchedulerTest {
                 .isEqualTo(OFFSET);
     }
 
+    @Test
+    void appliesDirectionalChangeoverBetweenDifferentProducts() {
+        SchedulingOrderInput first = order(
+                1L,
+                "PO-A",
+                10L,
+                60,
+                5,
+                operation(11L, 101L, 1, 1)
+        );
+        SchedulingOrderInput second = order(
+                2L,
+                "PO-B",
+                20L,
+                60,
+                5,
+                operation(12L, 101L, 1, 1)
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(first, second),
+                List.of(new SchedulingChangeoverInput(
+                        101L,
+                        10L,
+                        20L,
+                        30
+                ))
+        );
+
+        ScheduledTask secondTask = plan.tasks().get(1);
+        assertThat(secondTask.changeoverStartAt())
+                .isEqualTo(MONDAY_EIGHT.plusHours(1));
+        assertThat(secondTask.changeoverMinutes()).isEqualTo(30);
+        assertThat(secondTask.startAt())
+                .isEqualTo(MONDAY_EIGHT.plusMinutes(90));
+        assertThat(secondTask.endAt())
+                .isEqualTo(MONDAY_EIGHT.plusMinutes(150));
+    }
+
+    @Test
+    void doesNotApplyChangeoverForSameProduct() {
+        SchedulingOrderInput first = order(
+                1L,
+                "PO-A-1",
+                10L,
+                60,
+                5,
+                operation(11L, 101L, 1, 1)
+        );
+        SchedulingOrderInput second = order(
+                2L,
+                "PO-A-2",
+                10L,
+                60,
+                5,
+                operation(12L, 101L, 1, 1)
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(first, second),
+                List.of()
+        );
+
+        ScheduledTask secondTask = plan.tasks().get(1);
+        assertThat(secondTask.changeoverStartAt()).isNull();
+        assertThat(secondTask.changeoverMinutes()).isZero();
+        assertThat(secondTask.startAt())
+                .isEqualTo(MONDAY_EIGHT.plusHours(1));
+    }
+
+    @Test
+    void doesNotUseReverseDirectionMapping() {
+        SchedulingOrderInput first = order(
+                1L,
+                "PO-A",
+                10L,
+                60,
+                5,
+                operation(11L, 101L, 1, 1)
+        );
+        SchedulingOrderInput second = order(
+                2L,
+                "PO-B",
+                20L,
+                60,
+                5,
+                operation(12L, 101L, 1, 1)
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(first, second),
+                List.of(new SchedulingChangeoverInput(
+                        101L,
+                        20L,
+                        10L,
+                        30
+                ))
+        );
+
+        assertThat(plan.tasks().get(1).changeoverMinutes()).isZero();
+        assertThat(plan.tasks().get(1).startAt())
+                .isEqualTo(MONDAY_EIGHT.plusHours(1));
+    }
+
+    @Test
+    void continuesChangeoverOnNextWorkingDay() {
+        SchedulingOrderInput first = order(
+                1L,
+                "PO-A",
+                10L,
+                60,
+                5,
+                operation(11L, 101L, 1, 1)
+        );
+        SchedulingOrderInput second = order(
+                2L,
+                "PO-B",
+                20L,
+                60,
+                5,
+                operation(12L, 101L, 1, 1)
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT.plusHours(8),
+                List.of(first, second),
+                List.of(new SchedulingChangeoverInput(
+                        101L,
+                        10L,
+                        20L,
+                        60
+                ))
+        );
+
+        ScheduledTask secondTask = plan.tasks().get(1);
+        OffsetDateTime tuesdayEight = MONDAY_EIGHT.plusDays(1);
+        assertThat(secondTask.changeoverStartAt())
+                .isEqualTo(tuesdayEight);
+        assertThat(secondTask.startAt())
+                .isEqualTo(tuesdayEight.plusHours(1));
+        assertThat(secondTask.endAt())
+                .isEqualTo(tuesdayEight.plusHours(2));
+    }
+
     private SchedulingOrderInput order(
             long id,
             String orderNumber,
@@ -170,9 +318,28 @@ class ForwardSchedulerTest {
             int priority,
             SchedulingOperationInput... operations
     ) {
+        return order(
+                id,
+                orderNumber,
+                id,
+                quantity,
+                priority,
+                operations
+        );
+    }
+
+    private SchedulingOrderInput order(
+            long id,
+            String orderNumber,
+            long productId,
+            long quantity,
+            int priority,
+            SchedulingOperationInput... operations
+    ) {
         return new SchedulingOrderInput(
                 id,
                 orderNumber,
+                productId,
                 quantity,
                 MONDAY_EIGHT,
                 MONDAY_EIGHT.plusDays(5),

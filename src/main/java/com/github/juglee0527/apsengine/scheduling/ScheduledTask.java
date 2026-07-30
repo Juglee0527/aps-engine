@@ -10,6 +10,8 @@ public record ScheduledTask(
         int sequence,
         String operationCode,
         String operationName,
+        OffsetDateTime changeoverStartAt,
+        long changeoverMinutes,
         OffsetDateTime startAt,
         OffsetDateTime endAt,
         long workingMinutes,

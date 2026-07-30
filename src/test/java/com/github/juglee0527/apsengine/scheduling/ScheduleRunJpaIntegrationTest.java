@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
@@ -107,6 +108,97 @@ class ScheduleRunJpaIntegrationTest {
                 .isEqualTo(ProductionOrderStatus.SCHEDULED);
         assertThat(storedSecondOrder.status())
                 .isEqualTo(ProductionOrderStatus.SCHEDULED);
+    }
+
+    @Test
+    void persistsAppliedChangeoverTime() {
+        Factory factory =
+                Factory.create("FACTORY-CHANGEOVER-RUN", "전환 실행 공장");
+        entityManager.persist(factory);
+        ProductionLine line = ProductionLine.create(
+                factory,
+                "LINE-CHANGEOVER-RUN",
+                "전환 실행 라인"
+        );
+        entityManager.persist(line);
+        Machine machine = Machine.create(
+                line,
+                "MACHINE-CHANGEOVER-RUN",
+                "전환 실행 설비"
+        );
+        entityManager.persist(machine);
+        Product productA = Product.create(
+                "PRODUCT-CHANGEOVER-A",
+                "전환 품목 A",
+                ProductUnit.PIECE
+        );
+        Product productB = Product.create(
+                "PRODUCT-CHANGEOVER-B",
+                "전환 품목 B",
+                ProductUnit.PIECE
+        );
+        entityManager.persist(productA);
+        entityManager.persist(productB);
+        Routing routingA =
+                Routing.create(productA, "ROUTE-CHANGEOVER-A", "A 공정");
+        routingA.addOperation(1, "PROCESS-A", "A 가공", 30, machine);
+        Routing routingB =
+                Routing.create(productB, "ROUTE-CHANGEOVER-B", "B 공정");
+        routingB.addOperation(1, "PROCESS-B", "B 가공", 30, machine);
+        entityManager.persist(routingA);
+        entityManager.persist(routingB);
+        persistWeekdayCalendars(machine);
+        entityManager.persist(ChangeoverTime.create(
+                machine,
+                productA,
+                productB,
+                45
+        ));
+        ProductionOrder orderA = ProductionOrder.create(
+                routingA,
+                "PO-CHANGEOVER-A",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusDays(1),
+                100
+        );
+        ProductionOrder orderB = ProductionOrder.create(
+                routingB,
+                "PO-CHANGEOVER-B",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusDays(2),
+                100
+        );
+        orderA.confirm();
+        orderB.confirm();
+        entityManager.persist(orderA);
+        entityManager.persist(orderB);
+        entityManager.flush();
+
+        ScheduleRun created = scheduleRunService.execute(
+                UUID.randomUUID(),
+                PLANNING_START
+        );
+        Long scheduleRunId = created.id();
+        Long orderBId = orderB.id();
+        entityManager.flush();
+        entityManager.clear();
+
+        ScheduledOperation storedOperation = scheduleRunRepository
+                .findById(scheduleRunId)
+                .orElseThrow()
+                .scheduledOperations()
+                .stream()
+                .filter(operation -> operation.productionOrder().id()
+                        .equals(orderBId))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(storedOperation.changeoverMinutes()).isEqualTo(45);
+        assertThat(storedOperation.changeoverStartAt()).isNotNull();
+        assertThat(storedOperation.startAt())
+                .isAfter(storedOperation.changeoverStartAt());
     }
 
     private ProductionOrder persistConfirmedOrder() {

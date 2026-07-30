@@ -60,6 +60,16 @@ public class ScheduledOperation {
     @Column(name = "operation_sequence", nullable = false, updatable = false)
     private int sequence;
 
+    @Column(name = "changeover_start_at", updatable = false)
+    private OffsetDateTime changeoverStartAt;
+
+    @Column(
+            name = "changeover_minutes",
+            nullable = false,
+            updatable = false
+    )
+    private long changeoverMinutes;
+
     @Column(name = "start_at", nullable = false, updatable = false)
     private OffsetDateTime startAt;
 
@@ -100,6 +110,8 @@ public class ScheduledOperation {
         );
         Objects.requireNonNull(task, "task must not be null");
         this.sequence = task.sequence();
+        this.changeoverStartAt = task.changeoverStartAt();
+        this.changeoverMinutes = task.changeoverMinutes();
         this.startAt = task.startAt();
         this.endAt = task.endAt();
         this.workingMinutes = task.workingMinutes();
@@ -144,6 +156,14 @@ public class ScheduledOperation {
 
     public OffsetDateTime startAt() {
         return startAt;
+    }
+
+    public OffsetDateTime changeoverStartAt() {
+        return changeoverStartAt;
+    }
+
+    public long changeoverMinutes() {
+        return changeoverMinutes;
     }
 
     public OffsetDateTime endAt() {

@@ -9,7 +9,8 @@ Spring과 데이터베이스에 의존하지 않는 순수 Java 코드로 구현
 ProductionOrder
   → Priority Rule
     → Operation Sequence
-      → Machine Working Calendar
+      → Directional Changeover Time
+        → Machine Working Calendar
         → ScheduledTask
 ```
 
@@ -17,6 +18,7 @@ ProductionOrder
 
 `SchedulingOrderInput`은 생산오더 식별자, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록을 가집니다.
 `SchedulingOperationInput`은 공정, 설비, 순서, 단위 처리시간과 설비 근무시간 스냅샷을 가집니다.
+`SchedulingChangeoverInput`은 설비, 이전 품목, 다음 품목과 방향성 전환시간 스냅샷을 가집니다.
 
 필요 작업시간은 다음과 같이 계산합니다.
 
@@ -25,6 +27,7 @@ ProductionOrder
 ```
 
 결과인 `ScheduledTask`는 생산오더·공정·설비와 시작·종료시각, 실제 작업시간, 납기 지연 여부를 기록합니다.
+전환이 있으면 `changeoverStartAt`과 `changeoverMinutes`를 별도로 기록해 가공시간과 구분합니다.
 
 ## 3. 배정 규칙
 
@@ -45,6 +48,11 @@ ProductionOrder
 - 선행 공정 종료시각
 - 해당 설비의 직전 작업 종료시각
 
+설비에 먼저 배정된 품목이 있고 다음 품목이 다르면 해당 방향의 Changeover Time을 조회합니다.
+첫 작업, 동일 품목과 매핑이 없는 조합은 0분입니다. 전환 준비는 제품이 투입 가능한 뒤에 시작하는
+비선행 준비를 허용하지 않는 정책으로 두며, 가공과 동일하게 설비 근무시간 안에서만 배정합니다.
+전환이 근무 종료를 넘으면 다음 근무일에 이어서 배정한 뒤 가공을 시작합니다.
+
 실제 배정은 설비의 근무시간 안에서만 진행하며 비근무시간과 주말은 건너뜁니다.
 PostgreSQL이 오더 시각을 UTC offset으로 복원하더라도, 반복 근무시간은 실행 요청의
 `planningStart` offset으로 정규화해 공장 현지시각 기준을 유지합니다.
@@ -55,13 +63,13 @@ Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도�
 
 - 같은 설비의 작업은 서로 겹치지 않습니다.
 - 후속 공정은 선행 공정이 끝난 뒤 시작합니다.
+- Changeover와 가공은 같은 설비에서 순서대로 배정되어 서로 겹치지 않습니다.
 - 같은 입력은 같은 결과를 반환합니다.
 - 작업시간 곱셈 오버플로와 근무시간 누락을 명시적으로 실패 처리합니다.
 
 ## 5. 제한사항
 
-Changeover Time 기준정보와 기본값 조회 정책은 구현되어 있지만 현재 엔진 입력과 배정에는 아직
-연결되지 않았습니다. Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색도 현재 범위에 없습니다.
+Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색은 현재 범위에 없습니다.
 
 ## 6. 실행과 저장
 
@@ -70,7 +78,7 @@ Changeover Time 기준정보와 기본값 조회 정책은 구현되어 있지�
 ```text
 CONFIRMED 오더 조회
   → Routing·Operation·Machine 조회
-    → WorkingCalendar 스냅샷 구성
+    → WorkingCalendar·Changeover Time 스냅샷 구성
       → ForwardScheduler 실행
         → ScheduleRun·ScheduledOperation 저장
           → 오더를 SCHEDULED로 변경

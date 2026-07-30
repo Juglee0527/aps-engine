@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,6 +22,8 @@ import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
 import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
@@ -55,6 +58,9 @@ class ScheduleRunServiceTest {
     private WorkingCalendarRepository workingCalendarRepository;
 
     @Mock
+    private ChangeoverTimeRepository changeoverTimeRepository;
+
+    @Mock
     private ScheduleRunRepository scheduleRunRepository;
 
     private ScheduleRunService scheduleRunService;
@@ -64,6 +70,7 @@ class ScheduleRunServiceTest {
         scheduleRunService = new ScheduleRunService(
                 productionOrderRepository,
                 workingCalendarRepository,
+                changeoverTimeRepository,
                 scheduleRunRepository
         );
     }
@@ -145,6 +152,71 @@ class ScheduleRunServiceTest {
         );
     }
 
+    @Test
+    void loadsActiveChangeoverTimesIntoScheduler() {
+        Factory factory = Factory.create("FACTORY-02", "전환 공장");
+        ProductionLine line =
+                ProductionLine.create(factory, "LINE-02", "전환 라인");
+        Machine machine =
+                Machine.create(line, "MACHINE-02", "전환 설비");
+        ReflectionTestUtils.setField(machine, "id", 30L);
+        Product productA =
+                Product.create("PRODUCT-A", "제품 A", ProductUnit.PIECE);
+        Product productB =
+                Product.create("PRODUCT-B", "제품 B", ProductUnit.PIECE);
+        ReflectionTestUtils.setField(productA, "id", 40L);
+        ReflectionTestUtils.setField(productB, "id", 50L);
+        ProductionOrder orderA = confirmedOrder(
+                productA,
+                machine,
+                60L,
+                70L,
+                "PO-A",
+                80
+        );
+        ProductionOrder orderB = confirmedOrder(
+                productB,
+                machine,
+                61L,
+                71L,
+                "PO-B",
+                70
+        );
+        ChangeoverTime changeoverTime =
+                ChangeoverTime.create(machine, productA, productB, 30);
+        List<WorkingCalendar> calendars =
+                weekdayCalendars(machine);
+        UUID executionKey = UUID.randomUUID();
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(productionOrderRepository
+                .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                        ProductionOrderStatus.CONFIRMED
+                )).thenReturn(List.of(orderA, orderB));
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(calendars);
+        when(changeoverTimeRepository
+                .findAllByMachine_IdInAndActiveTrue(anySet()))
+                .thenReturn(List.of(changeoverTime));
+        when(scheduleRunRepository.saveAndFlush(any(ScheduleRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleRun result = scheduleRunService.execute(
+                executionKey,
+                PLANNING_START
+        );
+
+        assertThat(result.scheduledOperations()).hasSize(2);
+        ScheduledOperation second =
+                result.scheduledOperations().get(1);
+        assertThat(second.productionOrder()).isSameAs(orderB);
+        assertThat(second.changeoverMinutes()).isEqualTo(30);
+        assertThat(second.changeoverStartAt()).isNotNull();
+        assertThat(second.startAt())
+                .isAfter(second.changeoverStartAt());
+    }
+
     private TestData testData() {
         Factory factory = Factory.create("FACTORY-01", "서울 공장");
         ReflectionTestUtils.setField(factory, "id", 1L);
@@ -199,6 +271,52 @@ class ScheduleRunServiceTest {
             ));
         }
         return new TestData(order, List.copyOf(calendars));
+    }
+
+    private ProductionOrder confirmedOrder(
+            Product product,
+            Machine machine,
+            long routingId,
+            long operationId,
+            String orderNumber,
+            int priority
+    ) {
+        Routing routing =
+                Routing.create(product, orderNumber + "-ROUTE", "표준 공정");
+        routing.addOperation(1, "PROCESS", "가공", 1, machine);
+        ReflectionTestUtils.setField(routing, "id", routingId);
+        ReflectionTestUtils.setField(
+                routing.operations().getFirst(),
+                "id",
+                operationId
+        );
+        ProductionOrder order = ProductionOrder.create(
+                routing,
+                orderNumber,
+                60,
+                PLANNING_START,
+                PLANNING_START.plusDays(2),
+                priority
+        );
+        ReflectionTestUtils.setField(order, "id", routingId + 100);
+        order.confirm();
+        return order;
+    }
+
+    private List<WorkingCalendar> weekdayCalendars(Machine machine) {
+        List<WorkingCalendar> calendars = new ArrayList<>();
+        for (DayOfWeek dayOfWeek : DayOfWeek.values()) {
+            if (dayOfWeek != DayOfWeek.SATURDAY
+                    && dayOfWeek != DayOfWeek.SUNDAY) {
+                calendars.add(WorkingCalendar.create(
+                        machine,
+                        dayOfWeek,
+                        LocalTime.of(8, 0),
+                        LocalTime.of(17, 0)
+                ));
+            }
+        }
+        return List.copyOf(calendars);
     }
 
     private record TestData(

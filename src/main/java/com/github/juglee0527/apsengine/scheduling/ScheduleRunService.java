@@ -15,6 +15,8 @@ import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
 import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
 import com.github.juglee0527.apsengine.machine.MachineStatus;
 import com.github.juglee0527.apsengine.order.ProductionOrder;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
@@ -30,16 +32,19 @@ public class ScheduleRunService {
 
     private final ProductionOrderRepository productionOrderRepository;
     private final WorkingCalendarRepository workingCalendarRepository;
+    private final ChangeoverTimeRepository changeoverTimeRepository;
     private final ScheduleRunRepository scheduleRunRepository;
     private final ForwardScheduler forwardScheduler;
 
     public ScheduleRunService(
             ProductionOrderRepository productionOrderRepository,
             WorkingCalendarRepository workingCalendarRepository,
+            ChangeoverTimeRepository changeoverTimeRepository,
             ScheduleRunRepository scheduleRunRepository
     ) {
         this.productionOrderRepository = productionOrderRepository;
         this.workingCalendarRepository = workingCalendarRepository;
+        this.changeoverTimeRepository = changeoverTimeRepository;
         this.scheduleRunRepository = scheduleRunRepository;
         this.forwardScheduler = new ForwardScheduler();
     }
@@ -76,7 +81,8 @@ public class ScheduleRunService {
         try {
             plan = forwardScheduler.schedule(
                     planningStart,
-                    context.inputs()
+                    context.inputs(),
+                    context.changeoverInputs()
             );
         } catch (IllegalArgumentException | IllegalStateException exception) {
             throw new ApplicationException(
@@ -169,6 +175,8 @@ public class ScheduleRunService {
 
         Map<Long, List<WeeklyWorkingTime>> workingTimesByMachine =
                 loadWorkingTimes(machineIds);
+        List<SchedulingChangeoverInput> changeoverInputs =
+                loadChangeoverInputs(machineIds);
         List<SchedulingOrderInput> inputs =
                 new ArrayList<>(orders.size());
         for (ProductionOrder order : orders) {
@@ -202,6 +210,7 @@ public class ScheduleRunService {
             inputs.add(new SchedulingOrderInput(
                     order.id(),
                     order.orderNumber(),
+                    order.routing().product().id(),
                     order.quantity(),
                     order.releaseAt(),
                     order.dueAt(),
@@ -211,9 +220,28 @@ public class ScheduleRunService {
         }
         return new SchedulingContext(
                 List.copyOf(inputs),
+                changeoverInputs,
                 Map.copyOf(ordersById),
                 Map.copyOf(operationsById)
         );
+    }
+
+    private List<SchedulingChangeoverInput> loadChangeoverInputs(
+            Set<Long> machineIds
+    ) {
+        List<ChangeoverTime> changeoverTimes = changeoverTimeRepository
+                .findAllByMachine_IdInAndActiveTrue(machineIds);
+        List<SchedulingChangeoverInput> inputs =
+                new ArrayList<>(changeoverTimes.size());
+        for (ChangeoverTime changeoverTime : changeoverTimes) {
+            inputs.add(new SchedulingChangeoverInput(
+                    changeoverTime.machine().id(),
+                    changeoverTime.fromProduct().id(),
+                    changeoverTime.toProduct().id(),
+                    changeoverTime.changeoverMinutes()
+            ));
+        }
+        return List.copyOf(inputs);
     }
 
     private List<ProductionOrder> distinctOrders(
@@ -271,6 +299,7 @@ public class ScheduleRunService {
 
     private record SchedulingContext(
             List<SchedulingOrderInput> inputs,
+            List<SchedulingChangeoverInput> changeoverInputs,
             Map<Long, ProductionOrder> ordersById,
             Map<Long, Operation> operationsById
     ) {

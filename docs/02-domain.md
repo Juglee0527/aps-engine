@@ -177,13 +177,15 @@ WorkingCalendar는 Machine의 반복 주간 근무시간 한 구간입니다.
 
 | 모델 | 책임 |
 | --- | --- |
-| `SchedulingOrderInput` | 오더 ID, 번호, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록 |
+| `SchedulingOrderInput` | 오더·품목 ID, 번호, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록 |
 | `SchedulingOperationInput` | 공정·설비 ID, 순서, 단위 처리시간과 설비 근무시간 |
-| `ScheduledTask` | 배정된 오더·공정·설비, 시작·종료, 작업 분과 납기 지연 여부 |
+| `SchedulingChangeoverInput` | 설비·이전 품목·다음 품목과 방향성 전환시간 스냅샷 |
+| `ScheduledTask` | 배정된 오더·공정·설비, 전환 시작·분, 가공 시작·종료·분과 납기 지연 여부 |
 | `SchedulingPlan` | 계획 시작, 전체 종료와 작업 목록 |
 
 필요 작업시간은 `생산수량 × 단위 처리시간`으로 계산합니다. 같은 설비의 작업은 겹치지 않고,
-후속 공정은 선행 공정 종료 이후에 시작합니다.
+후속 공정은 선행 공정 종료 이후에 시작합니다. 다른 품목으로 바뀌면 가공 전에 방향성
+Changeover Time을 같은 설비의 근무시간 안에서 먼저 배정합니다.
 
 ## 9. ScheduleRun
 
@@ -214,6 +216,8 @@ ScheduledOperation은 ScheduleRun에 저장되는 공정 단위 작업 결과입
 | `operation` | Operation | 배정된 공정 |
 | `machine` | Machine | 작업이 점유하는 설비 |
 | `sequence` | int | Routing 공정 순서 |
+| `changeoverStartAt` | OffsetDateTime | 전환이 있을 때의 준비작업 시작, 없으면 null |
+| `changeoverMinutes` | long | 실제 근무시간 기준 준비작업 분, 없으면 0 |
 | `startAt`, `endAt` | OffsetDateTime | 종료가 시작보다 이후 |
 | `workingMinutes` | long | 실제 필요한 작업시간, 1분 이상 |
 | `delayed` | boolean | 작업 종료가 오더 납기를 초과했는지 여부 |
@@ -240,4 +244,5 @@ ChangeoverTime은 한 설비에서 이전 품목 생산을 마치고 다음 품�
 - 동일 품목은 전환이 아니므로 항상 0분이며 별도 기준정보를 등록하지 않습니다.
 - 서로 다른 품목의 매핑이 없으면 기본값 0분을 사용합니다.
 - 실제 준비작업이 필요 없는 조합을 명시하기 위해 서로 다른 품목에는 0분을 등록할 수 있습니다.
-- 현재 단계에서는 기준정보와 조회 정책만 제공하며 스케줄 배정에는 아직 반영하지 않습니다.
+- 스케줄러는 설비의 직전 배정 품목을 추적해 다음 가공 전에 방향성 전환시간을 배정합니다.
+- 첫 배정, 동일 품목과 매핑이 없는 조합은 전환시간 0분으로 처리합니다.

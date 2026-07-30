@@ -2,6 +2,7 @@ package com.github.juglee0527.apsengine.constraint.changeover;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -47,5 +48,14 @@ public interface ChangeoverTimeRepository
             """)
     Optional<ChangeoverTime> findActiveDetailById(
             @Param("changeoverTimeId") Long changeoverTimeId
+    );
+
+    @EntityGraph(attributePaths = {
+            "machine",
+            "fromProduct",
+            "toProduct"
+    })
+    List<ChangeoverTime> findAllByMachine_IdInAndActiveTrue(
+            Set<Long> machineIds
     );
 }
