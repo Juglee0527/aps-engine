@@ -1,4 +1,4 @@
-# API 계약
+# API Contract
 
 ## 1. 응답 원칙
 
@@ -46,9 +46,24 @@
 | `PRODUCTION_LINE_INACTIVE` | 409 | 비활성 생산라인에 설비 등록 시도 |
 | `MACHINE_CODE_DUPLICATED` | 409 | 같은 생산라인 내 설비 코드 중복 |
 | `MACHINE_NOT_FOUND` | 404 | 요청한 설비가 존재하지 않음 |
+| `MACHINE_INACTIVE` | 409 | 비활성 설비를 Operation에 배정 |
+| `MACHINE_UNAVAILABLE_FOR_SCHEDULING` | 409 | AVAILABLE이 아닌 설비를 스케줄링 |
+| `PRODUCT_CODE_DUPLICATED` | 409 | 품목 코드 중복 |
+| `PRODUCT_NOT_FOUND` | 404 | 요청한 품목이 존재하지 않음 |
+| `PRODUCT_INACTIVE` | 409 | 비활성 품목에 Routing 등록 |
+| `ROUTING_CODE_DUPLICATED` | 409 | 같은 품목 내 Routing 코드 중복 |
+| `ROUTING_NOT_FOUND` | 404 | 요청한 Routing이 존재하지 않음 |
+| `PRODUCTION_ORDER_NUMBER_DUPLICATED` | 409 | 생산오더 번호 중복 |
+| `PRODUCTION_ORDER_NOT_FOUND` | 404 | 요청한 생산오더가 존재하지 않음 |
+| `PRODUCTION_ORDER_STATUS_INVALID` | 409 | 허용되지 않은 오더 상태 전이 |
+| `WORKING_CALENDAR_OVERLAP` | 409 | 설비 근무시간이 기존 구간과 겹침 |
+| `WORKING_CALENDAR_REQUIRED` | 409 | 스케줄링 설비의 근무시간 누락 |
+| `CONFIRMED_PRODUCTION_ORDER_REQUIRED` | 409 | 실행할 확정 생산오더 없음 |
+| `SCHEDULE_RUN_NOT_FOUND` | 404 | 스케줄 실행 결과가 존재하지 않음 |
+| `SCHEDULE_EXECUTION_DUPLICATED` | 409 | 동일 실행 키가 동시에 저장됨 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
-도메인별 오류 코드가 실제로 필요해지면 해당 기능을 구현하는 커밋에서 추가합니다. 현재 사용되지 않는 오류 코드를 미리 만들지 않습니다.
+표에는 현재 `ErrorCode`에 정의되어 실제 유스케이스에서 사용하는 코드만 기록합니다.
 
 ## 4. 예외 처리 흐름
 
@@ -414,3 +429,23 @@ GET /api/v1/schedules/{scheduleRunId}
 
 응답은 실행 상태와 기간, 오더·작업·지연 오더 수, 간트 보드에 필요한 작업별
 품목·공정·설비·시작·종료 정보를 반환합니다.
+
+```json
+{
+  "id": 11,
+  "executionKey": "3cb6bb7e-6d18-4d9b-b314-54812025c401",
+  "status": "COMPLETED",
+  "planningStart": "2026-07-29T23:00:00Z",
+  "schedulingEnd": "2026-07-30T07:30:00Z",
+  "planningOffsetSeconds": 32400,
+  "createdAt": "2026-07-30T00:00:00Z",
+  "orderCount": 4,
+  "taskCount": 12,
+  "delayedOrderCount": 2,
+  "tasks": []
+}
+```
+
+`planningStart`와 작업 시각은 DB 재조회 시 UTC로 반환될 수 있습니다.
+클라이언트는 `planningOffsetSeconds`를 적용해 실행 당시 공장 현지시각으로 표시하고,
+같은 offset을 설비 가용시간 조회에 전달해야 합니다.

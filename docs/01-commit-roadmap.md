@@ -1,6 +1,8 @@
-# APS Engine 커밋 단위 개발 명령 목록
+# APS Engine Commit-based Development Command List
 
 이 문서는 사용자가 AI 개발 도우미에게 **한 번에 하나씩 전달할 개발 명령**을 정의합니다.
+
+> 현행 상태: 2026-07-30 기준 `001~028`, `011-A`, `011-B` 완료 · 다음 명령 `029`
 
 ## 사용 원칙
 

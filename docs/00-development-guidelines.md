@@ -1,4 +1,4 @@
-# APS Engine 개발 지침
+# APS Engine Development Guidelines
 
 이 문서는 `aps-engine` 프로젝트를 개발할 때 AI 개발 도우미가 따라야 할 역할, 설계 원칙, 작업 절차 및 응답 형식을 정의합니다.
 
@@ -74,7 +74,7 @@ Spring Boot 기반 APS(Advanced Planning & Scheduling) Engine을 처음부터 �
 기본 패키지 구조는 다음과 같습니다.
 
 ```text
-com.github.username.apsengine
+com.github.juglee0527.apsengine
 ├── common
 ├── config
 ├── factory

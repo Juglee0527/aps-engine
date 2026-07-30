@@ -1,4 +1,4 @@
-# APS Engine 프로젝트 정의
+# APS Engine Project Definition
 
 ## 1. 프로젝트 목적
 
@@ -16,17 +16,21 @@
 
 ## 2. 기술 기준
 
-| 구분 | 기술 |
-| --- | --- |
-| Language | Java 21 |
-| Framework | Spring Boot 3.5.16 |
-| Build | Gradle 8.14.4 Wrapper |
-| Database | PostgreSQL 18.4 |
-| ORM | Spring Data JPA, QueryDSL |
-| Cache | Redis |
-| Test | JUnit 5, Mockito, Testcontainers |
-| Container | Docker, Docker Compose |
-| CI | GitHub Actions |
+| 구분 | 현재 적용 | 목표 또는 적용 예정 |
+| --- | --- | --- |
+| Language | Java 21 | - |
+| Framework | Spring Boot 3.5.16 | - |
+| Build | Gradle 8.14.4 Wrapper | - |
+| Database | PostgreSQL 18.4 | - |
+| ORM | Spring Data JPA | QueryDSL |
+| Migration | Flyway | - |
+| Cache | - | Redis |
+| Test | JUnit 5, Mockito, Spring Boot Test | Testcontainers |
+| Container | PostgreSQL Docker Compose | 애플리케이션 Docker 이미지 |
+| CI | - | GitHub Actions |
+
+QueryDSL, Redis, Testcontainers, 애플리케이션 Docker 이미지와 GitHub Actions는 목표 기술이지만
+아직 의존성이나 설정을 추가하지 않았습니다. 로드맵 `034~037`에서 필요성과 운영 경계를 확인한 후 적용합니다.
 
 기본 Java 패키지는 저장소 소유자와 프로젝트명을 기준으로 다음 값을 사용합니다.
 
@@ -34,7 +38,7 @@
 com.github.juglee0527.apsengine
 ```
 
-Spring Boot 3.x 요구사항을 유지하면서 2026년 7월 기준 마지막 공개 3.x 릴리스인 3.5.16을 사용합니다. Java 21은 이 버전의 공식 지원 범위에 포함됩니다.
+현재 `build.gradle`은 Spring Boot 3.5.16과 Java 21 toolchain을 명시적으로 고정합니다.
 
 ## 3. 핵심 용어
 
@@ -120,6 +124,8 @@ Spring Boot(local profile)
 - 다중 Operation 및 다중 ProductionOrder 처리
 - Priority Rule
 - 스케줄 결과 저장
+- 실행 당시 고정 UTC offset 보존
+- 실제 스케줄 결과 기반 설비별 간트와 CAPA 사용률 시각화
 
 ### 제조 제약조건
 
@@ -138,7 +144,7 @@ Spring Boot(local profile)
 
 ## 5. 현재 제외 범위
 
-다음 기능은 현재 39개 커밋 로드맵에 포함하지 않습니다.
+다음 기능은 현재 `001~039` 핵심 로드맵에 포함하지 않습니다.
 
 - 수요예측과 판매계획
 - MRP와 원자재 재고 가용성
@@ -148,14 +154,30 @@ Spring Boot(local profile)
 - 운송 및 물류 최적화
 - 다공장 간 물량 배분
 - 실시간 MES 설비 데이터 수집
-- 스케줄 결과의 시각화 UI
 - 상용 Solver 또는 AI 기반 최적화
 - 멀티테넌시, 사용자 관리 및 인증·인가
 - 운영 배포와 클라우드 인프라
 
 제외 기능은 명시적인 로드맵 변경 없이 미리 구현하지 않습니다.
 
-## 6. 아키텍처 경계
+## 6. 현재 구현 스냅샷
+
+2026년 7월 30일 기준 로드맵 `001~028`과 APS Schedule Control Tower가 구현되어 있습니다.
+
+| 영역 | 구현 상태 |
+| --- | --- |
+| 생산 자원 | Factory, ProductionLine, Machine 등록·조회 |
+| 품목과 공정 | Product, Routing, Operation 등록·조회 |
+| 생산오더 | 등록·조회, DRAFT → CONFIRMED → SCHEDULED |
+| CAPA | WorkingCalendar, 가용 구간·가용 분, 화면 사용률 |
+| 스케줄링 | 우선순위 기반 다중 오더·다중 Operation 순방향 배정 |
+| 결과 | ScheduleRun, ScheduledOperation 저장과 최신·상세 조회 |
+| 화면 | 오더 큐, 설비별 간트, 납기 지연, 병목 후보, 기준정보 등록 |
+
+다음 구현 대상은 `029. Changeover Time 모델`입니다. Changeover, Maintenance, Lead Time,
+정식 Bottleneck Detection과 운영 기반 `034~039`는 아직 구현되지 않았습니다.
+
+## 7. 아키텍처 경계
 
 Layered Architecture를 기본으로 사용하며 기능별 패키지 안에서 다음 책임을 구분합니다.
 
@@ -169,7 +191,7 @@ API 요청
 
 Clean Architecture와 DDD의 개념은 도메인 규칙을 보호하는 데 필요한 만큼만 적용합니다. 현재 요구사항에 필요하지 않은 Port, Adapter, 추상 Repository 또는 범용 프레임워크는 만들지 않습니다.
 
-## 7. 개발 완료 기준
+## 8. 개발 완료 기준
 
 각 커밋 단위는 다음 조건을 모두 만족해야 완료로 판단합니다.
 
@@ -182,7 +204,7 @@ Clean Architecture와 DDD의 개념은 도메인 규칙을 보호하는 데 필�
 - 하나의 Conventional Commit으로 커밋되어 원격 브랜치에 push되었습니다.
 - 로드맵 체크박스가 완료 상태로 변경되었습니다.
 
-## 8. 기존 문서 정합성 검토
+## 9. 기존 문서 정합성 검토
 
 001 단계에서 확인한 문서 차이는 다음과 같이 정리합니다.
 
@@ -191,7 +213,7 @@ Clean Architecture와 DDD의 개념은 도메인 규칙을 보호하는 데 필�
 | 단계 번호 | README는 프로젝트 기반을 Phase 1로 시작 | 커밋 로드맵은 프로젝트 기반을 Phase 0으로 정의 |
 | 아키텍처 | DDD와 Clean Architecture를 원칙으로 단순 표기 | Layered Architecture를 기본으로 하고 필요한 개념만 제한적으로 적용 |
 | Redis 시점 | 초기 구성과 성능 단계에 모두 표시 | 실제 필요성이 확인되는 034 단계에서 적용 여부 결정 |
-| 범위 | Work Center, Sales Order, Material Availability, Load Balancing 포함 | 현재 39개 커밋 로드맵에서는 제외 |
+| 범위 | Work Center, Sales Order, Material Availability, Load Balancing 포함 | 현재 `001~039` 핵심 로드맵에서는 제외 |
 | 진행상태 | 포괄적인 `In Progress`만 표시 | 번호별 체크박스와 원격 push 여부로 추적 |
 
 이 문서와 커밋 단위 로드맵을 상세 범위의 기준으로 사용합니다. README는 프로젝트 소개와 현재 상태를 간결하게 보여주는 진입점으로 유지합니다.

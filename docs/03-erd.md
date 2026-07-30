@@ -1,6 +1,9 @@
 # ERD
 
-## 1. Factory
+## 1. Current Schema
+
+현재 스키마 기준은 Flyway `V10__add_schedule_planning_offset.sql`입니다.
+JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
 erDiagram

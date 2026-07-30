@@ -81,3 +81,7 @@ CONFIRMED 오더 조회
 
 저장된 결과는 실행 당시의 오더, 공정, 설비를 참조합니다.
 현재는 마스터 수정 API가 없으므로 별도 이름 스냅샷을 중복 저장하지 않습니다.
+
+여러 ProductionOrder가 같은 Routing을 공유하면 JPA collection fetch 결과에 같은 Operation이
+중복 materialize될 수 있습니다. 실행 서비스는 오더와 공정을 ID 기준으로 정규화한 뒤 알고리즘 입력을
+구성해 같은 오더·공정이 중복 저장되지 않도록 방어합니다.

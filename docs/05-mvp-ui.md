@@ -1,4 +1,4 @@
-# APS Operations MVP
+# APS Schedule Control Tower
 
 ## 1. 목적
 

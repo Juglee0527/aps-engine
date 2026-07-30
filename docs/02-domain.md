@@ -1,4 +1,4 @@
-# 도메인 모델
+# Domain Model
 
 ## 1. Factory
 
@@ -170,3 +170,53 @@ WorkingCalendar는 Machine의 반복 주간 근무시간 한 구간입니다.
 
 실제 날짜 구간은 `WorkingTimeCalculator`가 주간 규칙을 전개해 계산합니다. 상세 계산 정책은
 `docs/06-capacity.md`에서 관리합니다.
+
+## 8. Scheduling Input과 Result
+
+스케줄링 알고리즘은 JPA Entity를 직접 수정하지 않고 실행 시점의 순수 Java 입력 스냅샷을 사용합니다.
+
+| 모델 | 책임 |
+| --- | --- |
+| `SchedulingOrderInput` | 오더 ID, 번호, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록 |
+| `SchedulingOperationInput` | 공정·설비 ID, 순서, 단위 처리시간과 설비 근무시간 |
+| `ScheduledTask` | 배정된 오더·공정·설비, 시작·종료, 작업 분과 납기 지연 여부 |
+| `SchedulingPlan` | 계획 시작, 전체 종료와 작업 목록 |
+
+필요 작업시간은 `생산수량 × 단위 처리시간`으로 계산합니다. 같은 설비의 작업은 겹치지 않고,
+후속 공정은 선행 공정 종료 이후에 시작합니다.
+
+## 9. ScheduleRun
+
+ScheduleRun은 한 번의 스케줄 실행과 결과 집합을 나타냅니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `executionKey` | UUID | 클라이언트가 생성하며 시스템 전체에서 유일 |
+| `planningStart` | OffsetDateTime | 실행 요청의 계획 시작 instant |
+| `schedulingEnd` | OffsetDateTime | 마지막 작업 종료 instant |
+| `planningOffsetSeconds` | int | 실행 당시 고정 UTC offset, ±18시간 |
+| `createdAt` | OffsetDateTime | 결과 생성시각 |
+| `status` | ScheduleRunStatus | 저장 완료 시 `COMPLETED` |
+| `scheduledOperations` | List | 실행에 포함된 작업 결과 |
+
+PostgreSQL `TIMESTAMP WITH TIME ZONE`은 원래 offset을 보존하지 않으므로 `planningOffsetSeconds`를
+별도로 저장합니다. 간트와 CAPA 조회는 이 값을 사용해 DB 재조회 후에도 공장 현지시각을 유지합니다.
+
+같은 `executionKey`의 완료 결과가 있으면 새 결과를 만들지 않고 기존 실행을 반환합니다.
+
+## 10. ScheduledOperation
+
+ScheduledOperation은 ScheduleRun에 저장되는 공정 단위 작업 결과입니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `productionOrder` | ProductionOrder | 실행 당시 대상 오더 |
+| `operation` | Operation | 배정된 공정 |
+| `machine` | Machine | 작업이 점유하는 설비 |
+| `sequence` | int | Routing 공정 순서 |
+| `startAt`, `endAt` | OffsetDateTime | 종료가 시작보다 이후 |
+| `workingMinutes` | long | 실제 필요한 작업시간, 1분 이상 |
+| `delayed` | boolean | 작업 종료가 오더 납기를 초과했는지 여부 |
+
+ScheduleRun 저장과 대상 ProductionOrder의 `SCHEDULED` 전환은 하나의 트랜잭션에서 처리합니다.
+중간 저장이 실패하면 실행 결과와 오더 상태 변경을 모두 롤백합니다.

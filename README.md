@@ -20,37 +20,45 @@ APS Engine은 제조업의 생산계획(APS, Advanced Planning & Scheduling)의 
 
 ---
 
+# Current Implementation
+
+2026년 7월 30일 기준으로 Factory부터 스케줄 결과 저장까지 로드맵 `001~028`을 구현했습니다.
+
+```text
+Factory → ProductionLine → Machine → WorkingCalendar
+Product → Routing → Operation
+ProductionOrder → ForwardScheduler → ScheduleRun → ScheduledOperation
+```
+
+- 명시적 우선순위, 납기와 식별자를 적용하는 순방향 스케줄러
+- 설비 근무시간과 공정 선후관계를 반영한 유한 CAPA 배정
+- 실행 키 기반 중복 방지와 스케줄 결과 원자적 저장
+- 실제 API 데이터 기반 설비 간트, 납기 지연 및 병목 후보 화면
+- 다음 개발 단위: `029. Changeover Time 모델`
+
 # Tech Stack
 
-## Backend
+## Applied
 
-- Java 21
-- Spring Boot 3
-- Spring Data JPA
-- QueryDSL
-- Hibernate
+| 구분 | 현재 적용 기술 |
+| --- | --- |
+| Backend | Java 21, Spring Boot 3.5.16, Gradle 8.14.4 |
+| Persistence | Spring Data JPA, Hibernate, Flyway |
+| Database | PostgreSQL 18.4 |
+| Test | JUnit 5, Mockito, Spring Boot Test |
+| Local Environment | Docker Compose |
+| UI | Spring Boot Static Resources, Vanilla JavaScript |
 
-## Database
+## Planned
 
-- PostgreSQL
-- Redis
-
-## Test
-
-- JUnit 5
-- Testcontainers
-- Mockito
-
-## DevOps
-
-- Docker
-- GitHub Actions
+QueryDSL, Redis, Testcontainers, 애플리케이션 Docker 이미지와 GitHub Actions는 목표 스택이며 아직 적용하지 않았습니다.
+각 기술은 로드맵 `034~037`에서 필요성을 검증한 뒤 추가합니다.
 
 ---
 
 # Roadmap
 
-개발은 검증 가능한 39개 커밋 단위로 진행합니다.
+개발은 `001~039`의 핵심 단위와 `011-A`, `011-B` 보조 MVP 단위로 진행합니다.
 
 - Phase 0: 프로젝트 기반
 - Phase 1: 공장과 생산 자원
@@ -70,12 +78,12 @@ APS Engine은 제조업의 생산계획(APS, Advanced Planning & Scheduling)의 
 ```
 aps-engine
 ├── docs
-├── docker
+├── gradle
+├── scripts
 ├── src
 │   ├── main
 │   └── test
-├── .github
-│   └── workflows
+├── compose.yml
 ├── README.md
 └── build.gradle
 ```
@@ -93,8 +101,8 @@ aps-engine
 - [ERD](docs/03-erd.md)
 - [API 계약](docs/04-api.md)
 - [APS Schedule Control Tower](docs/05-mvp-ui.md)
-- [CAPA 계산](docs/06-capacity.md)
 - [순방향 스케줄링](docs/05-scheduling.md)
+- [CAPA 계산](docs/06-capacity.md)
 
 ---
 
@@ -177,7 +185,7 @@ docker compose ps
 .\gradlew.bat test
 ```
 
-실제 로컬 PostgreSQL 연결 테스트는 다음과 같이 명시적으로 실행합니다.
+실제 로컬 PostgreSQL 연결 및 JPA 매핑 테스트는 다음과 같이 명시적으로 실행합니다.
 
 ```powershell
 $env:APS_POSTGRES_INTEGRATION_TEST = "true"
@@ -185,6 +193,8 @@ $env:POSTGRES_DB = "aps"
 $env:POSTGRES_USER = "aps"
 $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 .\gradlew.bat test --tests "*PostgreSqlConnectionTest"
+.\gradlew.bat test --tests "*JpaMappingTest"
+.\gradlew.bat test --tests "*JpaIntegrationTest"
 ```
 
 ## Run
@@ -197,9 +207,10 @@ $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 `run-local.ps1`은 Git에서 제외된 `.env`를 현재 프로세스에만 읽어들인 뒤 로컬 프로필로 서버를 실행합니다.
 시작 시 Flyway가 `src/main/resources/db/migration`의 버전 마이그레이션을 순서대로 적용하고, Hibernate는 스키마를 생성하지 않고 매핑만 검증합니다.
 
-서버가 시작되면 브라우저에서 `http://localhost:8080`에 접속해 APS 운영 화면 MVP를 확인할 수 있습니다.
-화면에서는 공장, 생산라인, 설비를 순서대로 등록하고 선택한 상위 자원의 하위 목록을 조회할 수 있습니다.
-상세 설계와 현재 제외 범위는 [APS Operations MVP](docs/05-mvp-ui.md)를 참고해 주세요.
+서버가 시작되면 브라우저에서 `http://localhost:8080`에 접속해 APS Schedule Control Tower를 확인할 수 있습니다.
+화면에서 생산 자원과 품목·Routing·근무시간·생산오더를 등록하고, 오더 확정 후 스케줄을 실행할 수 있습니다.
+최신 실행 결과는 설비별 간트, 납기 지연과 계획기간 CAPA 사용률로 표시됩니다.
+상세 설계와 현재 제외 범위는 [APS Schedule Control Tower](docs/05-mvp-ui.md)를 참고해 주세요.
 
 ---
 
