@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
+import com.github.juglee0527.apsengine.machine.MachineStatus;
 import com.github.juglee0527.apsengine.order.ProductionOrder;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderStatus;
@@ -234,6 +236,117 @@ class ScheduleRunServiceTest {
         assertThat(second.changeoverStartAt()).isNotNull();
         assertThat(second.startAt())
                 .isAfter(second.changeoverStartAt());
+    }
+
+    @Test
+    void persistsAvailableAlternativeWhenPrimaryMachineIsStopped() {
+        Factory factory = Factory.create("FACTORY-ALT", "대체 설비 공장");
+        ProductionLine line =
+                ProductionLine.create(factory, "LINE-ALT", "대체 설비 라인");
+        Machine stoppedPrimary = Machine.create(
+                line,
+                "MACHINE-PRIMARY",
+                "주 설비",
+                MachineStatus.STOPPED
+        );
+        ReflectionTestUtils.setField(stoppedPrimary, "id", 101L);
+        Machine alternative =
+                Machine.create(line, "MACHINE-ALT", "대체 설비");
+        ReflectionTestUtils.setField(alternative, "id", 102L);
+        Product product =
+                Product.create("PRODUCT-ALT", "대체 품목", ProductUnit.PIECE);
+        ReflectionTestUtils.setField(product, "id", 103L);
+        Routing routing =
+                Routing.create(product, "ROUTING-ALT", "대체 Routing");
+        routing.addOperation(
+                1,
+                "PROCESS",
+                "가공",
+                1,
+                stoppedPrimary,
+                Map.of(stoppedPrimary, 1, alternative, 2)
+        );
+        ReflectionTestUtils.setField(routing, "id", 104L);
+        ReflectionTestUtils.setField(
+                routing.operations().getFirst(),
+                "id",
+                105L
+        );
+        ProductionOrder order = ProductionOrder.create(
+                routing,
+                "PO-ALT",
+                60,
+                PLANNING_START,
+                PLANNING_START.plusDays(2),
+                80
+        );
+        ReflectionTestUtils.setField(order, "id", 106L);
+        order.confirm();
+        UUID executionKey = UUID.randomUUID();
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(productionOrderRepository
+                .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                        ProductionOrderStatus.CONFIRMED
+                )).thenReturn(List.of(order));
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(weekdayCalendars(alternative));
+        when(scheduleRunRepository.saveAndFlush(any(ScheduleRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleRun result = scheduleRunService.execute(
+                executionKey,
+                PLANNING_START
+        );
+
+        assertThat(result.scheduledOperations())
+                .singleElement()
+                .satisfies(scheduled ->
+                        assertThat(scheduled.machine())
+                                .isSameAs(alternative));
+    }
+
+    @Test
+    void rejectsOperationWithoutAvailableMachineCandidate() {
+        Factory factory = Factory.create("FACTORY-STOP", "중지 공장");
+        ProductionLine line =
+                ProductionLine.create(factory, "LINE-STOP", "중지 라인");
+        Machine stoppedMachine = Machine.create(
+                line,
+                "MACHINE-STOP",
+                "중지 설비",
+                MachineStatus.STOPPED
+        );
+        ReflectionTestUtils.setField(stoppedMachine, "id", 201L);
+        Product product =
+                Product.create("PRODUCT-STOP", "중지 품목", ProductUnit.PIECE);
+        ReflectionTestUtils.setField(product, "id", 202L);
+        ProductionOrder order = confirmedOrder(
+                product,
+                stoppedMachine,
+                203L,
+                204L,
+                "PO-STOP",
+                80
+        );
+        UUID executionKey = UUID.randomUUID();
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(productionOrderRepository
+                .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                        ProductionOrderStatus.CONFIRMED
+                )).thenReturn(List.of(order));
+
+        assertThatThrownBy(() -> scheduleRunService.execute(
+                executionKey,
+                PLANNING_START
+        )).isInstanceOfSatisfying(
+                ApplicationException.class,
+                exception -> assertThat(exception.errorCode()).isEqualTo(
+                        ErrorCode.MACHINE_UNAVAILABLE_FOR_SCHEDULING
+                )
+        );
     }
 
     private TestData testData() {

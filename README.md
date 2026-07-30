@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 Operation 대체 설비 모델까지 로드맵 `001~040`을 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 결정론적 대체 설비 선택까지 로드맵 `001~041`을 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -100,7 +100,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 소·중·대 입력을 분리 실행하는 ForwardScheduler 성능 기준선
 - JFR로 확인한 빈 비가용 구간 정규화 비용 제거와 성능 회귀 테스트
 - 기존 주 설비 계약과 호환되는 Operation 후보 설비·우선순위 모델
-- 다음 개발 단위: `041. 결정론적 대체 설비 선택`
+- 완료시각·후보 우선순위·설비 ID 기반 결정론적 대체 설비 선택
+- 다음 개발 단위: `042. Dispatching Rule과 계획 KPI 비교`
 
 # Tech Stack
 
@@ -237,7 +238,7 @@ aps-engine
 - [x] 038. 스케줄링 성능 기준선
 - [x] 039. 측정 기반 성능 개선
 - [x] 040. Operation 대체 설비 모델
-- [ ] 041. 결정론적 대체 설비 선택
+- [x] 041. 결정론적 대체 설비 선택
 - [ ] 042. Dispatching Rule과 계획 KPI 비교
 - [ ] 043. Frozen Horizon 재스케줄링
 - [ ] 044. CSV 대량 입력 검증과 미리보기

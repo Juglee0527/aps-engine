@@ -342,6 +342,171 @@ class ForwardSchedulerTest {
                 .isEqualTo(120);
     }
 
+    @Test
+    void selectsCandidateWithEarliestCompletion() {
+        SchedulingOperationInput operation = operationWithCandidates(
+                11L,
+                101L,
+                1,
+                1,
+                candidate(
+                        101L,
+                        1,
+                        weeklyTimes(LocalTime.of(10, 0)),
+                        List.of()
+                ),
+                candidate(102L, 2)
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(order(1L, "PO-001", 60, 5, operation))
+        );
+
+        assertThat(plan.tasks().getFirst().machineId()).isEqualTo(102L);
+        assertThat(plan.tasks().getFirst().endAt())
+                .isEqualTo(MONDAY_EIGHT.plusHours(1));
+    }
+
+    @Test
+    void considersExistingMachineLoadForCandidateSelection() {
+        SchedulingOrderInput first = order(
+                1L,
+                "PO-FIRST",
+                120,
+                10,
+                operation(11L, 101L, 1, 1)
+        );
+        SchedulingOrderInput second = order(
+                2L,
+                "PO-SECOND",
+                60,
+                5,
+                operationWithCandidates(
+                        12L,
+                        101L,
+                        1,
+                        1,
+                        candidate(101L, 1),
+                        candidate(102L, 2)
+                )
+        );
+
+        SchedulingPlan plan =
+                scheduler.schedule(MONDAY_EIGHT, List.of(first, second));
+
+        assertThat(plan.tasks().get(1).machineId()).isEqualTo(102L);
+        assertThat(plan.tasks().get(1).startAt())
+                .isEqualTo(MONDAY_EIGHT);
+    }
+
+    @Test
+    void considersMaintenanceForCandidateSelection() {
+        SchedulingOperationInput operation = operationWithCandidates(
+                11L,
+                101L,
+                1,
+                1,
+                candidate(
+                        101L,
+                        1,
+                        weeklyTimes(),
+                        List.of(new UnavailableInterval(
+                                MONDAY_EIGHT,
+                                MONDAY_EIGHT.plusHours(2)
+                        ))
+                ),
+                candidate(102L, 2)
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(order(1L, "PO-001", 60, 5, operation))
+        );
+
+        assertThat(plan.tasks().getFirst().machineId()).isEqualTo(102L);
+    }
+
+    @Test
+    void considersChangeoverForCandidateSelection() {
+        SchedulingOrderInput first = order(
+                1L,
+                "PO-A",
+                10L,
+                60,
+                10,
+                operation(11L, 101L, 1, 1)
+        );
+        SchedulingOrderInput second = order(
+                2L,
+                "PO-B",
+                20L,
+                60,
+                5,
+                operationWithCandidates(
+                        12L,
+                        101L,
+                        1,
+                        1,
+                        candidate(101L, 1),
+                        candidate(
+                                102L,
+                                2,
+                                weeklyTimes(LocalTime.of(9, 0)),
+                                List.of()
+                        )
+                )
+        );
+
+        SchedulingPlan plan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(first, second),
+                List.of(new SchedulingChangeoverInput(
+                        101L,
+                        10L,
+                        20L,
+                        60
+                ))
+        );
+
+        assertThat(plan.tasks().get(1).machineId()).isEqualTo(102L);
+        assertThat(plan.tasks().get(1).changeoverMinutes()).isZero();
+    }
+
+    @Test
+    void resolvesSameCompletionByPriorityThenMachineId() {
+        SchedulingOperationInput priorityTie = operationWithCandidates(
+                11L,
+                102L,
+                1,
+                1,
+                candidate(101L, 2),
+                candidate(102L, 1)
+        );
+        SchedulingOperationInput machineIdTie = operationWithCandidates(
+                12L,
+                102L,
+                1,
+                1,
+                candidate(102L, 1),
+                candidate(101L, 1)
+        );
+
+        SchedulingPlan priorityPlan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(order(1L, "PO-PRIORITY", 60, 5, priorityTie))
+        );
+        SchedulingPlan machineIdPlan = scheduler.schedule(
+                MONDAY_EIGHT,
+                List.of(order(2L, "PO-MACHINE", 60, 5, machineIdTie))
+        );
+
+        assertThat(priorityPlan.tasks().getFirst().machineId())
+                .isEqualTo(102L);
+        assertThat(machineIdPlan.tasks().getFirst().machineId())
+                .isEqualTo(101L);
+    }
+
     private SchedulingOrderInput order(
             long id,
             String orderNumber,
@@ -396,20 +561,72 @@ class ForwardSchedulerTest {
         );
     }
 
+    private SchedulingOperationInput operationWithCandidates(
+            long id,
+            long primaryMachineId,
+            int sequence,
+            long minutesPerUnit,
+            SchedulingMachineCandidateInput... candidates
+    ) {
+        return new SchedulingOperationInput(
+                id,
+                primaryMachineId,
+                sequence,
+                "OP-" + sequence,
+                "공정 " + sequence,
+                minutesPerUnit,
+                List.of(),
+                List.of(),
+                List.of(candidates)
+        );
+    }
+
+    private SchedulingMachineCandidateInput candidate(
+            long machineId,
+            int priority
+    ) {
+        return candidate(machineId, priority, weeklyTimes(), List.of());
+    }
+
+    private SchedulingMachineCandidateInput candidate(
+            long machineId,
+            int priority,
+            List<WeeklyWorkingTime> workingTimes,
+            List<UnavailableInterval> unavailableIntervals
+    ) {
+        return new SchedulingMachineCandidateInput(
+                machineId,
+                priority,
+                workingTimes,
+                unavailableIntervals
+        );
+    }
+
     private List<WeeklyWorkingTime> weeklyTimes() {
+        return weeklyTimes(LocalTime.of(8, 0));
+    }
+
+    private List<WeeklyWorkingTime> weeklyTimes(LocalTime startTime) {
         return List.of(
-                weeklyTime(DayOfWeek.MONDAY),
-                weeklyTime(DayOfWeek.TUESDAY),
-                weeklyTime(DayOfWeek.WEDNESDAY),
-                weeklyTime(DayOfWeek.THURSDAY),
-                weeklyTime(DayOfWeek.FRIDAY)
+                weeklyTime(DayOfWeek.MONDAY, startTime),
+                weeklyTime(DayOfWeek.TUESDAY, startTime),
+                weeklyTime(DayOfWeek.WEDNESDAY, startTime),
+                weeklyTime(DayOfWeek.THURSDAY, startTime),
+                weeklyTime(DayOfWeek.FRIDAY, startTime)
         );
     }
 
     private WeeklyWorkingTime weeklyTime(DayOfWeek dayOfWeek) {
+        return weeklyTime(dayOfWeek, LocalTime.of(8, 0));
+    }
+
+    private WeeklyWorkingTime weeklyTime(
+            DayOfWeek dayOfWeek,
+            LocalTime startTime
+    ) {
         return new WeeklyWorkingTime(
                 dayOfWeek,
-                LocalTime.of(8, 0),
+                startTime,
                 LocalTime.of(17, 0)
         );
     }

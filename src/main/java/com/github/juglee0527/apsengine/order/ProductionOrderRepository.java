@@ -25,7 +25,9 @@ public interface ProductionOrderRepository
             "routing",
             "routing.product",
             "routing.operations",
-            "routing.operations.machine"
+            "routing.operations.machine",
+            "routing.operations.machineCandidates",
+            "routing.operations.machineCandidates.machine"
     })
     @Query("""
             SELECT DISTINCT productionOrder

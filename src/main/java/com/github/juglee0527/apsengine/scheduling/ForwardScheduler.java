@@ -15,6 +15,18 @@ public class ForwardScheduler {
     private static final Comparator<SchedulingOperationInput>
             OPERATION_SEQUENCE =
             Comparator.comparingInt(SchedulingOperationInput::sequence);
+    private static final Comparator<CandidateAllocation>
+            CANDIDATE_SELECTION =
+            Comparator.comparing(
+                            (CandidateAllocation candidate) ->
+                                    candidate.processingAllocation()
+                                    .endAt()
+                                    .toInstant()
+                    )
+                    .thenComparingInt(candidate ->
+                            candidate.candidate().priority())
+                    .thenComparingLong(candidate ->
+                            candidate.candidate().machineId());
 
     private final WorkingTimeCalculator workingTimeCalculator;
     private final SchedulingPriorityRule priorityRule;
@@ -80,49 +92,32 @@ public class ForwardScheduler {
             operations.sort(OPERATION_SEQUENCE);
 
             for (SchedulingOperationInput operation : operations) {
-                OffsetDateTime earliestStart = max(
-                        precedingOperationEnd,
-                        machineAvailableAt.get(operation.machineId())
-                );
-                long changeoverMinutes = changeoverMinutes(
-                        changeoverTimeLookup,
-                        lastProductByMachine.get(operation.machineId()),
-                        order.productId(),
-                        operation.machineId()
-                );
-                OffsetDateTime changeoverStartAt = null;
-                if (changeoverMinutes > 0) {
-                    WorkingAllocation changeoverAllocation =
-                            workingTimeCalculator.allocate(
-                                    operation.workingTimes(),
-                                    operation.unavailableIntervals(),
-                                    earliestStart,
-                                    changeoverMinutes
-                            );
-                    changeoverStartAt =
-                            changeoverAllocation.startAt();
-                    earliestStart = changeoverAllocation.endAt();
-                }
                 long requiredMinutes = requiredMinutes(order, operation);
+                CandidateAllocation selected = selectCandidate(
+                        order,
+                        operation,
+                        precedingOperationEnd,
+                        requiredMinutes,
+                        changeoverTimeLookup,
+                        machineAvailableAt,
+                        lastProductByMachine
+                );
+                SchedulingMachineCandidateInput selectedCandidate =
+                        selected.candidate();
                 WorkingAllocation allocation =
-                        workingTimeCalculator.allocate(
-                                operation.workingTimes(),
-                                operation.unavailableIntervals(),
-                                earliestStart,
-                                requiredMinutes
-                        );
+                        selected.processingAllocation();
                 boolean delayed =
                         allocation.endAt().isAfter(order.dueAt());
                 tasks.add(new ScheduledTask(
                         order.orderId(),
                         order.orderNumber(),
                         operation.operationId(),
-                        operation.machineId(),
+                        selectedCandidate.machineId(),
                         operation.sequence(),
                         operation.operationCode(),
                         operation.operationName(),
-                        changeoverStartAt,
-                        changeoverMinutes,
+                        selected.changeoverStartAt(),
+                        selected.changeoverMinutes(),
                         allocation.startAt(),
                         allocation.endAt(),
                         allocation.workingMinutes(),
@@ -131,11 +126,11 @@ public class ForwardScheduler {
                 ));
                 precedingOperationEnd = allocation.endAt();
                 machineAvailableAt.put(
-                        operation.machineId(),
+                        selectedCandidate.machineId(),
                         allocation.endAt()
                 );
                 lastProductByMachine.put(
-                        operation.machineId(),
+                        selectedCandidate.machineId(),
                         order.productId()
                 );
                 schedulingEnd = max(
@@ -148,6 +143,89 @@ public class ForwardScheduler {
                 planningStart,
                 schedulingEnd,
                 tasks
+        );
+    }
+
+    private CandidateAllocation selectCandidate(
+            SchedulingOrderInput order,
+            SchedulingOperationInput operation,
+            OffsetDateTime precedingOperationEnd,
+            long requiredMinutes,
+            ChangeoverTimeLookup changeoverTimeLookup,
+            Map<Long, OffsetDateTime> machineAvailableAt,
+            Map<Long, Long> lastProductByMachine
+    ) {
+        CandidateAllocation selected = null;
+        for (SchedulingMachineCandidateInput candidate
+                : operation.machineCandidates()) {
+            CandidateAllocation allocation = allocateCandidate(
+                    order,
+                    candidate,
+                    precedingOperationEnd,
+                    requiredMinutes,
+                    changeoverTimeLookup,
+                    machineAvailableAt,
+                    lastProductByMachine
+            );
+            if (selected == null
+                    || CANDIDATE_SELECTION.compare(
+                            allocation,
+                            selected
+                    ) < 0) {
+                selected = allocation;
+            }
+        }
+        if (selected == null) {
+            throw new IllegalArgumentException(
+                    "스케줄링할 후보 설비가 없습니다."
+            );
+        }
+        return selected;
+    }
+
+    private CandidateAllocation allocateCandidate(
+            SchedulingOrderInput order,
+            SchedulingMachineCandidateInput candidate,
+            OffsetDateTime precedingOperationEnd,
+            long requiredMinutes,
+            ChangeoverTimeLookup changeoverTimeLookup,
+            Map<Long, OffsetDateTime> machineAvailableAt,
+            Map<Long, Long> lastProductByMachine
+    ) {
+        OffsetDateTime earliestStart = max(
+                precedingOperationEnd,
+                machineAvailableAt.get(candidate.machineId())
+        );
+        long changeoverMinutes = changeoverMinutes(
+                changeoverTimeLookup,
+                lastProductByMachine.get(candidate.machineId()),
+                order.productId(),
+                candidate.machineId()
+        );
+        OffsetDateTime changeoverStartAt = null;
+        if (changeoverMinutes > 0) {
+            WorkingAllocation changeoverAllocation =
+                    workingTimeCalculator.allocate(
+                            candidate.workingTimes(),
+                            candidate.unavailableIntervals(),
+                            earliestStart,
+                            changeoverMinutes
+                    );
+            changeoverStartAt = changeoverAllocation.startAt();
+            earliestStart = changeoverAllocation.endAt();
+        }
+        WorkingAllocation processingAllocation =
+                workingTimeCalculator.allocate(
+                        candidate.workingTimes(),
+                        candidate.unavailableIntervals(),
+                        earliestStart,
+                        requiredMinutes
+                );
+        return new CandidateAllocation(
+                candidate,
+                changeoverStartAt,
+                changeoverMinutes,
+                processingAllocation
         );
     }
 
@@ -192,5 +270,13 @@ public class ForwardScheduler {
             return left;
         }
         return right.withOffsetSameInstant(left.getOffset());
+    }
+
+    private record CandidateAllocation(
+            SchedulingMachineCandidateInput candidate,
+            OffsetDateTime changeoverStartAt,
+            long changeoverMinutes,
+            WorkingAllocation processingAllocation
+    ) {
     }
 }

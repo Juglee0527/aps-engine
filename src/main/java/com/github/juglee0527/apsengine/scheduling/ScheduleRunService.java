@@ -20,11 +20,13 @@ import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
 import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
 import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
+import com.github.juglee0527.apsengine.machine.Machine;
 import com.github.juglee0527.apsengine.machine.MachineStatus;
 import com.github.juglee0527.apsengine.order.ProductionOrder;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderStatus;
 import com.github.juglee0527.apsengine.product.routing.Operation;
+import com.github.juglee0527.apsengine.product.routing.OperationMachineCandidate;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -108,10 +110,17 @@ public class ScheduleRunService {
                     .get(task.orderId());
             Operation operation = context.operationsById()
                     .get(task.operationId());
+            Machine selectedMachine = context.machinesById()
+                    .get(task.machineId());
+            if (selectedMachine == null) {
+                throw new IllegalStateException(
+                        "선택된 후보 설비를 찾을 수 없습니다."
+                );
+            }
             scheduleRun.addScheduledOperation(
                     order,
                     operation,
-                    operation.machine(),
+                    selectedMachine,
                     task
             );
         }
@@ -163,19 +172,33 @@ public class ScheduleRunService {
         Set<Long> machineIds = new HashSet<>();
         Map<Long, ProductionOrder> ordersById = new HashMap<>();
         Map<Long, Operation> operationsById = new HashMap<>();
+        Map<Long, Machine> machinesById = new HashMap<>();
 
         for (ProductionOrder order : orders) {
             ordersById.put(order.id(), order);
             for (Operation operation : distinctOperations(
                     order.routing().operations()
             )) {
-                if (operation.machine().status()
-                        != MachineStatus.AVAILABLE) {
+                int availableCandidateCount = 0;
+                for (OperationMachineCandidate candidate
+                        : operation.machineCandidates()) {
+                    Machine candidateMachine = candidate.machine();
+                    if (candidateMachine.status()
+                            != MachineStatus.AVAILABLE) {
+                        continue;
+                    }
+                    availableCandidateCount++;
+                    machineIds.add(candidateMachine.id());
+                    machinesById.put(
+                            candidateMachine.id(),
+                            candidateMachine
+                    );
+                }
+                if (availableCandidateCount == 0) {
                     throw new ApplicationException(
                             ErrorCode.MACHINE_UNAVAILABLE_FOR_SCHEDULING
                     );
                 }
-                machineIds.add(operation.machine().id());
                 operationsById.put(operation.id(), operation);
             }
         }
@@ -194,18 +217,47 @@ public class ScheduleRunService {
             for (Operation operation : distinctOperations(
                     order.routing().operations()
             )) {
-                List<WeeklyWorkingTime> workingTimes =
+                List<SchedulingMachineCandidateInput> candidateInputs =
+                        new ArrayList<>();
+                for (OperationMachineCandidate candidate
+                        : operation.machineCandidates()) {
+                    Machine candidateMachine = candidate.machine();
+                    if (candidateMachine.status()
+                            != MachineStatus.AVAILABLE) {
+                        continue;
+                    }
+                    List<WeeklyWorkingTime> candidateWorkingTimes =
+                            workingTimesByMachine.getOrDefault(
+                                    candidateMachine.id(),
+                                    List.of()
+                            );
+                    if (candidateWorkingTimes.isEmpty()) {
+                        continue;
+                    }
+                    candidateInputs.add(
+                            new SchedulingMachineCandidateInput(
+                                    candidateMachine.id(),
+                                    candidate.priority(),
+                                    candidateWorkingTimes,
+                                    unavailableByMachine.getOrDefault(
+                                            candidateMachine.id(),
+                                            List.of()
+                                    )
+                            )
+                    );
+                }
+                if (candidateInputs.isEmpty()) {
+                    throw new ApplicationException(
+                            ErrorCode.WORKING_CALENDAR_REQUIRED,
+                            "Operation %s의 후보 설비 근무시간이 필요합니다."
+                                    .formatted(operation.code())
+                    );
+                }
+                List<WeeklyWorkingTime> primaryWorkingTimes =
                         workingTimesByMachine.getOrDefault(
                                 operation.machine().id(),
                                 List.of()
                         );
-                if (workingTimes.isEmpty()) {
-                    throw new ApplicationException(
-                            ErrorCode.WORKING_CALENDAR_REQUIRED,
-                            "설비 %s의 근무시간이 필요합니다."
-                                    .formatted(operation.machine().code())
-                    );
-                }
                 operationInputs.add(new SchedulingOperationInput(
                         operation.id(),
                         operation.machine().id(),
@@ -213,11 +265,12 @@ public class ScheduleRunService {
                         operation.code(),
                         operation.name(),
                         operation.processingTimeMinutes(),
-                        workingTimes,
+                        primaryWorkingTimes,
                         unavailableByMachine.getOrDefault(
                                 operation.machine().id(),
                                 List.of()
-                        )
+                        ),
+                        candidateInputs
                 ));
             }
             inputs.add(new SchedulingOrderInput(
@@ -235,7 +288,8 @@ public class ScheduleRunService {
                 List.copyOf(inputs),
                 changeoverInputs,
                 Map.copyOf(ordersById),
-                Map.copyOf(operationsById)
+                Map.copyOf(operationsById),
+                Map.copyOf(machinesById)
         );
     }
 
@@ -336,7 +390,8 @@ public class ScheduleRunService {
             List<SchedulingOrderInput> inputs,
             List<SchedulingChangeoverInput> changeoverInputs,
             Map<Long, ProductionOrder> ordersById,
-            Map<Long, Operation> operationsById
+            Map<Long, Operation> operationsById,
+            Map<Long, Machine> machinesById
     ) {
     }
 }

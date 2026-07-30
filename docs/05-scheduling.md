@@ -9,21 +9,23 @@ Spring과 데이터베이스에 의존하지 않는 순수 Java 코드로 구현
 ProductionOrder
   → Priority Rule
     → Operation Sequence
-      → Directional Changeover Time
-        → Machine Working Calendar − Maintenance
-        → ScheduledTask
+      → Available Machine Candidates
+        → Existing Load + Directional Changeover Time
+          → Machine Working Calendar − Maintenance
+            → Earliest Completion → Priority → Machine ID
+              → ScheduledTask
 ```
 
 ## 2. 입력과 결과
 
 `SchedulingOrderInput`은 생산오더 식별자, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록을 가집니다.
-`SchedulingOperationInput`은 공정, 설비, 순서, 단위 처리시간과 설비 근무시간 스냅샷을 가집니다.
-각 공정 입력에는 계획 시작 이후의 설비 Maintenance 비가용 구간도 함께 포함됩니다.
+`SchedulingOperationInput`은 공정, 기존 주 설비, 순서, 단위 처리시간과 후보 설비 목록을 가집니다.
+`SchedulingMachineCandidateInput`은 후보 설비 ID, 우선순위, 근무시간과 계획 시작 이후의
+Maintenance 비가용 구간 스냅샷을 가집니다.
 `SchedulingChangeoverInput`은 설비, 이전 품목, 다음 품목과 방향성 전환시간 스냅샷을 가집니다.
 
-Operation 기준정보에는 040부터 후보 설비가 존재하지만, 현재 `SchedulingOperationInput`은 기존
-주 설비 하나만 받습니다. 따라서 기존 계획 결과는 바뀌지 않습니다. 후보 중 가장 이른 완료 설비를
-결정론적으로 선택하는 입력 확장은 041에서 함께 적용합니다.
+기존 단일 설비 입력 생성자는 같은 설비를 우선순위 1 후보 하나로 변환하므로 이전 호출 계약과
+계획 결과를 유지합니다.
 
 필요 작업시간은 다음과 같이 계산합니다.
 
@@ -53,6 +55,18 @@ Operation 기준정보에는 040부터 후보 설비가 존재하지만, 현재 
 - 선행 공정 종료시각
 - 해당 설비의 직전 작업 종료시각
 
+각 후보 설비에 이 시작시각부터 Changeover와 가공을 가상 배정하고 실제 완료시각을 비교합니다.
+후보 평가 중에는 설비 상태를 변경하지 않으며 최종 선택한 후보만 부하와 직전 품목을 갱신합니다.
+
+1. 완료시각 오름차순
+2. 후보 우선순위 오름차순
+3. 설비 ID 오름차순
+
+따라서 요청이나 DB 조회에서 후보 순서가 달라도 같은 입력은 같은 설비를 선택합니다.
+`STOPPED`, `INACTIVE` 후보와 근무시간이 없는 후보는 실행 입력에서 제외합니다. 가용 상태 후보가
+없으면 `MACHINE_UNAVAILABLE_FOR_SCHEDULING`, 근무시간을 가진 후보가 없으면
+`WORKING_CALENDAR_REQUIRED`로 실패합니다.
+
 설비에 먼저 배정된 품목이 있고 다음 품목이 다르면 해당 방향의 Changeover Time을 조회합니다.
 첫 작업, 동일 품목과 매핑이 없는 조합은 0분입니다. 전환 준비는 제품이 투입 가능한 뒤에 시작하는
 비선행 준비를 허용하지 않는 정책으로 두며, 가공과 동일하게 설비 근무시간 안에서만 배정합니다.
@@ -72,12 +86,14 @@ Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도�
 - 후속 공정은 선행 공정이 끝난 뒤 시작합니다.
 - Changeover와 가공은 같은 설비에서 순서대로 배정되어 서로 겹치지 않습니다.
 - 가공과 Changeover는 계획 정비 구간과 겹치지 않습니다.
+- 선택된 후보 설비가 `ScheduledOperation.machine`에 저장됩니다.
 - 같은 입력은 같은 결과를 반환합니다.
 - 작업시간 곱셈 오버플로와 근무시간 누락을 명시적으로 실패 처리합니다.
 
 ## 5. 제한사항
 
-병렬 설비 선택, 작업 분할 정책과 최적화 탐색은 현재 범위에 없습니다.
+한 Operation을 여러 설비에 나누는 작업 분할, 후보 조합의 전역 최적화와 상용 Solver는
+현재 범위에 없습니다. 현재 선택은 공정별 가장 이른 완료시각을 사용하는 지역 최선 방식입니다.
 
 ## 6. 실행과 저장
 
@@ -85,8 +101,8 @@ Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도�
 
 ```text
 CONFIRMED 오더 조회
-  → Routing·Operation·Machine 조회
-    → WorkingCalendar·Changeover Time·Maintenance 스냅샷 구성
+  → Routing·Operation·후보 Machine 조회
+    → 후보별 WorkingCalendar·Changeover Time·Maintenance 스냅샷 구성
       → ForwardScheduler 실행
         → ScheduleRun·ScheduledOperation 저장
           → 오더를 SCHEDULED로 변경
@@ -99,9 +115,9 @@ CONFIRMED 오더 조회
 저장된 결과는 실행 당시의 오더, 공정, 설비를 참조합니다.
 현재는 마스터 수정 API가 없으므로 별도 이름 스냅샷을 중복 저장하지 않습니다.
 
-여러 ProductionOrder가 같은 Routing을 공유하면 JPA collection fetch 결과에 같은 Operation이
-중복 materialize될 수 있습니다. 실행 서비스는 오더와 공정을 ID 기준으로 정규화한 뒤 알고리즘 입력을
-구성해 같은 오더·공정이 중복 저장되지 않도록 방어합니다.
+Routing의 Operation과 후보 설비는 ordered `Set`으로 fetch join 행 증폭에 따른 중복을 방지합니다.
+실행 서비스도 여러 ProductionOrder가 같은 Routing을 공유하는 경우를 위해 오더와 공정을 ID 기준으로
+정규화해 같은 오더·공정이 중복 저장되지 않도록 방어합니다.
 
 ## 7. 계획 Lead Time
 

@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.github.juglee0527.apsengine.capacity.BottleneckAnalysis;
@@ -17,6 +18,7 @@ import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
+import com.github.juglee0527.apsengine.machine.MachineStatus;
 import com.github.juglee0527.apsengine.order.ProductionOrder;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderStatus;
@@ -241,6 +243,84 @@ class ScheduleRunJpaIntegrationTest {
                     assertThat(candidate.utilizationPercent())
                             .isEqualByComparingTo("100.00");
                 });
+    }
+
+    @Test
+    void persistsSelectedAlternativeMachine() {
+        Factory factory =
+                Factory.create("FACTORY-ALT-RUN", "대체 실행 공장");
+        entityManager.persist(factory);
+        ProductionLine line = ProductionLine.create(
+                factory,
+                "LINE-ALT-RUN",
+                "대체 실행 라인"
+        );
+        entityManager.persist(line);
+        Machine primaryMachine = Machine.create(
+                line,
+                "MACHINE-ALT-PRIMARY",
+                "중지 주 설비",
+                MachineStatus.STOPPED
+        );
+        Machine alternativeMachine = Machine.create(
+                line,
+                "MACHINE-ALT-AVAILABLE",
+                "가용 대체 설비"
+        );
+        entityManager.persist(primaryMachine);
+        entityManager.persist(alternativeMachine);
+        Product product = Product.create(
+                "PRODUCT-ALT-RUN",
+                "대체 실행 품목",
+                ProductUnit.PIECE
+        );
+        entityManager.persist(product);
+        Routing routing =
+                Routing.create(product, "ROUTING-ALT-RUN", "대체 공정");
+        routing.addOperation(
+                1,
+                "PROCESS-ALT",
+                "대체 가공",
+                30,
+                primaryMachine,
+                Map.of(primaryMachine, 1, alternativeMachine, 2)
+        );
+        entityManager.persist(routing);
+        persistWeekdayCalendars(alternativeMachine);
+        ProductionOrder order = ProductionOrder.create(
+                routing,
+                "PO-ALT-RUN",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusDays(1),
+                100
+        );
+        order.confirm();
+        entityManager.persist(order);
+        entityManager.flush();
+        Long orderId = order.id();
+
+        ScheduleRun created = scheduleRunService.execute(
+                UUID.randomUUID(),
+                PLANNING_START
+        );
+        Long scheduleRunId = created.id();
+        Long alternativeMachineId = alternativeMachine.id();
+        entityManager.flush();
+        entityManager.clear();
+
+        ScheduledOperation storedOperation = scheduleRunRepository
+                .findById(scheduleRunId)
+                .orElseThrow()
+                .scheduledOperations()
+                .stream()
+                .filter(operation -> operation.productionOrder().id()
+                        .equals(orderId))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(storedOperation.machine().id())
+                .isEqualTo(alternativeMachineId);
     }
 
     private ProductionOrder persistConfirmedOrder() {
