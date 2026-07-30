@@ -50,6 +50,8 @@ Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.c
 - 생산계획(Scheduling) 알고리즘 구현
 - 설비 CAPA(Capacity Planning) 계산
 - 생산 제약조건(Constraint) 처리
+- 재사용 가능한 스케줄링 정책과 제조 KPI 비교
+- 대량 제조 데이터 처리와 실행 이력 관리
 - 성능 최적화
 - 테스트 코드 및 CI/CD 구축
 - 실무 수준의 Spring Boot 프로젝트 설계
@@ -94,7 +96,7 @@ QueryDSL, Redis, Testcontainers, 애플리케이션 Docker 이미지와 GitHub A
 
 # Roadmap
 
-개발은 `001~039`의 핵심 단위와 `011-A`, `011-B` 보조 MVP 단위로 진행합니다.
+개발은 `001~047`의 핵심 단위와 `011-A`, `011-B` 보조 MVP 단위로 진행합니다.
 
 - Phase 0: 프로젝트 기반
 - Phase 1: 공장과 생산 자원
@@ -104,6 +106,8 @@ QueryDSL, Redis, Testcontainers, 애플리케이션 Docker 이미지와 GitHub A
 - Phase 5: 기본 스케줄링
 - Phase 6: 제조 제약조건
 - Phase 7: 운영 기반
+- Phase 8: APS 엔진 고도화
+- Phase 9: 데이터 처리와 실행 운영
 
 상세 범위와 현재 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)에서 관리합니다.
 
@@ -188,6 +192,24 @@ aps-engine
 - [x] 027. 스케줄 실행 유스케이스
 - [x] 028. 스케줄 결과 저장
 - [ ] 029. Changeover Time 모델
+- [ ] 030. 스케줄러에 Changeover Time 적용
+- [ ] 031. Maintenance 제약조건
+- [ ] 032. Lead Time 계산
+- [ ] 033. Bottleneck 탐지
+- [ ] 034. Redis 캐시 적용 대상 검증
+- [ ] 035. Testcontainers 통합 테스트 기반
+- [ ] 036. Docker 애플리케이션 이미지
+- [ ] 037. GitHub Actions 빌드 검증
+- [ ] 038. 스케줄링 성능 기준선
+- [ ] 039. 측정 기반 성능 개선
+- [ ] 040. Operation 대체 설비 모델
+- [ ] 041. 결정론적 대체 설비 선택
+- [ ] 042. Dispatching Rule과 계획 KPI 비교
+- [ ] 043. Frozen Horizon 재스케줄링
+- [ ] 044. CSV 대량 입력 검증과 미리보기
+- [ ] 045. 대량 입력 멱등성과 실패 복구
+- [ ] 046. 비동기 스케줄 실행과 이력 조회
+- [ ] 047. 스케줄 실행 관측성
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 
