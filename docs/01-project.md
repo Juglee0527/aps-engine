@@ -30,10 +30,10 @@
 | Cache | 미적용, 측정 근거 부족으로 보류 | Redis 재검토 |
 | Test | JUnit 5, Mockito, Spring Boot Test, Testcontainers | - |
 | Container | PostgreSQL + APS Engine Docker Compose | - |
-| CI | - | GitHub Actions |
+| CI | GitHub Actions Java 21 Gradle build | - |
 
-QueryDSL과 GitHub Actions는 아직 적용 전입니다. Redis는 구조 검토 결과 도입을 보류했고,
-Testcontainers와 애플리케이션 Docker 이미지는 운영 경계를 확인해 적용했습니다.
+QueryDSL은 아직 적용 전입니다. Redis는 구조 검토 결과 도입을 보류했고,
+Testcontainers, 애플리케이션 Docker 이미지와 GitHub Actions는 운영 경계를 확인해 적용했습니다.
 
 기본 Java 패키지는 저장소 소유자와 프로젝트명을 기준으로 다음 값을 사용합니다.
 
@@ -179,7 +179,7 @@ Spring Boot(local profile)
 
 ## 6. 현재 구현 스냅샷
 
-2026년 7월 30일 기준 로드맵 `001~036`과 APS Schedule Control Tower가 구현되어 있습니다.
+2026년 7월 30일 기준 로드맵 `001~037`과 APS Schedule Control Tower가 구현되어 있습니다.
 
 | 영역 | 구현 상태 |
 | --- | --- |
@@ -194,8 +194,9 @@ Spring Boot(local profile)
 | 캐시 | 호출량·지연 근거 부족으로 Redis 도입 보류, 재검토 기준 문서화 |
 | 통합 테스트 | PostgreSQL Testcontainers 공통 기반과 Factory Repository 검증 |
 | 실행 환경 | 비루트 멀티 스테이지 Docker 이미지와 PostgreSQL Compose |
+| CI | push·pull request Java 21 Gradle 테스트와 결과 artifact |
 
-다음 구현 대상은 `037. GitHub Actions 빌드 검증`입니다. 운영 기반 `037~039`,
+다음 구현 대상은 `038. 스케줄링 성능 기준선`입니다. 운영 기반 `038~039`,
 APS 엔진 고도화 `040~043`, 데이터 처리와 실행 운영 `044~047`은 아직 구현되지 않았습니다.
 
 ## 7. 아키텍처 경계

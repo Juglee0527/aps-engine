@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 Docker 애플리케이션 이미지까지 로드맵 `001~036`을 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 GitHub Actions 빌드까지 로드맵 `001~037`을 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -95,7 +95,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - Redis 캐시는 반복 호출량과 성능 근거가 없어 현재 도입 보류
 - Docker 사용 가능 시 PostgreSQL 컨테이너에서 Flyway·Repository 통합 검증
 - 비루트 멀티 스테이지 애플리케이션 이미지와 PostgreSQL Compose 실행
-- 다음 개발 단위: `037. GitHub Actions 빌드 검증`
+- push·pull request에서 Java 21 Gradle 테스트와 결과 보존
+- 다음 개발 단위: `038. 스케줄링 성능 기준선`
 
 # Tech Stack
 
@@ -109,11 +110,12 @@ Machine + Product 전환 방향 → ChangeoverTime
 | Test | JUnit 5, Mockito, Spring Boot Test, Testcontainers |
 | Runtime | Multi-stage Docker image, Spring Boot Actuator |
 | Local Environment | PostgreSQL + APS Engine Docker Compose |
+| CI | GitHub Actions, Gradle Wrapper validation and cache |
 | UI | Spring Boot Static Resources, Vanilla JavaScript |
 
 ## Planned
 
-QueryDSL과 GitHub Actions는 아직 적용하지 않았습니다. Redis는 측정 근거가 없어 도입을 보류했습니다.
+QueryDSL은 아직 적용하지 않았습니다. Redis는 측정 근거가 없어 도입을 보류했습니다.
 
 ---
 
@@ -169,6 +171,7 @@ aps-engine
 - [캐시 도입 판단](docs/08-cache-strategy.md)
 - [PostgreSQL Testcontainers](docs/09-testcontainers.md)
 - [Docker 애플리케이션 이미지](docs/10-docker.md)
+- [GitHub Actions 빌드](docs/11-ci.md)
 
 ---
 
@@ -225,7 +228,7 @@ aps-engine
 - [x] 034. Redis 캐시 적용 대상 검증
 - [x] 035. Testcontainers 통합 테스트 기반
 - [x] 036. Docker 애플리케이션 이미지
-- [ ] 037. GitHub Actions 빌드 검증
+- [x] 037. GitHub Actions 빌드 검증
 - [ ] 038. 스케줄링 성능 기준선
 - [ ] 039. 측정 기반 성능 개선
 - [ ] 040. Operation 대체 설비 모델
@@ -389,8 +392,10 @@ POSTGRES_PORT=5433
 Repository 통합 테스트가 함께 실행되고, Docker를 사용할 수 없으면 해당 테스트만 자동으로 건너뜁니다.
 
 ```powershell
-.\gradlew.bat test
+.\gradlew.bat test --no-daemon
 ```
+
+이 명령은 GitHub Actions 빌드의 로컬 재현 명령과 같습니다.
 
 컨테이너 기반 Repository 테스트만 실행하려면 다음 명령을 사용합니다.
 
@@ -414,6 +419,7 @@ $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 애플리케이션은 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` 환경변수로 연결 정보를 받습니다.
 시작 시 Flyway가 `src/main/resources/db/migration`의 버전 마이그레이션을 순서대로 적용하고, Hibernate는 스키마를 생성하지 않고 매핑만 검증합니다.
 컨테이너 테스트 상세 정책은 [PostgreSQL Testcontainers](docs/09-testcontainers.md)를 참고해 주세요.
+CI 실행 조건과 결과 artifact는 [GitHub Actions 빌드](docs/11-ci.md)를 참고해 주세요.
 
 화면에서 생산 자원과 품목·Routing·근무시간·생산오더를 등록하고, 오더 확정 후 스케줄을 실행할 수 있습니다.
 최신 실행 결과는 설비별 간트, 납기 지연과 계획기간 CAPA 사용률로 표시됩니다.

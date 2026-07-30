@@ -2,7 +2,7 @@
 
 이 문서는 사용자가 AI 개발 도우미에게 **한 번에 하나씩 전달할 개발 명령**을 정의합니다.
 
-> 현행 상태: 2026-07-30 기준 `001~036`, `011-A`, `011-B` 완료 · 다음 명령 `037`
+> 현행 상태: 2026-07-30 기준 `001~037`, `011-A`, `011-B` 완료 · 다음 명령 `038`
 
 ## 사용 원칙
 
@@ -425,7 +425,7 @@ PostgreSQL과 함께 실행하는 Docker Compose 구성을 검증하고 실행 �
 권장 커밋 메시지: chore: add application docker image
 ```
 
-### [ ] 037. GitHub Actions 빌드 검증
+### [x] 037. GitHub Actions 빌드 검증
 
 ```text
 push와 pull request에서 Java 21 Gradle 테스트를 실행하는 최소 GitHub Actions 워크플로를 추가해 주세요.
