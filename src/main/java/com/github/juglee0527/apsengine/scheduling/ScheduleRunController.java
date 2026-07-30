@@ -26,7 +26,8 @@ public class ScheduleRunController {
     ) {
         ScheduleRun scheduleRun = scheduleRunService.execute(
                 request.executionKey(),
-                request.planningStart()
+                request.planningStart(),
+                request.dispatchingRule()
         );
         return ResponseEntity.ok(ScheduleRunResponse.from(scheduleRun));
     }

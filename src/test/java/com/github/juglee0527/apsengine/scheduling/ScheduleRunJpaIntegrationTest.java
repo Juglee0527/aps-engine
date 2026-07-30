@@ -108,6 +108,10 @@ class ScheduleRunJpaIntegrationTest {
 
         assertThat(stored.executionKey()).isEqualTo(executionKey);
         assertThat(stored.planningOffsetSeconds()).isEqualTo(32_400);
+        assertThat(stored.dispatchingRule())
+                .isEqualTo(DispatchingRule.EXPLICIT_PRIORITY);
+        assertThat(stored.makespanMinutes()).isPositive();
+        assertThat(stored.machineUtilizationPercent()).isPositive();
         assertThat(stored.scheduledOperations())
                 .filteredOn(scheduledOperation ->
                         scheduledOperation.productionOrder().id()
@@ -195,16 +199,18 @@ class ScheduleRunJpaIntegrationTest {
 
         ScheduleRun created = scheduleRunService.execute(
                 UUID.randomUUID(),
-                PLANNING_START
+                PLANNING_START,
+                DispatchingRule.EDD
         );
         Long scheduleRunId = created.id();
         Long orderBId = orderB.id();
         entityManager.flush();
         entityManager.clear();
 
-        ScheduledOperation storedOperation = scheduleRunRepository
+        ScheduleRun storedRun = scheduleRunRepository
                 .findById(scheduleRunId)
-                .orElseThrow()
+                .orElseThrow();
+        ScheduledOperation storedOperation = storedRun
                 .scheduledOperations()
                 .stream()
                 .filter(operation -> operation.productionOrder().id()
@@ -302,16 +308,18 @@ class ScheduleRunJpaIntegrationTest {
 
         ScheduleRun created = scheduleRunService.execute(
                 UUID.randomUUID(),
-                PLANNING_START
+                PLANNING_START,
+                DispatchingRule.EDD
         );
         Long scheduleRunId = created.id();
         Long alternativeMachineId = alternativeMachine.id();
         entityManager.flush();
         entityManager.clear();
 
-        ScheduledOperation storedOperation = scheduleRunRepository
+        ScheduleRun storedRun = scheduleRunRepository
                 .findById(scheduleRunId)
-                .orElseThrow()
+                .orElseThrow();
+        ScheduledOperation storedOperation = storedRun
                 .scheduledOperations()
                 .stream()
                 .filter(operation -> operation.productionOrder().id()
@@ -321,6 +329,8 @@ class ScheduleRunJpaIntegrationTest {
 
         assertThat(storedOperation.machine().id())
                 .isEqualTo(alternativeMachineId);
+        assertThat(storedRun.dispatchingRule())
+                .isEqualTo(DispatchingRule.EDD);
     }
 
     private ProductionOrder persistConfirmedOrder() {

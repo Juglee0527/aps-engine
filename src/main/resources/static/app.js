@@ -314,6 +314,22 @@ function renderRunSummary() {
         : "아직 실행된 스케줄이 없습니다");
     text("#planning-start", schedule ? formatDateTime(schedule.planningStart) : "-");
     text("#schedule-end", schedule ? formatDateTime(schedule.schedulingEnd) : "-");
+    text(
+        "#dispatching-rule",
+        schedule?.dispatchingRule || "-"
+    );
+    text(
+        "#total-tardiness",
+        schedule ? `${number(schedule.totalTardinessMinutes)}분` : "-"
+    );
+    text(
+        "#makespan",
+        schedule ? `${number(schedule.makespanMinutes)}분` : "-"
+    );
+    text(
+        "#plan-utilization",
+        schedule ? `${schedule.machineUtilizationPercent}%` : "-"
+    );
     const status = document.querySelector("#run-status");
     status.textContent = schedule?.status || "READY";
     status.className = `status-pill ${schedule ? "completed" : "neutral"}`;
@@ -675,10 +691,16 @@ function bindActions() {
 
 function bindForms() {
     bindForm("#schedule-form", async (form) => {
-        const planningStart = new Date(new FormData(form).get("planningStart")).toISOString();
+        const formData = new FormData(form);
+        const planningStart =
+            new Date(formData.get("planningStart")).toISOString();
         await request(API.schedules, {
             method: "POST",
-            body: JSON.stringify({executionKey: crypto.randomUUID(), planningStart})
+            body: JSON.stringify({
+                executionKey: crypto.randomUUID(),
+                planningStart,
+                dispatchingRule: formData.get("dispatchingRule")
+            })
         });
         await loadAll();
         return "스케줄 계산과 결과 저장을 완료했습니다.";
@@ -1022,7 +1044,8 @@ async function executeSampleSchedule() {
         method: "POST",
         body: JSON.stringify({
             executionKey: crypto.randomUUID(),
-            planningStart: planningStart.toISOString()
+            planningStart: planningStart.toISOString(),
+            dispatchingRule: "EXPLICIT_PRIORITY"
         })
     });
 }

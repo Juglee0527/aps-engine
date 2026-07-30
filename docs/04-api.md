@@ -432,12 +432,17 @@ Content-Type: application/json
 ```json
 {
   "executionKey": "3cb6bb7e-6d18-4d9b-b314-54812025c401",
-  "planningStart": "2026-07-27T08:00:00+09:00"
+  "planningStart": "2026-07-27T08:00:00+09:00",
+  "dispatchingRule": "EDD"
 }
 ```
 
 - `CONFIRMED` 생산오더만 실행 대상입니다.
 - 공정 설비는 `AVAILABLE` 상태이며 근무 캘린더가 있어야 합니다.
+- `dispatchingRule`은 `EXPLICIT_PRIORITY`, `EDD`, `SPT` 중 하나이며 생략하면
+  `EXPLICIT_PRIORITY`를 적용합니다.
+- 각 규칙은 명시적 우선순위, 납기, 총 가공시간을 각각 첫 정렬 기준으로 사용합니다.
+  서버가 규칙을 자동 추천하거나 입력을 보고 임의로 바꾸지는 않습니다.
 - 같은 `executionKey`로 완료 후 재요청하면 저장된 기존 결과를 반환합니다.
 - 동시 중복 요청은 `409 SCHEDULE_EXECUTION_DUPLICATED`로 차단합니다.
 - 성공하면 대상 생산오더를 `SCHEDULED`로 변경하고 결과를 한 트랜잭션에 저장합니다.
@@ -449,7 +454,7 @@ GET /api/v1/schedules/latest
 GET /api/v1/schedules/{scheduleRunId}
 ```
 
-응답은 실행 상태와 기간, 오더·작업·지연 오더 수, 간트 보드에 필요한 작업별
+응답은 실행 상태와 기간, 적용 규칙, 계획 KPI와 간트 보드에 필요한 작업별
 품목·공정·설비·시작·종료 정보를 반환합니다.
 
 ```json
@@ -461,9 +466,13 @@ GET /api/v1/schedules/{scheduleRunId}
   "schedulingEnd": "2026-07-30T07:30:00Z",
   "planningOffsetSeconds": 32400,
   "createdAt": "2026-07-30T00:00:00Z",
+  "dispatchingRule": "EDD",
   "orderCount": 4,
   "taskCount": 12,
+  "totalTardinessMinutes": 90,
   "delayedOrderCount": 2,
+  "makespanMinutes": 510,
+  "machineUtilizationPercent": 72.50,
   "tasks": [
     {
       "id": 101,
@@ -496,6 +505,10 @@ GET /api/v1/schedules/{scheduleRunId}
 같은 offset을 설비 가용시간 조회에 전달해야 합니다.
 `changeoverStartAt`은 다른 품목으로 전환하는 준비작업이 있을 때만 존재하며,
 `changeoverMinutes`는 설비 근무시간 기준 실제 준비작업 분입니다.
+`totalTardinessMinutes`는 오더별 `max(0, 완료시각 - 납기)`의 합이고,
+`makespanMinutes`는 계획 시작부터 마지막 작업 종료까지의 경과 분입니다.
+`machineUtilizationPercent`는 선택된 설비들의 실제 가용시간 대비
+`(가공 분 + Changeover 분)` 비율이며 소수 둘째 자리까지 반환합니다.
 
 ## 14. Changeover Time API
 

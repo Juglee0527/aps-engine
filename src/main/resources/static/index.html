@@ -80,6 +80,10 @@
                 <div class="run-meta">
                     <span>계획 시작 <strong id="planning-start">-</strong></span>
                     <span>완료 시각 <strong id="schedule-end">-</strong></span>
+                    <span>규칙 <strong id="dispatching-rule">-</strong></span>
+                    <span>총 지연 <strong id="total-tardiness">-</strong></span>
+                    <span>Makespan <strong id="makespan">-</strong></span>
+                    <span>전체 가동률 <strong id="plan-utilization">-</strong></span>
                     <span id="run-status" class="status-pill neutral">READY</span>
                 </div>
             </div>
@@ -479,8 +483,15 @@
 <dialog id="schedule-dialog" class="modal">
     <form id="schedule-form">
         <header><div><span class="section-label">RUN ENGINE</span><h2>스케줄 실행</h2></div><button type="button" class="modal-close">×</button></header>
-        <p class="modal-copy">CONFIRMED 오더를 우선순위 순으로 배치하고 결과를 저장합니다.</p>
+        <p class="modal-copy">같은 CONFIRMED 오더에 적용할 배차 규칙을 선택하고 KPI 결과를 비교합니다.</p>
         <label>계획 시작시각<input id="schedule-start-input" name="planningStart" type="datetime-local" required></label>
+        <label>Dispatching Rule
+            <select name="dispatchingRule" required>
+                <option value="EXPLICIT_PRIORITY">명시적 우선순위 · 긴급 오더 우선</option>
+                <option value="EDD">EDD · 납기가 빠른 오더 우선</option>
+                <option value="SPT">SPT · 총 가공시간이 짧은 오더 우선</option>
+            </select>
+        </label>
         <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">엔진 실행</button></div>
     </form>
 </dialog>

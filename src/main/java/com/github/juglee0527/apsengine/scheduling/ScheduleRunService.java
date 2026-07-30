@@ -40,7 +40,7 @@ public class ScheduleRunService {
     private final ChangeoverTimeRepository changeoverTimeRepository;
     private final MachineMaintenanceRepository maintenanceRepository;
     private final ScheduleRunRepository scheduleRunRepository;
-    private final ForwardScheduler forwardScheduler;
+    private final ScheduleKpiCalculator kpiCalculator;
 
     public ScheduleRunService(
             ProductionOrderRepository productionOrderRepository,
@@ -54,7 +54,7 @@ public class ScheduleRunService {
         this.changeoverTimeRepository = changeoverTimeRepository;
         this.maintenanceRepository = maintenanceRepository;
         this.scheduleRunRepository = scheduleRunRepository;
-        this.forwardScheduler = new ForwardScheduler();
+        this.kpiCalculator = new ScheduleKpiCalculator();
     }
 
     @Transactional
@@ -62,7 +62,22 @@ public class ScheduleRunService {
             UUID executionKey,
             OffsetDateTime planningStart
     ) {
-        if (executionKey == null || planningStart == null) {
+        return execute(
+                executionKey,
+                planningStart,
+                DispatchingRule.EXPLICIT_PRIORITY
+        );
+    }
+
+    @Transactional
+    public ScheduleRun execute(
+            UUID executionKey,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule
+    ) {
+        if (executionKey == null
+                || planningStart == null
+                || dispatchingRule == null) {
             throw new ApplicationException(ErrorCode.INVALID_REQUEST);
         }
         ScheduleRun existing = scheduleRunRepository
@@ -86,12 +101,17 @@ public class ScheduleRunService {
 
         SchedulingContext context = createContext(orders, planningStart);
         SchedulingPlan plan;
+        ScheduleKpis kpis;
         try {
+            ForwardScheduler forwardScheduler = new ForwardScheduler(
+                    dispatchingRule.priorityRule()
+            );
             plan = forwardScheduler.schedule(
                     planningStart,
                     context.inputs(),
                     context.changeoverInputs()
             );
+            kpis = kpiCalculator.calculate(plan, context.inputs());
         } catch (IllegalArgumentException | IllegalStateException exception) {
             throw new ApplicationException(
                     ErrorCode.INVALID_REQUEST,
@@ -103,7 +123,9 @@ public class ScheduleRunService {
         ScheduleRun scheduleRun = ScheduleRun.create(
                 executionKey,
                 plan,
-                OffsetDateTime.now()
+                OffsetDateTime.now(),
+                dispatchingRule,
+                kpis
         );
         for (ScheduledTask task : plan.tasks()) {
             ProductionOrder order = context.ordersById()

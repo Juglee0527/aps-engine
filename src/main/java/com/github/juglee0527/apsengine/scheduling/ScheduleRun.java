@@ -1,5 +1,6 @@
 package com.github.juglee0527.apsengine.scheduling;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,6 +60,45 @@ public class ScheduleRun {
     private OffsetDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
+    @Column(
+            name = "dispatching_rule",
+            nullable = false,
+            updatable = false,
+            length = 30
+    )
+    private DispatchingRule dispatchingRule;
+
+    @Column(
+            name = "total_tardiness_minutes",
+            nullable = false,
+            updatable = false
+    )
+    private long totalTardinessMinutes;
+
+    @Column(
+            name = "delayed_order_count",
+            nullable = false,
+            updatable = false
+    )
+    private int delayedOrderCount;
+
+    @Column(
+            name = "makespan_minutes",
+            nullable = false,
+            updatable = false
+    )
+    private long makespanMinutes;
+
+    @Column(
+            name = "machine_utilization_percent",
+            nullable = false,
+            updatable = false,
+            precision = 7,
+            scale = 2
+    )
+    private BigDecimal machineUtilizationPercent;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     private ScheduleRunStatus status;
 
@@ -78,7 +118,9 @@ public class ScheduleRun {
             UUID executionKey,
             OffsetDateTime planningStart,
             OffsetDateTime schedulingEnd,
-            OffsetDateTime createdAt
+            OffsetDateTime createdAt,
+            DispatchingRule dispatchingRule,
+            ScheduleKpis kpis
     ) {
         this.executionKey = Objects.requireNonNull(
                 executionKey,
@@ -103,6 +145,16 @@ public class ScheduleRun {
                 createdAt,
                 "createdAt must not be null"
         );
+        this.dispatchingRule = Objects.requireNonNull(
+                dispatchingRule,
+                "dispatchingRule must not be null"
+        );
+        Objects.requireNonNull(kpis, "kpis must not be null");
+        this.totalTardinessMinutes = kpis.totalTardinessMinutes();
+        this.delayedOrderCount = kpis.delayedOrderCount();
+        this.makespanMinutes = kpis.makespanMinutes();
+        this.machineUtilizationPercent =
+                kpis.machineUtilizationPercent();
         this.status = ScheduleRunStatus.COMPLETED;
     }
 
@@ -111,12 +163,30 @@ public class ScheduleRun {
             SchedulingPlan plan,
             OffsetDateTime createdAt
     ) {
+        return create(
+                executionKey,
+                plan,
+                createdAt,
+                DispatchingRule.EXPLICIT_PRIORITY,
+                ScheduleKpis.empty()
+        );
+    }
+
+    public static ScheduleRun create(
+            UUID executionKey,
+            SchedulingPlan plan,
+            OffsetDateTime createdAt,
+            DispatchingRule dispatchingRule,
+            ScheduleKpis kpis
+    ) {
         Objects.requireNonNull(plan, "plan must not be null");
         return new ScheduleRun(
                 executionKey,
                 plan.planningStart(),
                 plan.schedulingEnd(),
-                createdAt
+                createdAt,
+                dispatchingRule,
+                kpis
         );
     }
 
@@ -161,6 +231,26 @@ public class ScheduleRun {
 
     public ScheduleRunStatus status() {
         return status;
+    }
+
+    public DispatchingRule dispatchingRule() {
+        return dispatchingRule;
+    }
+
+    public long totalTardinessMinutes() {
+        return totalTardinessMinutes;
+    }
+
+    public int delayedOrderCount() {
+        return delayedOrderCount;
+    }
+
+    public long makespanMinutes() {
+        return makespanMinutes;
+    }
+
+    public BigDecimal machineUtilizationPercent() {
+        return machineUtilizationPercent;
     }
 
     public List<ScheduledOperation> scheduledOperations() {

@@ -1,5 +1,6 @@
 package com.github.juglee0527.apsengine.scheduling;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -12,9 +13,13 @@ public record ScheduleRunResponse(
         OffsetDateTime schedulingEnd,
         int planningOffsetSeconds,
         OffsetDateTime createdAt,
+        DispatchingRule dispatchingRule,
         int orderCount,
         int taskCount,
+        long totalTardinessMinutes,
         int delayedOrderCount,
+        long makespanMinutes,
+        BigDecimal machineUtilizationPercent,
         List<ScheduledOperationResponse> tasks
 ) {
 
@@ -28,11 +33,6 @@ public record ScheduleRunResponse(
                 .map(ScheduledOperationResponse::productionOrderId)
                 .distinct()
                 .count();
-        int delayedOrderCount = (int) tasks.stream()
-                .filter(ScheduledOperationResponse::delayed)
-                .map(ScheduledOperationResponse::productionOrderId)
-                .distinct()
-                .count();
         return new ScheduleRunResponse(
                 scheduleRun.id(),
                 scheduleRun.executionKey(),
@@ -41,9 +41,13 @@ public record ScheduleRunResponse(
                 scheduleRun.schedulingEnd(),
                 scheduleRun.planningOffsetSeconds(),
                 scheduleRun.createdAt(),
+                scheduleRun.dispatchingRule(),
                 orderCount,
                 tasks.size(),
-                delayedOrderCount,
+                scheduleRun.totalTardinessMinutes(),
+                scheduleRun.delayedOrderCount(),
+                scheduleRun.makespanMinutes(),
+                scheduleRun.machineUtilizationPercent(),
                 tasks
         );
     }

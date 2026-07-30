@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V14__create_operation_machine_candidate_table.sql`입니다.
+현재 스키마 기준은 Flyway `V15__add_schedule_rule_and_kpis.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -96,6 +96,11 @@ erDiagram
         TIMESTAMPTZ planning_start
         TIMESTAMPTZ scheduling_end
         INTEGER planning_offset_seconds
+        VARCHAR_30 dispatching_rule
+        BIGINT total_tardiness_minutes
+        INTEGER delayed_order_count
+        BIGINT makespan_minutes
+        NUMERIC_7_2 machine_utilization_percent
         TIMESTAMPTZ created_at
         VARCHAR_20 status
     }
@@ -219,12 +224,22 @@ erDiagram
 | `uk_schedule_run_execution_key` | `execution_key` | 같은 실행 요청의 중복 저장 방지 |
 | `ck_schedule_run_period` | 계획 시작·스케줄 종료 | 종료가 계획 시작보다 이전이 아님을 보장 |
 | `ck_schedule_run_planning_offset` | `planning_offset_seconds` | UTC offset을 ±18시간 범위로 제한 |
+| `ck_schedule_run_dispatching_rule` | `dispatching_rule` | `EXPLICIT_PRIORITY`, `EDD`, `SPT`만 허용 |
+| `ck_schedule_run_total_tardiness` | `total_tardiness_minutes` | 총 납기 지연시간이 0분 이상임을 보장 |
+| `ck_schedule_run_delayed_order_count` | `delayed_order_count` | 지연 오더 수가 0건 이상임을 보장 |
+| `ck_schedule_run_makespan` | `makespan_minutes` | Makespan이 0분 이상임을 보장 |
+| `ck_schedule_run_machine_utilization` | `machine_utilization_percent` | 설비 가동률을 0~100%로 제한 |
 | `uk_scheduled_operation_run_order_operation` | 실행·오더·공정 | 한 실행에서 같은 오더 공정 중복 방지 |
 | `ck_scheduled_operation_period` | 시작·종료 | 작업 종료가 시작보다 이후임을 보장 |
 | `ck_scheduled_operation_changeover_minutes` | `changeover_minutes` | Changeover Time이 0분 이상임을 보장 |
 | `ck_scheduled_operation_changeover_period` | 전환 시작·가공 시작 | 전환이 있으면 시작시각이 가공 시작보다 이전임을 보장 |
 | `ix_scheduled_operation_run_start` | 실행·시작 | 간트 보드 시간순 조회 지원 |
 | `ix_scheduled_operation_machine_start` | 설비·시작 | 설비별 부하 조회 지원 |
+
+`V15`는 기존 실행을 `EXPLICIT_PRIORITY`로 표시하고 저장 작업에서 총 납기 지연시간,
+지연 오더 수와 Makespan을 백필합니다. 과거 실행은 당시 후보 설비의 가용시간 스냅샷을
+복원할 수 없으므로 설비 가동률은 `0`을 유지합니다. 신규 실행은 선택한 규칙과 네 KPI를
+계획 결과와 함께 저장합니다.
 
 ### ChangeoverTime 제약조건
 

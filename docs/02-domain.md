@@ -205,13 +205,20 @@ ScheduleRun은 한 번의 스케줄 실행과 결과 집합을 나타냅니다.
 | `schedulingEnd` | OffsetDateTime | 마지막 작업 종료 instant |
 | `planningOffsetSeconds` | int | 실행 당시 고정 UTC offset, ±18시간 |
 | `createdAt` | OffsetDateTime | 결과 생성시각 |
+| `dispatchingRule` | DispatchingRule | `EXPLICIT_PRIORITY`, `EDD`, `SPT` |
+| `totalTardinessMinutes` | long | 오더별 납기 초과분 합계 |
+| `delayedOrderCount` | int | 완료시각이 납기를 초과한 오더 수 |
+| `makespanMinutes` | long | 계획 시작부터 마지막 작업 종료까지 경과 분 |
+| `machineUtilizationPercent` | BigDecimal | 선택 설비 총 부하 / 실행기간 총 가용분 |
 | `status` | ScheduleRunStatus | 저장 완료 시 `COMPLETED` |
 | `scheduledOperations` | List | 실행에 포함된 작업 결과 |
 
 PostgreSQL `TIMESTAMP WITH TIME ZONE`은 원래 offset을 보존하지 않으므로 `planningOffsetSeconds`를
 별도로 저장합니다. 간트와 CAPA 조회는 이 값을 사용해 DB 재조회 후에도 공장 현지시각을 유지합니다.
 
-같은 `executionKey`의 완료 결과가 있으면 새 결과를 만들지 않고 기존 실행을 반환합니다.
+규칙과 KPI는 실행 시점 스냅샷으로 저장하므로 이후 근무시간이나 정비 기준정보가 바뀌어도 과거
+비교 결과는 유지됩니다. 같은 `executionKey`의 완료 결과가 있으면 새 결과를 만들지 않고 기존
+실행을 반환합니다.
 
 ## 10. ScheduledOperation
 
