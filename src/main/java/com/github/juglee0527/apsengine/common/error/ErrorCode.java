@@ -69,6 +69,14 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "스케줄링할 설비의 근무시간이 필요합니다."
     ),
+    CHANGEOVER_TIME_DUPLICATED(
+            HttpStatus.CONFLICT,
+            "해당 설비와 품목 전환 조합의 Changeover Time이 이미 존재합니다."
+    ),
+    CHANGEOVER_TIME_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "Changeover Time을 찾을 수 없습니다."
+    ),
     CONFIRMED_PRODUCTION_ORDER_REQUIRED(
             HttpStatus.CONFLICT,
             "스케줄링할 확정 생산오더가 필요합니다."

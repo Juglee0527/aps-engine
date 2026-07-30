@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V10__add_schedule_planning_offset.sql`입니다.
+현재 스키마 기준은 Flyway `V11__create_changeover_time_table.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -68,6 +68,14 @@ erDiagram
         TIME end_time
         BOOLEAN active
     }
+    CHANGEOVER_TIME {
+        BIGINT changeover_time_id PK
+        BIGINT machine_id FK
+        BIGINT from_product_id FK
+        BIGINT to_product_id FK
+        INTEGER changeover_minutes
+        BOOLEAN active
+    }
     SCHEDULE_RUN {
         BIGINT schedule_run_id PK
         UUID execution_key UK
@@ -96,6 +104,9 @@ erDiagram
     MACHINE ||--o{ OPERATION : executes
     ROUTING ||--o{ PRODUCTION_ORDER : produces
     MACHINE ||--o{ WORKING_CALENDAR : available
+    MACHINE ||--o{ CHANGEOVER_TIME : configures
+    PRODUCT ||--o{ CHANGEOVER_TIME : from_product
+    PRODUCT ||--o{ CHANGEOVER_TIME : to_product
     SCHEDULE_RUN ||--o{ SCHEDULED_OPERATION : contains
     PRODUCTION_ORDER ||--o{ SCHEDULED_OPERATION : scheduled
     OPERATION ||--o{ SCHEDULED_OPERATION : plans
@@ -186,3 +197,17 @@ erDiagram
 | `ck_scheduled_operation_period` | 시작·종료 | 작업 종료가 시작보다 이후임을 보장 |
 | `ix_scheduled_operation_run_start` | 실행·시작 | 간트 보드 시간순 조회 지원 |
 | `ix_scheduled_operation_machine_start` | 설비·시작 | 설비별 부하 조회 지원 |
+
+### ChangeoverTime 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `pk_changeover_time` | `changeover_time_id` | 전환시간 내부 식별자 |
+| `fk_changeover_time_machine` | `machine_id` | 전환이 발생하는 설비 참조 |
+| `fk_changeover_time_from_product` | `from_product_id` | 이전 품목 참조 |
+| `fk_changeover_time_to_product` | `to_product_id` | 다음 품목 참조 |
+| `uk_changeover_time_machine_products` | 설비·이전 품목·다음 품목 | 방향성 조합 중복 방지 |
+| `ck_changeover_time_different_products` | 이전 품목·다음 품목 | 동일 품목 조합 저장 방지 |
+| `ck_changeover_time_minutes` | `changeover_minutes` | 0분 이상 보장 |
+| `ix_changeover_time_machine_id` | `machine_id` | 설비별 전환시간 조회 지원 |
+| `ix_changeover_time_product_pair` | 이전 품목·다음 품목 | 품목 전환 조합 조회 지원 |

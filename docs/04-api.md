@@ -61,6 +61,8 @@
 | `CONFIRMED_PRODUCTION_ORDER_REQUIRED` | 409 | 실행할 확정 생산오더 없음 |
 | `SCHEDULE_RUN_NOT_FOUND` | 404 | 스케줄 실행 결과가 존재하지 않음 |
 | `SCHEDULE_EXECUTION_DUPLICATED` | 409 | 동일 실행 키가 동시에 저장됨 |
+| `CHANGEOVER_TIME_DUPLICATED` | 409 | 같은 설비·이전 품목·다음 품목 조합이 이미 존재함 |
+| `CHANGEOVER_TIME_NOT_FOUND` | 404 | 요청한 Changeover Time이 존재하지 않거나 비활성 상태임 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
 표에는 현재 `ErrorCode`에 정의되어 실제 유스케이스에서 사용하는 코드만 기록합니다.
@@ -449,3 +451,36 @@ GET /api/v1/schedules/{scheduleRunId}
 `planningStart`와 작업 시각은 DB 재조회 시 UTC로 반환될 수 있습니다.
 클라이언트는 `planningOffsetSeconds`를 적용해 실행 당시 공장 현지시각으로 표시하고,
 같은 offset을 설비 가용시간 조회에 전달해야 합니다.
+
+## 14. Changeover Time API
+
+### Changeover Time 등록
+
+```http
+POST /api/v1/machines/{machineId}/changeover-times
+Content-Type: application/json
+```
+
+```json
+{
+  "fromProductId": 10,
+  "toProductId": 20,
+  "changeoverMinutes": 30
+}
+```
+
+성공 시 `201 Created`, `/api/v1/changeover-times/{changeoverTimeId}` Location과 생성 결과를
+반환합니다. 같은 품목 조합과 음수 시간은 `400 INVALID_REQUEST`, 같은 설비·이전 품목·다음 품목
+조합 중복은 `409 CHANGEOVER_TIME_DUPLICATED`를 반환합니다.
+
+### 단건 및 설비별 목록 조회
+
+```http
+GET /api/v1/changeover-times/{changeoverTimeId}
+GET /api/v1/machines/{machineId}/changeover-times
+```
+
+- 단건 조회는 활성 기준정보만 반환하며 없으면 `404 CHANGEOVER_TIME_NOT_FOUND`를 반환합니다.
+- 설비별 목록은 활성 기준정보를 이전 품목 ID, 다음 품목 ID 오름차순으로 반환합니다.
+- 동일 품목의 전환시간과 등록되지 않은 방향성 조합은 스케줄링 정책에서 기본값 0분으로 해석합니다.
+- 스케줄러 반영은 다음 개발 단위 `030`의 범위입니다.

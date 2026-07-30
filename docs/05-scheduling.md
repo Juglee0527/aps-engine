@@ -60,7 +60,8 @@ Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도�
 
 ## 5. 제한사항
 
-현재 엔진에는 Changeover Time, Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색이 없습니다.
+Changeover Time 기준정보와 기본값 조회 정책은 구현되어 있지만 현재 엔진 입력과 배정에는 아직
+연결되지 않았습니다. Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색도 현재 범위에 없습니다.
 
 ## 6. 실행과 저장
 
