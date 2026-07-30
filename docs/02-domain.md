@@ -355,3 +355,29 @@ PlanningDataImportRun은 CSV 반영 요청의 멱등성과 복구 상태를 보�
 행 결과 상태는 `SUCCEEDED`, `FAILED`, `SKIPPED`입니다. 전체 반영이 성공해야 모든 행을
 `SUCCEEDED`로 기록합니다. 검증 오류나 DB 제약 위반이 있으면 실제 데이터는 모두 반영하지 않고,
 원인 행은 `FAILED`, 함께 되돌리거나 반영하지 않은 행은 `SKIPPED`로 명시합니다.
+
+## 16. ScheduleExecution
+
+ScheduleExecution은 계산 요청의 수명주기를, ScheduleRun은 성공한 계산 결과를 담당합니다.
+요청 이력과 결과를 분리해 실패한 실행도 조회하면서 ScheduleRun의 완료 결과 불변성을 유지합니다.
+
+| 속성 | 설명 |
+| --- | --- |
+| `executionKey` | 클라이언트가 재요청에도 유지하는 고유 UUID |
+| `planningStart`, `planningOffsetSeconds` | 계획 시작시각과 요청 당시 UTC offset |
+| `dispatchingRule` | `EXPLICIT_PRIORITY`, `EDD`, `SPT` |
+| `sourceScheduleRun`, `frozenAt` | 재스케줄링 요청일 때만 함께 존재 |
+| `resultScheduleRun` | 성공 후 연결되는 단 하나의 결과 |
+| `status` | `QUEUED`, `RUNNING`, `COMPLETED`, `FAILED` |
+| `failureReason` | 실패 시 사용자에게 제공하는 정제된 사유 |
+| `createdAt`, `startedAt`, `completedAt` | 대기·시작·종료 시각 |
+
+```text
+QUEUED → RUNNING → COMPLETED → ScheduleRun
+                 └→ FAILED
+QUEUED ──────────────────────→ FAILED (대기열 거부)
+```
+
+동일 `executionKey`와 동일 파라미터의 재요청은 기존 실행을 반환합니다. 계획 시작, 규칙,
+원본 실행 또는 동결 기준이 다르면 요청 충돌입니다. PostgreSQL이 offset을 UTC로 읽는 특성을
+보완하기 위해 계획 offset 초를 함께 저장하고 작업자 입력을 원래 offset으로 복원합니다.

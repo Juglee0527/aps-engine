@@ -114,20 +114,29 @@ Maintenance를 제외해 계산합니다. 가동률은 전체 계획 기준 소�
 
 ## 7. 실행과 저장
 
-`ScheduleRunService`는 아래 흐름을 하나의 트랜잭션으로 실행합니다.
+HTTP 요청과 실제 계산은 `ScheduleExecution`을 경계로 분리합니다.
 
 ```text
-CONFIRMED 오더 조회
-  → Routing·Operation·후보 Machine 조회
-    → 후보별 WorkingCalendar·Changeover Time·Maintenance 스냅샷 구성
-      → ForwardScheduler 실행
-        → ScheduleRun·ScheduledOperation 저장
-          → 오더를 SCHEDULED로 변경
+HTTP 요청
+  → ScheduleExecution을 QUEUED로 커밋하고 202 Accepted 반환
+    → 단일 내부 작업자가 RUNNING으로 커밋
+      → ScheduleRunService 계산 트랜잭션
+        → CONFIRMED 오더·Routing·Operation·후보 Machine 조회
+          → WorkingCalendar·Changeover Time·Maintenance 스냅샷 구성
+            → ForwardScheduler 실행
+              → ScheduleRun·ScheduledOperation 저장
+                → 오더를 SCHEDULED로 변경
+      → 실행 이력에 결과를 연결하고 COMPLETED로 커밋
 ```
 
-`executionKey`는 클라이언트가 생성하는 실행 식별자입니다.
-완료된 키의 재요청은 기존 결과를 반환하며, DB 유니크 제약이 동시 중복 저장을 최종 방어합니다.
-저장이나 상태 변경 중 하나라도 실패하면 전체 트랜잭션을 롤백하므로 부분 결과가 남지 않습니다.
+`executionKey`는 클라이언트가 생성하는 요청 식별자입니다. 같은 키와 같은 입력의 재요청은 기존
+실행 이력을 반환하고, 같은 키에 다른 입력을 사용하면 충돌로 거절합니다. DB 유니크 제약이 동시
+중복 생성을 최종 방어합니다.
+
+계산, ScheduleRun 저장, 오더 상태 변경은 기존 `ScheduleRunService`의 단일 트랜잭션을 유지합니다.
+이 중 하나라도 실패하면 계산 트랜잭션 전체를 롤백하므로 부분 결과가 남지 않습니다. 실행 상태
+전이는 별도 짧은 트랜잭션으로 커밋해 요청 수락과 실패 이력을 보존합니다. 자세한 상태, 재시작 복구,
+동시 실행 정책은 [비동기 스케줄 실행](13-async-scheduling.md)을 참고합니다.
 
 저장된 결과는 실행 당시의 오더, 공정, 설비를 참조합니다.
 현재는 마스터 수정 API가 없으므로 별도 이름 스냅샷을 중복 저장하지 않습니다.

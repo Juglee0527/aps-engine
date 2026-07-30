@@ -1,5 +1,8 @@
 package com.github.juglee0527.apsengine.scheduling;
 
+import java.net.URI;
+import java.util.List;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -8,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -15,35 +19,55 @@ import org.springframework.web.bind.annotation.RestController;
 public class ScheduleRunController {
 
     private final ScheduleRunService scheduleRunService;
+    private final ScheduleExecutionService executionService;
 
-    public ScheduleRunController(ScheduleRunService scheduleRunService) {
+    public ScheduleRunController(
+            ScheduleRunService scheduleRunService,
+            ScheduleExecutionService executionService
+    ) {
         this.scheduleRunService = scheduleRunService;
+        this.executionService = executionService;
     }
 
     @PostMapping
-    public ResponseEntity<ScheduleRunResponse> execute(
+    public ResponseEntity<ScheduleExecutionResponse> execute(
             @Valid @RequestBody ScheduleExecuteRequest request
     ) {
-        ScheduleRun scheduleRun = scheduleRunService.execute(
+        ScheduleExecutionResponse execution = executionService.submit(
                 request.executionKey(),
                 request.planningStart(),
                 request.dispatchingRule()
         );
-        return ResponseEntity.ok(ScheduleRunResponse.from(scheduleRun));
+        return accepted(execution);
     }
 
     @PostMapping("/{scheduleRunId}/reschedule")
-    public ResponseEntity<ScheduleRunResponse> reschedule(
+    public ResponseEntity<ScheduleExecutionResponse> reschedule(
             @PathVariable long scheduleRunId,
             @Valid @RequestBody ScheduleRescheduleRequest request
     ) {
-        ScheduleRun scheduleRun = scheduleRunService.reschedule(
+        ScheduleExecutionResponse execution =
+                executionService.submitReschedule(
                 scheduleRunId,
                 request.executionKey(),
                 request.frozenAt(),
                 request.dispatchingRule()
         );
-        return ResponseEntity.ok(ScheduleRunResponse.from(scheduleRun));
+        return accepted(execution);
+    }
+
+    @GetMapping("/executions")
+    public List<ScheduleExecutionResponse> getExecutions(
+            @RequestParam(defaultValue = "20") int limit
+    ) {
+        return executionService.findRecent(limit);
+    }
+
+    @GetMapping("/executions/{executionId}")
+    public ScheduleExecutionResponse getExecution(
+            @PathVariable Long executionId
+    ) {
+        return executionService.find(executionId);
     }
 
     @GetMapping("/latest")
@@ -58,5 +82,16 @@ public class ScheduleRunController {
         return ScheduleRunResponse.from(
                 scheduleRunService.getById(scheduleRunId)
         );
+    }
+
+    private ResponseEntity<ScheduleExecutionResponse> accepted(
+            ScheduleExecutionResponse execution
+    ) {
+        URI location = URI.create(
+                "/api/v1/schedules/executions/" + execution.id()
+        );
+        return ResponseEntity.accepted()
+                .location(location)
+                .body(execution);
     }
 }

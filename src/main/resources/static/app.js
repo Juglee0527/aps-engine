@@ -12,6 +12,8 @@ const API = {
         return `/api/v1/machines/${machineId}/availability?${query}`;
     },
     schedules: "/api/v1/schedules",
+    scheduleExecution: (executionId) =>
+        `/api/v1/schedules/executions/${executionId}`,
     reschedule: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/reschedule`,
     planningDataPreview: "/api/v1/planning-data/imports/preview",
@@ -868,14 +870,14 @@ function bindForms() {
         const formData = new FormData(form);
         const planningStart =
             new Date(formData.get("planningStart")).toISOString();
-        await request(API.schedules, {
-            method: "POST",
-            body: JSON.stringify({
+        await submitScheduleExecution(
+            API.schedules,
+            {
                 executionKey: crypto.randomUUID(),
                 planningStart,
                 dispatchingRule: formData.get("dispatchingRule")
-            })
-        });
+            }
+        );
         await loadAll();
         return "스케줄 계산과 결과 저장을 완료했습니다.";
     });
@@ -885,16 +887,16 @@ function bindForms() {
             throw new Error("재스케줄링할 원본 실행이 없습니다.");
         }
         const formData = new FormData(form);
-        await request(API.reschedule(source.id), {
-            method: "POST",
-            body: JSON.stringify({
+        await submitScheduleExecution(
+            API.reschedule(source.id),
+            {
                 executionKey: crypto.randomUUID(),
                 frozenAt: new Date(
                     formData.get("frozenAt")
                 ).toISOString(),
                 dispatchingRule: formData.get("dispatchingRule")
-            })
-        });
+            }
+        );
         await loadAll();
         return "동결 작업을 유지한 새 스케줄을 저장했습니다.";
     });
@@ -1233,14 +1235,46 @@ async function executeSampleSchedule() {
     const planningStart = confirmedOrders
         .map((order) => new Date(order.releaseAt))
         .sort((left, right) => left - right)[0];
-    await request(API.schedules, {
-        method: "POST",
-        body: JSON.stringify({
+    await submitScheduleExecution(
+        API.schedules,
+        {
             executionKey: crypto.randomUUID(),
             planningStart: planningStart.toISOString(),
             dispatchingRule: "EXPLICIT_PRIORITY"
-        })
+        }
+    );
+}
+
+async function submitScheduleExecution(url, payload) {
+    const submitted = await request(url, {
+        method: "POST",
+        body: JSON.stringify(payload)
     });
+    return waitForScheduleExecution(submitted);
+}
+
+async function waitForScheduleExecution(initialExecution) {
+    let execution = initialExecution;
+    for (let attempt = 0; attempt < 240; attempt += 1) {
+        if (execution.status === "COMPLETED") {
+            if (!execution.resultScheduleRunId) {
+                throw new Error("완료된 실행의 스케줄 결과를 찾을 수 없습니다.");
+            }
+            return execution;
+        }
+        if (execution.status === "FAILED") {
+            throw new Error(
+                execution.failureReason || "스케줄 계산에 실패했습니다."
+            );
+        }
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        execution = await request(
+            API.scheduleExecution(execution.id)
+        );
+    }
+    throw new Error(
+        "스케줄 계산이 2분 안에 끝나지 않았습니다. 실행 이력을 확인해 주세요."
+    );
 }
 
 function sampleEntities() {

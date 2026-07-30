@@ -61,6 +61,8 @@
 | `CONFIRMED_PRODUCTION_ORDER_REQUIRED` | 409 | 실행할 확정 생산오더 없음 |
 | `SCHEDULE_RUN_NOT_FOUND` | 404 | 스케줄 실행 결과가 존재하지 않음 |
 | `SCHEDULE_EXECUTION_DUPLICATED` | 409 | 동일 실행 키가 동시에 저장됨 |
+| `SCHEDULE_EXECUTION_NOT_FOUND` | 404 | 비동기 스케줄 실행 요청이 존재하지 않음 |
+| `SCHEDULE_EXECUTION_REQUEST_CONFLICT` | 409 | 동일 실행 키에 다른 요청 파라미터를 사용함 |
 | `PLANNING_DATA_IMPORT_NOT_FOUND` | 404 | 계획 데이터 입력 실행이 존재하지 않음 |
 | `PLANNING_DATA_IMPORT_REQUEST_CONFLICT` | 409 | 동일 요청 키에 다른 CSV 파일을 사용함 |
 | `CHANGEOVER_TIME_DUPLICATED` | 409 | 같은 설비·이전 품목·다음 품목 조합이 이미 존재함 |
@@ -445,9 +447,43 @@ Content-Type: application/json
   `EXPLICIT_PRIORITY`를 적용합니다.
 - 각 규칙은 명시적 우선순위, 납기, 총 가공시간을 각각 첫 정렬 기준으로 사용합니다.
   서버가 규칙을 자동 추천하거나 입력을 보고 임의로 바꾸지는 않습니다.
-- 같은 `executionKey`로 완료 후 재요청하면 저장된 기존 결과를 반환합니다.
-- 동시 중복 요청은 `409 SCHEDULE_EXECUTION_DUPLICATED`로 차단합니다.
-- 성공하면 대상 생산오더를 `SCHEDULED`로 변경하고 결과를 한 트랜잭션에 저장합니다.
+- 요청은 `ScheduleExecution`을 먼저 커밋하고 `202 Accepted`와 실행 ID를 반환합니다.
+- 같은 `executionKey`와 같은 계획 시작·규칙은 기존 실행을 반환하고 다시 배차하지 않습니다.
+- 같은 키에 다른 파라미터를 보내면 `409 SCHEDULE_EXECUTION_REQUEST_CONFLICT`입니다.
+- 단일 내부 작업자가 FIFO로 계산하며 성공하면 대상 오더 상태와 ScheduleRun을 한 트랜잭션에 저장합니다.
+- 응답 `Location`은 `/api/v1/schedules/executions/{executionId}`입니다.
+
+```json
+{
+  "id": 31,
+  "executionKey": "3cb6bb7e-6d18-4d9b-b314-54812025c401",
+  "status": "QUEUED",
+  "planningStart": "2026-07-27T08:00:00+09:00",
+  "planningOffsetSeconds": 32400,
+  "dispatchingRule": "EDD",
+  "sourceScheduleRunId": null,
+  "frozenAt": null,
+  "resultScheduleRunId": null,
+  "failureReason": null,
+  "createdAt": "2026-07-30T18:00:00+09:00",
+  "startedAt": null,
+  "completedAt": null
+}
+```
+
+### 비동기 실행 상태와 이력 조회
+
+```http
+GET /api/v1/schedules/executions/{executionId}
+GET /api/v1/schedules/executions?limit=20
+```
+
+- 상태는 `QUEUED`, `RUNNING`, `COMPLETED`, `FAILED`입니다.
+- 최근 이력 `limit`은 1~100이고 생성시각·ID 내림차순입니다.
+- 완료되면 `resultScheduleRunId`가 존재하고 실패하면 정제된 `failureReason`이 존재합니다.
+- 존재하지 않는 ID는 `404 SCHEDULE_EXECUTION_NOT_FOUND`입니다.
+- 애플리케이션 재시작 시 결과가 이미 커밋된 `RUNNING`은 `COMPLETED`, 결과가 없는 실행은
+  `FAILED`로 복구하고 `QUEUED`는 다시 배차합니다.
 
 ### 스케줄 결과 조회
 
@@ -535,7 +571,9 @@ Content-Type: application/json
 - 기준시각 이후의 원본 작업만 다시 배치하고, 새 `CONFIRMED` 오더도 기준시각 이후에 포함합니다.
 - `CANCELLED` 오더의 고정 작업은 이력으로 남기되 미래 작업은 새 실행에서 제외합니다.
 - `dispatchingRule`을 생략하면 원본 실행의 규칙을 재사용합니다.
-- 응답의 `sourceScheduleRunId`, `frozenAt`으로 원본과 동결 기준을 추적하며 원본 실행은 변경하지 않습니다.
+- 일반 실행과 동일하게 `202 Accepted`와 ScheduleExecution을 반환합니다.
+- 실행 완료 후 결과 ScheduleRun의 `sourceScheduleRunId`, `frozenAt`으로 원본과 동결 기준을
+  추적하며 원본 실행은 변경하지 않습니다.
 - 수동 Drag & Drop과 실시간 MES 이벤트 반영은 이 API 범위에 없습니다.
 
 ## 14. Changeover Time API

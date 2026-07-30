@@ -2,6 +2,7 @@ package com.github.juglee0527.apsengine.scheduling;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -268,11 +269,11 @@ public class ScheduleRun {
     }
 
     public OffsetDateTime planningStart() {
-        return planningStart;
+        return withPlanningOffset(planningStart);
     }
 
     public OffsetDateTime schedulingEnd() {
-        return schedulingEnd;
+        return withPlanningOffset(schedulingEnd);
     }
 
     public int planningOffsetSeconds() {
@@ -319,5 +320,11 @@ public class ScheduleRun {
 
     public List<ScheduledOperation> scheduledOperations() {
         return Collections.unmodifiableList(scheduledOperations);
+    }
+
+    private OffsetDateTime withPlanningOffset(OffsetDateTime value) {
+        return value.withOffsetSameInstant(
+                ZoneOffset.ofTotalSeconds(planningOffsetSeconds)
+        );
     }
 }

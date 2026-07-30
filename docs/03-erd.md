@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V17__create_planning_data_import_tables.sql`입니다.
+현재 스키마 기준은 Flyway `V18__create_schedule_execution.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -149,6 +149,21 @@ erDiagram
         VARCHAR_50 error_code
         VARCHAR_500 error_message
     }
+    SCHEDULE_EXECUTION {
+        BIGINT schedule_execution_id PK
+        UUID execution_key UK
+        TIMESTAMPTZ planning_start
+        INTEGER planning_offset_seconds
+        VARCHAR_30 dispatching_rule
+        BIGINT source_schedule_run_id FK
+        TIMESTAMPTZ frozen_at
+        BIGINT result_schedule_run_id FK
+        VARCHAR_20 status
+        VARCHAR_500 failure_reason
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ started_at
+        TIMESTAMPTZ completed_at
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
     PRODUCT ||--o{ ROUTING : defines
@@ -169,6 +184,8 @@ erDiagram
     MACHINE ||--o{ SCHEDULED_OPERATION : occupies
     PLANNING_DATA_IMPORT_RUN ||--o{ PLANNING_DATA_IMPORT_ROW : contains
     PLANNING_DATA_IMPORT_ROW ||--o{ PLANNING_DATA_IMPORT_ROW_ERROR : explains
+    SCHEDULE_RUN o|--o{ SCHEDULE_EXECUTION : source_request
+    SCHEDULE_RUN o|--o| SCHEDULE_EXECUTION : result_of
 ```
 
 ### 제약조건
@@ -297,6 +314,23 @@ erDiagram
 
 `V17`은 실행, 행 결과, 행 오류를 분리합니다. CSV 도메인 데이터 반영과 실행 완료 전이는
 같은 트랜잭션이고, 검증·반영 실패 결과는 롤백 후 별도 트랜잭션으로 저장합니다.
+
+### ScheduleExecution 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_schedule_execution_key` | `execution_key` | 동일 실행 요청 중복 방지 |
+| `uk_schedule_execution_result` | `result_schedule_run_id` | 결과 한 건을 실행 하나에만 연결 |
+| `fk_schedule_execution_source` | 원본 ScheduleRun | 재스케줄 요청의 원본 삭제 제한 |
+| `fk_schedule_execution_result` | 결과 ScheduleRun | 완료 결과 삭제 제한 |
+| `ck_schedule_execution_rule` | 배차 규칙 | 지원하는 세 규칙만 허용 |
+| `ck_schedule_execution_planning_offset` | 계획 offset 초 | UTC offset을 ±18시간으로 제한 |
+| `ck_schedule_execution_trace` | 원본·동결 기준 | 두 값의 동시 존재와 시간 범위 보장 |
+| `ck_schedule_execution_status` | 실행 상태 | 네 수명주기 상태만 허용 |
+| `ck_schedule_execution_lifecycle` | 상태별 시각·결과·실패 | 잘못된 중간 상태 조합 저장 방지 |
+
+`V18`은 요청 이력을 성공 결과와 분리합니다. `RUNNING`은 결과 ScheduleRun 존재 여부로
+재시작 복구하고, `QUEUED`는 생성 순서로 다시 배차합니다.
 
 ### ChangeoverTime 제약조건
 

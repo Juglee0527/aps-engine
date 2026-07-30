@@ -97,6 +97,14 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "같은 실행 키의 스케줄이 처리 중입니다."
     ),
+    SCHEDULE_EXECUTION_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "스케줄 실행 요청을 찾을 수 없습니다."
+    ),
+    SCHEDULE_EXECUTION_REQUEST_CONFLICT(
+            HttpStatus.CONFLICT,
+            "같은 실행 키에 다른 스케줄 요청을 사용할 수 없습니다."
+    ),
     PLANNING_DATA_IMPORT_NOT_FOUND(
             HttpStatus.NOT_FOUND,
             "계획 데이터 입력 실행을 찾을 수 없습니다."

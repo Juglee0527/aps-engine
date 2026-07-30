@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 멱등한 계획 데이터 CSV 반영까지 로드맵 `001~045`를 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 비동기 스케줄 실행 이력까지 로드맵 `001~046`을 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -105,7 +105,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 시작·진행 작업을 유지하고 미래 작업·신규 확정 오더만 재배치하는 Frozen Horizon
 - UTF-8 CSV 샘플·파일 제한·참조 순서·행별 오류를 제공하는 DB 무변경 미리보기
 - 요청 키·파일 해시 기반 중복 방지, 원자적 CSV 반영, 행별 결과 이력과 중단 재시도
-- 다음 개발 단위: `046. 비동기 스케줄 실행과 이력 조회`
+- 단일 내부 작업자 기반 비동기 스케줄 큐, 상태·실패 이력 조회와 재시작 복구
+- 다음 개발 단위: `047. 스케줄 실행 관측성`
 
 # Tech Stack
 
@@ -183,6 +184,7 @@ aps-engine
 - [Docker 애플리케이션 이미지](docs/10-docker.md)
 - [GitHub Actions 빌드](docs/11-ci.md)
 - [계획 데이터 CSV 입력](docs/12-csv-import.md)
+- [비동기 스케줄 실행](docs/13-async-scheduling.md)
 
 ---
 
@@ -248,7 +250,7 @@ aps-engine
 - [x] 043. Frozen Horizon 재스케줄링
 - [x] 044. CSV 대량 입력 검증과 미리보기
 - [x] 045. 대량 입력 멱등성과 실패 복구
-- [ ] 046. 비동기 스케줄 실행과 이력 조회
+- [x] 046. 비동기 스케줄 실행과 이력 조회
 - [ ] 047. 스케줄 실행 관측성
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.

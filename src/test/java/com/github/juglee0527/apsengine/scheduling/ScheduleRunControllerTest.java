@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
@@ -38,19 +39,22 @@ class ScheduleRunControllerTest {
     @MockitoBean
     private ScheduleRunService scheduleRunService;
 
+    @MockitoBean
+    private ScheduleExecutionService executionService;
+
     @Test
     void executesSchedule() throws Exception {
         UUID executionKey =
                 UUID.fromString("3cb6bb7e-6d18-4d9b-b314-54812025c401");
-        ScheduleRun scheduleRun = scheduleRun(
+        ScheduleExecutionResponse execution = queuedExecution(
                 executionKey,
                 DispatchingRule.EDD
         );
-        when(scheduleRunService.execute(
+        when(executionService.submit(
                 eq(executionKey),
                 any(OffsetDateTime.class),
                 eq(DispatchingRule.EDD)
-        )).thenReturn(scheduleRun);
+        )).thenReturn(execution);
 
         mockMvc.perform(post("/api/v1/schedules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -61,20 +65,19 @@ class ScheduleRunControllerTest {
                                   "dispatchingRule": "EDD"
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(10))
-                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(status().isAccepted())
+                .andExpect(header().string(
+                        "Location",
+                        "/api/v1/schedules/executions/31"
+                ))
+                .andExpect(jsonPath("$.id").value(31))
+                .andExpect(jsonPath("$.status").value("QUEUED"))
                 .andExpect(jsonPath("$.dispatchingRule").value(
                         "EDD"
                 ))
-                .andExpect(jsonPath("$.totalTardinessMinutes").value(30))
-                .andExpect(jsonPath("$.makespanMinutes").value(120))
-                .andExpect(jsonPath("$.machineUtilizationPercent").value(
-                        75.00
-                ))
-                .andExpect(jsonPath("$.taskCount").value(0));
+                .andExpect(jsonPath("$.resultScheduleRunId").isEmpty());
 
-        verify(scheduleRunService).execute(
+        verify(executionService).submit(
                 executionKey,
                 OffsetDateTime.parse("2026-07-27T08:00:00+09:00"),
                 DispatchingRule.EDD
@@ -85,11 +88,11 @@ class ScheduleRunControllerTest {
     void defaultsToExplicitPriorityWhenRuleIsOmitted() throws Exception {
         UUID executionKey =
                 UUID.fromString("7557af3d-2134-4c04-8f54-e240e3b23dda");
-        when(scheduleRunService.execute(
+        when(executionService.submit(
                 eq(executionKey),
                 any(OffsetDateTime.class),
                 eq(DispatchingRule.EXPLICIT_PRIORITY)
-        )).thenReturn(scheduleRun(executionKey));
+        )).thenReturn(queuedExecution(executionKey));
 
         mockMvc.perform(post("/api/v1/schedules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -99,12 +102,12 @@ class ScheduleRunControllerTest {
                                   "planningStart": "2026-07-27T08:00:00+09:00"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.dispatchingRule").value(
                         "EXPLICIT_PRIORITY"
                 ));
 
-        verify(scheduleRunService).execute(
+        verify(executionService).submit(
                 executionKey,
                 OffsetDateTime.parse("2026-07-27T08:00:00+09:00"),
                 DispatchingRule.EXPLICIT_PRIORITY
@@ -116,12 +119,12 @@ class ScheduleRunControllerTest {
         UUID executionKey =
                 UUID.fromString("8743f2eb-5b06-43f8-ac75-31f0d43aaf0c");
         OffsetDateTime frozenAt = PLANNING_START.plusHours(1);
-        ScheduleRun result = rescheduledRun(
+        ScheduleExecutionResponse result = queuedReschedule(
                 executionKey,
                 frozenAt,
                 DispatchingRule.SPT
         );
-        when(scheduleRunService.reschedule(
+        when(executionService.submitReschedule(
                 9L,
                 executionKey,
                 frozenAt,
@@ -137,12 +140,31 @@ class ScheduleRunControllerTest {
                                   "dispatchingRule": "SPT"
                                 }
                                 """))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.sourceScheduleRunId").value(9))
                 .andExpect(jsonPath("$.frozenAt").value(
                         "2026-07-27T09:00:00+09:00"
                 ))
                 .andExpect(jsonPath("$.dispatchingRule").value("SPT"));
+    }
+
+    @Test
+    void getsExecutionStatusAndRecentHistory() throws Exception {
+        ScheduleExecutionResponse execution =
+                queuedExecution(UUID.randomUUID());
+        when(executionService.find(31L)).thenReturn(execution);
+        when(executionService.findRecent(10))
+                .thenReturn(List.of(execution));
+
+        mockMvc.perform(get("/api/v1/schedules/executions/31"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(31))
+                .andExpect(jsonPath("$.status").value("QUEUED"));
+
+        mockMvc.perform(get("/api/v1/schedules/executions")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(31));
     }
 
     @Test
@@ -186,27 +208,55 @@ class ScheduleRunControllerTest {
         return scheduleRun;
     }
 
-    private ScheduleRun rescheduledRun(
+    private ScheduleExecutionResponse queuedExecution(
+            UUID executionKey
+    ) {
+        return queuedExecution(
+                executionKey,
+                DispatchingRule.EXPLICIT_PRIORITY
+        );
+    }
+
+    private ScheduleExecutionResponse queuedExecution(
+            UUID executionKey,
+            DispatchingRule dispatchingRule
+    ) {
+        return new ScheduleExecutionResponse(
+                31L,
+                executionKey,
+                ScheduleExecutionStatus.QUEUED,
+                PLANNING_START,
+                PLANNING_START.getOffset().getTotalSeconds(),
+                dispatchingRule,
+                null,
+                null,
+                null,
+                null,
+                PLANNING_START,
+                null,
+                null
+        );
+    }
+
+    private ScheduleExecutionResponse queuedReschedule(
             UUID executionKey,
             OffsetDateTime frozenAt,
             DispatchingRule dispatchingRule
     ) {
-        ScheduleRun source = scheduleRun(UUID.randomUUID());
-        ReflectionTestUtils.setField(source, "id", 9L);
-        ScheduleRun result = ScheduleRun.createRescheduled(
+        return new ScheduleExecutionResponse(
+                31L,
                 executionKey,
-                new SchedulingPlan(
-                        PLANNING_START,
-                        PLANNING_START,
-                        List.of()
-                ),
+                ScheduleExecutionStatus.QUEUED,
                 PLANNING_START,
+                PLANNING_START.getOffset().getTotalSeconds(),
                 dispatchingRule,
-                ScheduleKpis.empty(),
-                source,
-                frozenAt
+                9L,
+                frozenAt,
+                null,
+                null,
+                PLANNING_START,
+                null,
+                null
         );
-        ReflectionTestUtils.setField(result, "id", 10L);
-        return result;
     }
 }

@@ -56,6 +56,10 @@ Factory 생성
 이 테스트는 클래스 전용 컨테이너에서 각 테스트 전에 관련 테이블을 초기화해
 `REQUIRES_NEW`로 커밋되는 실행 이력까지 격리합니다.
 
+`ScheduleExecutionPostgreSqlIntegrationTest`는 실행 키 멱등성·요청 충돌, 계획 offset 보존,
+재스케줄 요청, `RUNNING`과 이미 커밋된 ScheduleRun의 재시작 대조, 결과 없는 중단 실행의
+`FAILED` 전이를 검증합니다.
+
 ## 4. 실행
 
 Docker Desktop 또는 호환 Docker daemon이 실행 중이면 일반 테스트 명령에 컨테이너 테스트가
@@ -70,6 +74,7 @@ Docker Desktop 또는 호환 Docker daemon이 실행 중이면 일반 테스트 
 ```powershell
 .\gradlew.bat test --tests "*FactoryRepositoryIntegrationTest"
 .\gradlew.bat test --tests "*PlanningDataImportExecutionPostgreSqlIntegrationTest"
+.\gradlew.bat test --tests "*ScheduleExecutionPostgreSqlIntegrationTest"
 ```
 
 첫 실행은 `postgres:17-alpine` 이미지를 내려받으므로 네트워크 상태에 따라 시간이 더 걸릴 수 있습니다.
