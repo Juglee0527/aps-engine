@@ -48,6 +48,13 @@ class ForwardSchedulerPerformanceTest {
         for (Scenario scenario : scenarios) {
             measure(scenario);
         }
+        if (Boolean.getBoolean("performance.profile")) {
+            Scenario profileScenario =
+                    new Scenario("profile-large", 20_000, 5, 100);
+            for (int iteration = 0; iteration < 10; iteration++) {
+                measure(profileScenario);
+            }
+        }
     }
 
     private void measure(Scenario scenario) {

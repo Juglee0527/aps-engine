@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 스케줄링 성능 기준선까지 로드맵 `001~038`을 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 측정 기반 성능 개선까지 로드맵 `001~039`를 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -97,7 +97,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 비루트 멀티 스테이지 애플리케이션 이미지와 PostgreSQL Compose 실행
 - push·pull request에서 Java 21 Gradle 테스트와 결과 보존
 - 소·중·대 입력을 분리 실행하는 ForwardScheduler 성능 기준선
-- 다음 개발 단위: `039. 측정 기반 성능 개선`
+- JFR로 확인한 빈 비가용 구간 정규화 비용 제거와 성능 회귀 테스트
+- 다음 개발 단위: `040. Operation 대체 설비 모델`
 
 # Tech Stack
 
@@ -232,7 +233,7 @@ aps-engine
 - [x] 036. Docker 애플리케이션 이미지
 - [x] 037. GitHub Actions 빌드 검증
 - [x] 038. 스케줄링 성능 기준선
-- [ ] 039. 측정 기반 성능 개선
+- [x] 039. 측정 기반 성능 개선
 - [ ] 040. Operation 대체 설비 모델
 - [ ] 041. 결정론적 대체 설비 선택
 - [ ] 042. Dispatching Rule과 계획 KPI 비교

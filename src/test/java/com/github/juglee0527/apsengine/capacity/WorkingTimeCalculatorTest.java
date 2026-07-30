@@ -1,6 +1,7 @@
 package com.github.juglee0527.apsengine.capacity;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
@@ -64,6 +65,34 @@ class WorkingTimeCalculatorTest {
                 OffsetDateTime.parse("2026-08-03T12:00:00+09:00"),
                 OffsetDateTime.parse("2026-08-03T14:00:00+09:00")
         ));
+    }
+
+    @Test
+    void returnsSameImmutableIntervalsForEmptyUnavailableTime() {
+        OffsetDateTime from =
+                OffsetDateTime.parse("2026-08-03T08:00:00+09:00");
+        OffsetDateTime to =
+                OffsetDateTime.parse("2026-08-03T17:00:00+09:00");
+
+        List<AvailabilityInterval> withoutUnavailable =
+                calculator.intervalsBetween(
+                        weekdayTimes(),
+                        from,
+                        to
+                );
+        List<AvailabilityInterval> withEmptyUnavailable =
+                calculator.intervalsBetween(
+                        weekdayTimes(),
+                        List.of(),
+                        from,
+                        to
+                );
+
+        assertThat(withEmptyUnavailable)
+                .containsExactlyElementsOf(withoutUnavailable);
+        assertThatThrownBy(() ->
+                withEmptyUnavailable.add(withoutUnavailable.getFirst()))
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

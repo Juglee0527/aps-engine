@@ -173,6 +173,9 @@ public class WorkingTimeCalculator {
             List<UnavailableInterval> unavailableIntervals,
             ZoneOffset offset
     ) {
+        if (unavailableIntervals.isEmpty()) {
+            return List.copyOf(workingIntervals);
+        }
         List<UnavailableInterval> normalizedUnavailable =
                 unavailableIntervals.stream()
                         .map(interval -> new UnavailableInterval(

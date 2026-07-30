@@ -52,4 +52,18 @@ tasks.register('performanceTest', Test) {
     testLogging {
         showStandardStreams = true
     }
+    if (providers.gradleProperty('performanceJfr').isPresent()) {
+        def recordingFile = layout.buildDirectory.file(
+                'reports/performance/forward-scheduler.jfr'
+        ).get().asFile
+        doFirst {
+            recordingFile.parentFile.mkdirs()
+        }
+        jvmArgs(
+                '-Dperformance.profile=true',
+                '-XX:StartFlightRecording=filename='
+                        + recordingFile.absolutePath.replace('\\', '/')
+                        + ',settings=profile,dumponexit=true'
+        )
+    }
 }
