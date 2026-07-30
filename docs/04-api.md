@@ -574,3 +574,40 @@ GET /api/v1/schedules/{scheduleRunId}/lead-times
 - 대기시간에는 작업 전·공정 사이 대기와 휴무, 비근무 및 정비시간이 포함됩니다.
 - 저장 공정이 없는 실행은 빈 목록, 실행이 없으면 `404 SCHEDULE_RUN_NOT_FOUND`를 반환합니다.
 - 이 API는 저장된 계획 결과의 산술 분해이며 통계나 예측값을 만들지 않습니다.
+
+## 17. Bottleneck Detection API
+
+```http
+GET /api/v1/schedules/{scheduleRunId}/bottlenecks
+```
+
+저장된 ScheduleRun의 계획기간과 설비 부하를 기준으로 병목 후보를 반환합니다.
+
+```json
+{
+  "scheduleRunId": 10,
+  "from": "2026-08-03T08:00:00+09:00",
+  "to": "2026-08-03T16:00:00+09:00",
+  "thresholdPercent": 80.00,
+  "candidates": [
+    {
+      "rank": 1,
+      "machineId": 20,
+      "machineCode": "MACHINE-A",
+      "machineName": "조립 설비 A",
+      "availableMinutes": 480,
+      "loadMinutes": 420,
+      "utilizationPercent": 87.50,
+      "capacityExceeded": false,
+      "reason": "HIGH_UTILIZATION"
+    }
+  ]
+}
+```
+
+- 부하는 저장 작업의 `workingMinutes + changeoverMinutes`, 가용 분은 같은 기간의 근무시간에서
+  Maintenance를 차감한 값입니다.
+- 사용률 80% 이상을 후보로 판정합니다. 100% 초과는 `CAPACITY_EXCEEDED`입니다.
+- 가용 분 0에 양의 부하가 있으면 사용률은 `null`, 사유는 `NO_AVAILABLE_CAPACITY`이며 최우선입니다.
+- 이후 사용률 내림차순, 동일 사용률은 설비 코드와 ID 오름차순으로 순위를 고정합니다.
+- 이 API는 진단 결과만 반환하며 설비 재배치나 스케줄 재실행을 수행하지 않습니다.

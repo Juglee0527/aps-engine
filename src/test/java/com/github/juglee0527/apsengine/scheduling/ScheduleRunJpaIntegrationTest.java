@@ -9,6 +9,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
+import com.github.juglee0527.apsengine.capacity.BottleneckAnalysis;
+import com.github.juglee0527.apsengine.capacity.BottleneckService;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
 import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
@@ -62,6 +64,9 @@ class ScheduleRunJpaIntegrationTest {
 
     @Autowired
     private PlannedLeadTimeService plannedLeadTimeService;
+
+    @Autowired
+    private BottleneckService bottleneckService;
 
     @Test
     void persistsScheduleAndMarksOrderAsScheduled() {
@@ -223,6 +228,19 @@ class ScheduleRunJpaIntegrationTest {
         assertThat(leadTime.processingMinutes()).isEqualTo(30);
         assertThat(leadTime.changeoverMinutes()).isEqualTo(45);
         assertThat(leadTime.waitingMinutes()).isEqualTo(60);
+
+        BottleneckAnalysis bottlenecks =
+                bottleneckService.detect(scheduleRunId);
+        assertThat(bottlenecks.candidates()).singleElement()
+                .satisfies(candidate -> {
+                    assertThat(candidate.machineId())
+                            .isEqualTo(machine.id());
+                    assertThat(candidate.availableMinutes())
+                            .isEqualTo(105);
+                    assertThat(candidate.loadMinutes()).isEqualTo(105);
+                    assertThat(candidate.utilizationPercent())
+                            .isEqualByComparingTo("100.00");
+                });
     }
 
     private ProductionOrder persistConfirmedOrder() {

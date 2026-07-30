@@ -12,7 +12,9 @@ const API = {
         return `/api/v1/machines/${machineId}/availability?${query}`;
     },
     schedules: "/api/v1/schedules",
-    latestSchedule: "/api/v1/schedules/latest"
+    latestSchedule: "/api/v1/schedules/latest",
+    bottlenecks: (scheduleRunId) =>
+        `/api/v1/schedules/${scheduleRunId}/bottlenecks`
 };
 
 const SAMPLE_DATA = {
@@ -61,6 +63,7 @@ const state = {
     orders: [],
     latestSchedule: null,
     capacity: new Map(),
+    bottleneckAnalysis: null,
     sampleCalendars: new Map()
 };
 
@@ -131,7 +134,7 @@ async function loadAll() {
         );
         state.routings = routingLists.flat();
         await loadSampleCalendars();
-        await loadCapacity();
+        await Promise.all([loadCapacity(), loadBottlenecks()]);
         setConnection("online");
         render();
     } catch (error) {
@@ -193,6 +196,17 @@ async function loadCapacity() {
         }
     }));
     state.capacity = new Map(results);
+}
+
+async function loadBottlenecks() {
+    state.bottleneckAnalysis = null;
+    const schedule = state.latestSchedule;
+    if (!schedule) {
+        return;
+    }
+    state.bottleneckAnalysis = await request(
+        API.bottlenecks(schedule.id)
+    );
 }
 
 function render() {
@@ -310,12 +324,17 @@ function renderMetrics() {
     text("#confirmed-count", confirmed);
     text("#task-count", state.latestSchedule?.taskCount || 0);
     text("#delayed-count", state.latestSchedule?.delayedOrderCount || 0);
-    const loads = [...state.capacity.entries()]
-        .sort((left, right) => right[1].utilization - left[1].utilization);
-    const peak = loads[0];
-    text("#peak-load", peak ? `${peak[1].utilization}%` : "0%");
-    const machine = peak && state.machines.find((item) => item.id === peak[0]);
-    text("#peak-machine", machine ? `${machine.code} · 계획기간 CAPA` : "계산 대기");
+    const candidate = state.bottleneckAnalysis?.candidates?.[0];
+    const utilization = candidate?.utilizationPercent == null
+        ? (candidate ? "CAPA 없음" : "0%")
+        : `${candidate.utilizationPercent}%`;
+    text("#peak-load", utilization);
+    text(
+        "#peak-machine",
+        candidate
+            ? `${candidate.machineCode} · 병목 후보 #${candidate.rank}`
+            : (state.latestSchedule ? "진단 후보 없음" : "계산 대기")
+    );
 }
 
 function renderGantt() {
@@ -477,22 +496,54 @@ function renderOrderTables() {
 function renderLoadRanking() {
     const container = document.querySelector("#load-ranking");
     container.replaceChildren();
+    const candidates = new Map(
+        (state.bottleneckAnalysis?.candidates || [])
+            .map((candidate) => [candidate.machineId, candidate])
+    );
     const loads = [...state.capacity.entries()]
-        .sort((left, right) => right[1].utilization - left[1].utilization);
+        .sort((left, right) => {
+            const leftRank = candidates.get(left[0])?.rank
+                ?? Number.MAX_SAFE_INTEGER;
+            const rightRank = candidates.get(right[0])?.rank
+                ?? Number.MAX_SAFE_INTEGER;
+            return leftRank - rightRank
+                || right[1].utilization - left[1].utilization;
+        });
     if (loads.length === 0) {
         container.innerHTML = `<div class="load-empty">스케줄 실행 후 설비별<br>CAPA 사용률을 계산합니다.</div>`;
         return;
     }
     for (const [machineId, load] of loads) {
         const machine = state.machines.find((item) => item.id === machineId);
+        const candidate = candidates.get(machineId);
+        const utilization = candidate?.utilizationPercent
+            ?? load.utilization;
+        const utilizationLabel = candidate
+            && candidate.utilizationPercent == null
+            ? "CAPA 없음"
+            : `${utilization}%`;
+        const diagnosis = candidate
+            ? `병목 #${candidate.rank} · ${bottleneckReason(
+                candidate.reason
+            )}`
+            : "진단 임계치 미만";
         const item = document.createElement("div");
         item.className = "load-item";
         item.innerHTML = `
-            <div class="load-item-top"><span>${escapeHtml(machine?.code || `MACHINE #${machineId}`)}</span><strong>${load.utilization}%</strong></div>
-            <div class="load-track"><div class="load-fill" style="width:${Math.min(100, load.utilization)}%"></div></div>
-            <div class="load-item-top"><span>LOAD ${number(load.workingMinutes)}m</span><span>CAPA ${number(load.availableMinutes)}m</span></div>`;
+            <div class="load-item-top"><span>${escapeHtml(machine?.code || `MACHINE #${machineId}`)}</span><strong>${utilizationLabel}</strong></div>
+            <div class="load-track"><div class="load-fill" style="width:${Math.min(100, utilization || 0)}%"></div></div>
+            <div class="load-item-top"><span>LOAD ${number(load.workingMinutes)}m</span><span>CAPA ${number(load.availableMinutes)}m</span></div>
+            <div class="load-item-top"><span>${diagnosis}</span></div>`;
         container.append(item);
     }
+}
+
+function bottleneckReason(reason) {
+    return {
+        NO_AVAILABLE_CAPACITY: "가용 CAPA 없음",
+        CAPACITY_EXCEEDED: "CAPA 초과",
+        HIGH_UTILIZATION: "사용률 80% 이상"
+    }[reason] || reason;
 }
 
 function renderMasterData() {
