@@ -1,5 +1,8 @@
 package com.github.juglee0527.apsengine.product.routing;
 
+import java.util.List;
+
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -27,6 +30,32 @@ public record OperationCreateRequest(
         int processingTimeMinutes,
 
         @Min(value = 1, message = "설비 ID는 1 이상이어야 합니다.")
-        long machineId
+        long machineId,
+
+        @Size(min = 1, message = "후보 설비는 하나 이상이어야 합니다.")
+        List<@Valid OperationMachineCandidateRequest> machineCandidates
 ) {
+
+    public OperationCreateRequest {
+        machineCandidates = machineCandidates == null
+                ? null
+                : List.copyOf(machineCandidates);
+    }
+
+    public OperationCreateRequest(
+            int sequence,
+            String code,
+            String name,
+            int processingTimeMinutes,
+            long machineId
+    ) {
+        this(
+                sequence,
+                code,
+                name,
+                processingTimeMinutes,
+                machineId,
+                null
+        );
+    }
 }

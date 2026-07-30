@@ -179,12 +179,12 @@ Spring Boot(local profile)
 
 ## 6. 현재 구현 스냅샷
 
-2026년 7월 30일 기준 로드맵 `001~039`와 APS Schedule Control Tower가 구현되어 있습니다.
+2026년 7월 30일 기준 로드맵 `001~040`과 APS Schedule Control Tower가 구현되어 있습니다.
 
 | 영역 | 구현 상태 |
 | --- | --- |
 | 생산 자원 | Factory, ProductionLine, Machine 등록·조회 |
-| 품목과 공정 | Product, Routing, Operation 등록·조회 |
+| 품목과 공정 | Product, Routing, Operation 등록·조회, 후보 설비와 우선순위 정의 |
 | 생산오더 | 등록·조회, DRAFT → CONFIRMED → SCHEDULED |
 | CAPA | WorkingCalendar, 가용 구간·가용 분, 병목 후보 진단 |
 | 스케줄링 | 우선순위 기반 다중 오더·다중 Operation 순방향 배정, Changeover와 Maintenance 반영 |
@@ -197,8 +197,9 @@ Spring Boot(local profile)
 | CI | push·pull request Java 21 Gradle 테스트와 결과 artifact |
 | 성능 | 소·중·대 ForwardScheduler 기준선, JFR 프로파일링과 빈 비가용 구간 빠른 경로 |
 
-다음 구현 대상은 `040. Operation 대체 설비 모델`입니다. 운영 기반 `034~039`는 완료했고,
-APS 엔진 고도화 `040~043`, 데이터 처리와 실행 운영 `044~047`은 아직 구현되지 않았습니다.
+다음 구현 대상은 `041. 결정론적 대체 설비 선택`입니다. 운영 기반 `034~039`와
+대체 설비 모델 `040`은 완료했고, APS 엔진 고도화 `041~043`, 데이터 처리와 실행 운영
+`044~047`은 아직 구현되지 않았습니다.
 
 ## 7. 아키텍처 경계
 

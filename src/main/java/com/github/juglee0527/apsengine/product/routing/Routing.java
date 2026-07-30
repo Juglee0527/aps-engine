@@ -1,9 +1,9 @@
 package com.github.juglee0527.apsengine.product.routing;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -67,7 +67,7 @@ public class Routing {
             orphanRemoval = true
     )
     @OrderBy("sequence ASC")
-    private List<Operation> operations = new ArrayList<>();
+    private Set<Operation> operations = new LinkedHashSet<>();
 
     protected Routing() {
     }
@@ -102,6 +102,24 @@ public class Routing {
             int processingTimeMinutes,
             Machine machine
     ) {
+        addOperation(
+                sequence,
+                code,
+                name,
+                processingTimeMinutes,
+                machine,
+                Map.of(machine, 1)
+        );
+    }
+
+    public void addOperation(
+            int sequence,
+            String code,
+            String name,
+            int processingTimeMinutes,
+            Machine machine,
+            Map<Machine, Integer> candidateDefinitions
+    ) {
         validateOperationUniqueness(sequence, code);
         operations.add(Operation.create(
                 this,
@@ -109,7 +127,8 @@ public class Routing {
                 sequence,
                 code,
                 name,
-                processingTimeMinutes
+                processingTimeMinutes,
+                candidateDefinitions
         ));
     }
 
@@ -134,7 +153,7 @@ public class Routing {
     }
 
     public List<Operation> operations() {
-        return Collections.unmodifiableList(operations);
+        return List.copyOf(operations);
     }
 
     private void validateOperationUniqueness(int sequence, String code) {

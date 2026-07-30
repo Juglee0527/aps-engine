@@ -15,7 +15,9 @@ public interface RoutingRepository extends JpaRepository<Routing, Long> {
     @EntityGraph(attributePaths = {
             "product",
             "operations",
-            "operations.machine"
+            "operations.machine",
+            "operations.machineCandidates",
+            "operations.machineCandidates.machine"
     })
     @Query("""
             select distinct routing
@@ -30,7 +32,9 @@ public interface RoutingRepository extends JpaRepository<Routing, Long> {
     @EntityGraph(attributePaths = {
             "product",
             "operations",
-            "operations.machine"
+            "operations.machine",
+            "operations.machineCandidates",
+            "operations.machineCandidates.machine"
     })
     @Query("""
             select distinct routing

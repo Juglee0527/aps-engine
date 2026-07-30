@@ -2,6 +2,8 @@ package com.github.juglee0527.apsengine.product.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Map;
+
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
@@ -46,9 +48,19 @@ class RoutingJpaMappingTest {
         entityManager.persist(line);
         Machine machine = Machine.create(line, "MACHINE-RT", "매핑 설비");
         entityManager.persist(machine);
+        Machine alternativeMachine =
+                Machine.create(line, "MACHINE-RT-ALT", "대체 설비");
+        entityManager.persist(alternativeMachine);
         Routing routing =
                 Routing.create(product, "ROUTING-01", "표준 Routing");
-        routing.addOperation(10, "CUT", "절단", 15, machine);
+        routing.addOperation(
+                10,
+                "CUT",
+                "절단",
+                15,
+                machine,
+                Map.of(machine, 1, alternativeMachine, 1)
+        );
         entityManager.persist(routing);
         entityManager.flush();
         Long routingId = routing.id();
@@ -63,5 +75,12 @@ class RoutingJpaMappingTest {
         assertThat(response.operations()).hasSize(1);
         assertThat(response.operations().getFirst().machineId())
                 .isEqualTo(machine.id());
+        assertThat(response.operations().getFirst().machineCandidates())
+                .hasSize(2)
+                .extracting(OperationMachineCandidateResponse::machineId)
+                .containsExactlyInAnyOrder(
+                        machine.id(),
+                        alternativeMachine.id()
+                );
     }
 }

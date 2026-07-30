@@ -21,6 +21,10 @@ ProductionOrder
 각 공정 입력에는 계획 시작 이후의 설비 Maintenance 비가용 구간도 함께 포함됩니다.
 `SchedulingChangeoverInput`은 설비, 이전 품목, 다음 품목과 방향성 전환시간 스냅샷을 가집니다.
 
+Operation 기준정보에는 040부터 후보 설비가 존재하지만, 현재 `SchedulingOperationInput`은 기존
+주 설비 하나만 받습니다. 따라서 기존 계획 결과는 바뀌지 않습니다. 후보 중 가장 이른 완료 설비를
+결정론적으로 선택하는 입력 확장은 041에서 함께 적용합니다.
+
 필요 작업시간은 다음과 같이 계산합니다.
 
 ```text

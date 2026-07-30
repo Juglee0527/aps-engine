@@ -68,7 +68,37 @@ class RoutingControllerTest {
                 .andExpect(jsonPath("$.id").value(20))
                 .andExpect(jsonPath("$.productId").value(1))
                 .andExpect(jsonPath("$.operations[0].machineId").value(100))
+                .andExpect(jsonPath(
+                        "$.operations[0].machineCandidates[0].machineId"
+                ).value(100))
+                .andExpect(jsonPath(
+                        "$.operations[0].machineCandidates[0].priority"
+                ).value(1))
                 .andExpect(jsonPath("$.operations[0].sequence").value(10));
+    }
+
+    @Test
+    void rejectsEmptyMachineCandidates() throws Exception {
+        mockMvc.perform(post("/api/v1/products/1/routings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "code": "ROUTING-01",
+                                  "name": "표준 Routing",
+                                  "operations": [
+                                    {
+                                      "sequence": 10,
+                                      "code": "CUT",
+                                      "name": "절단",
+                                      "processingTimeMinutes": 15,
+                                      "machineId": 100,
+                                      "machineCandidates": []
+                                    }
+                                  ]
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
 
     @Test

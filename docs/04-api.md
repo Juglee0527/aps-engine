@@ -312,7 +312,17 @@ Content-Type: application/json
       "code": "CUT",
       "name": "절단",
       "processingTimeMinutes": 15,
-      "machineId": 100
+      "machineId": 100,
+      "machineCandidates": [
+        {
+          "machineId": 100,
+          "priority": 1
+        },
+        {
+          "machineId": 101,
+          "priority": 2
+        }
+      ]
     }
   ]
 }
@@ -322,6 +332,11 @@ Content-Type: application/json
 - `sequence`와 Operation 코드는 같은 Routing 안에서 중복될 수 없습니다.
 - 비활성 Product와 비활성 Machine은 신규 Routing 정의에 사용할 수 없습니다.
 - 표준 가공시간은 제품 1단위당 분 단위입니다.
+- `machineId`는 기존 스케줄러가 사용하는 주 설비입니다.
+- `machineCandidates`를 생략하면 주 설비 하나를 우선순위 1 후보로 등록합니다.
+- 후보 목록을 명시하면 하나 이상이어야 하며 주 설비를 우선순위 1로 포함해야 합니다.
+- 후보 설비는 중복될 수 없지만 1~1000 범위의 우선순위는 같을 수 있습니다.
+- `INACTIVE` 설비는 등록할 수 없습니다. `STOPPED` 설비는 후보 정의에 보존합니다.
 
 ### Routing 조회
 
@@ -330,8 +345,10 @@ GET /api/v1/routings/{routingId}
 GET /api/v1/products/{productId}/routings
 ```
 
-응답의 Operation은 sequence 오름차순으로 반환합니다. Routing 수정과 버전 활성화 전환,
-대체 설비 정의는 현재 범위에 포함하지 않습니다.
+응답의 Operation은 sequence 오름차순으로 반환합니다. 각 Operation은 기존 `machineId`와 함께
+후보별 `machineId`, `priority`, 현재 `status`를 `machineCandidates`로 반환합니다.
+040의 스케줄러는 기존 `machineId`만 사용하며 후보 선택은 041에서 적용합니다.
+Routing 수정과 버전 활성화 전환은 현재 범위에 포함하지 않습니다.
 
 ## 11. ProductionOrder API
 

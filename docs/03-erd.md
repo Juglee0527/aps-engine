@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V13__create_machine_maintenance_table.sql`입니다.
+현재 스키마 기준은 Flyway `V14__create_operation_machine_candidate_table.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -49,6 +49,12 @@ erDiagram
         VARCHAR_50 operation_code
         VARCHAR_100 operation_name
         INTEGER processing_time_minutes
+    }
+    OPERATION_MACHINE_CANDIDATE {
+        BIGINT operation_machine_candidate_id PK
+        BIGINT operation_id FK
+        BIGINT machine_id FK
+        INTEGER candidate_priority
     }
     PRODUCTION_ORDER {
         BIGINT production_order_id PK
@@ -111,7 +117,9 @@ erDiagram
     PRODUCTION_LINE ||--o{ MACHINE : contains
     PRODUCT ||--o{ ROUTING : defines
     ROUTING ||--|{ OPERATION : contains
-    MACHINE ||--o{ OPERATION : executes
+    MACHINE ||--o{ OPERATION : primary_machine
+    OPERATION ||--|{ OPERATION_MACHINE_CANDIDATE : allows
+    MACHINE ||--o{ OPERATION_MACHINE_CANDIDATE : candidate
     ROUTING ||--o{ PRODUCTION_ORDER : produces
     MACHINE ||--o{ WORKING_CALENDAR : available
     MACHINE ||--o{ CHANGEOVER_TIME : configures
@@ -177,6 +185,13 @@ erDiagram
 | `uk_operation_routing_code` | `routing_id`, `operation_code` | Routing 내 공정 코드 중복 방지 |
 | `ck_operation_processing_time` | `processing_time_minutes` | 1~10080분 범위 보장 |
 | `ix_operation_machine_id` | `machine_id` | 설비별 Operation 접근 인덱스 |
+| `uk_operation_machine_candidate` | `operation_id`, `machine_id` | 같은 설비의 후보 중복 방지 |
+| `ck_operation_machine_candidate_priority` | `candidate_priority` | 후보 우선순위를 1~1000으로 제한 |
+| `ix_operation_machine_candidate_operation_priority` | 공정·우선순위·후보 ID | 공정별 후보 조회 순서 지원 |
+| `ix_operation_machine_candidate_machine_id` | `machine_id` | 설비별 후보 정의 접근 지원 |
+
+`V14`는 기존 `operation.machine_id`를 각 공정의 우선순위 1 후보로 백필합니다. 주 설비 FK는
+041 이전 스케줄러와 기존 API 계약을 위해 유지합니다.
 
 ### ProductionOrder 제약조건
 

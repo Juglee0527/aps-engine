@@ -16,6 +16,7 @@ import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
+import com.github.juglee0527.apsengine.machine.MachineStatus;
 import com.github.juglee0527.apsengine.product.Product;
 import com.github.juglee0527.apsengine.product.ProductRepository;
 import com.github.juglee0527.apsengine.product.ProductUnit;
@@ -66,7 +67,163 @@ class RoutingServiceTest {
         assertThat(routing.operations()).hasSize(1);
         assertThat(routing.operations().getFirst().machine())
                 .isSameAs(machine);
+        assertThat(routing.operations().getFirst().machineCandidates())
+                .singleElement()
+                .satisfies(candidate -> {
+                    assertThat(candidate.machine()).isSameAs(machine);
+                    assertThat(candidate.priority()).isEqualTo(1);
+                });
         verify(routingRepository).saveAndFlush(routing);
+    }
+
+    @Test
+    void createsRoutingWithTiedCandidatePriority() {
+        Product product =
+                Product.create("PRODUCT-01", "완제품 A", ProductUnit.PIECE);
+        Machine primaryMachine =
+                machine("MACHINE-01", MachineStatus.AVAILABLE);
+        Machine alternativeMachine =
+                machine("MACHINE-02", MachineStatus.AVAILABLE);
+        prepareRoutingCreation(product);
+        when(machineRepository.findById(10L))
+                .thenReturn(Optional.of(primaryMachine));
+        when(machineRepository.findById(20L))
+                .thenReturn(Optional.of(alternativeMachine));
+        when(routingRepository.saveAndFlush(any(Routing.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Routing routing = routingService.create(
+                1L,
+                "routing-01",
+                "표준 Routing",
+                List.of(operationRequest(
+                        10,
+                        "CUT",
+                        List.of(
+                                candidate(10L, 1),
+                                candidate(20L, 1)
+                        )
+                ))
+        );
+
+        assertThat(routing.operations().getFirst().machineCandidates())
+                .hasSize(2)
+                .extracting(OperationMachineCandidate::priority)
+                .containsOnly(1);
+    }
+
+    @Test
+    void rejectsEmptyMachineCandidates() {
+        Product product =
+                Product.create("PRODUCT-01", "완제품 A", ProductUnit.PIECE);
+        prepareRoutingCreation(product);
+        when(machineRepository.findById(10L))
+                .thenReturn(Optional.of(machine()));
+
+        assertErrorCode(
+                () -> routingService.create(
+                        1L,
+                        "ROUTING-01",
+                        "표준 Routing",
+                        List.of(operationRequest(10, "CUT", List.of()))
+                ),
+                ErrorCode.INVALID_REQUEST
+        );
+
+        verify(routingRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void rejectsDuplicatedMachineCandidate() {
+        Product product =
+                Product.create("PRODUCT-01", "완제품 A", ProductUnit.PIECE);
+        prepareRoutingCreation(product);
+        when(machineRepository.findById(10L))
+                .thenReturn(Optional.of(machine()));
+
+        assertErrorCode(
+                () -> routingService.create(
+                        1L,
+                        "ROUTING-01",
+                        "표준 Routing",
+                        List.of(operationRequest(
+                                10,
+                                "CUT",
+                                List.of(
+                                        candidate(10L, 1),
+                                        candidate(10L, 2)
+                                )
+                        ))
+                ),
+                ErrorCode.INVALID_REQUEST
+        );
+    }
+
+    @Test
+    void rejectsInactiveAlternativeMachine() {
+        Product product =
+                Product.create("PRODUCT-01", "완제품 A", ProductUnit.PIECE);
+        prepareRoutingCreation(product);
+        when(machineRepository.findById(10L))
+                .thenReturn(Optional.of(machine()));
+        when(machineRepository.findById(20L)).thenReturn(Optional.of(
+                machine("MACHINE-02", MachineStatus.INACTIVE)
+        ));
+
+        assertErrorCode(
+                () -> routingService.create(
+                        1L,
+                        "ROUTING-01",
+                        "표준 Routing",
+                        List.of(operationRequest(
+                                10,
+                                "CUT",
+                                List.of(
+                                        candidate(10L, 1),
+                                        candidate(20L, 2)
+                                )
+                        ))
+                ),
+                ErrorCode.MACHINE_INACTIVE
+        );
+    }
+
+    @Test
+    void keepsStoppedAlternativeMachineAsCandidateDefinition() {
+        Product product =
+                Product.create("PRODUCT-01", "완제품 A", ProductUnit.PIECE);
+        Machine primaryMachine =
+                machine("MACHINE-01", MachineStatus.AVAILABLE);
+        Machine stoppedMachine =
+                machine("MACHINE-02", MachineStatus.STOPPED);
+        prepareRoutingCreation(product);
+        when(machineRepository.findById(10L))
+                .thenReturn(Optional.of(primaryMachine));
+        when(machineRepository.findById(20L))
+                .thenReturn(Optional.of(stoppedMachine));
+        when(routingRepository.saveAndFlush(any(Routing.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Routing routing = routingService.create(
+                1L,
+                "ROUTING-01",
+                "표준 Routing",
+                List.of(operationRequest(
+                        10,
+                        "CUT",
+                        List.of(
+                                candidate(10L, 1),
+                                candidate(20L, 2)
+                        )
+                ))
+        );
+
+        assertThat(routing.operations().getFirst().machineCandidates())
+                .extracting(candidate -> candidate.machine().status())
+                .containsExactlyInAnyOrder(
+                        MachineStatus.AVAILABLE,
+                        MachineStatus.STOPPED
+                );
     }
 
     @Test
@@ -126,11 +283,45 @@ class RoutingServiceTest {
         );
     }
 
+    private OperationCreateRequest operationRequest(
+            int sequence,
+            String code,
+            List<OperationMachineCandidateRequest> candidates
+    ) {
+        return new OperationCreateRequest(
+                sequence,
+                code,
+                "공정",
+                30,
+                10L,
+                candidates
+        );
+    }
+
+    private OperationMachineCandidateRequest candidate(
+            long machineId,
+            int priority
+    ) {
+        return new OperationMachineCandidateRequest(machineId, priority);
+    }
+
+    private void prepareRoutingCreation(Product product) {
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(routingRepository.existsByProduct_IdAndCode(
+                1L,
+                "ROUTING-01"
+        )).thenReturn(false);
+    }
+
     private Machine machine() {
+        return machine("MACHINE-01", MachineStatus.AVAILABLE);
+    }
+
+    private Machine machine(String code, MachineStatus status) {
         Factory factory = Factory.create("FACTORY-01", "서울 공장");
         ProductionLine line =
                 ProductionLine.create(factory, "LINE-01", "조립 라인");
-        return Machine.create(line, "MACHINE-01", "가공 설비");
+        return Machine.create(line, code, "가공 설비", status);
     }
 
     private void assertErrorCode(
