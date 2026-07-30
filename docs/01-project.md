@@ -179,7 +179,7 @@ Spring Boot(local profile)
 
 ## 6. 현재 구현 스냅샷
 
-2026년 7월 30일 기준 로드맵 `001~034`와 APS Schedule Control Tower가 구현되어 있습니다.
+2026년 7월 30일 기준 로드맵 `001~035`와 APS Schedule Control Tower가 구현되어 있습니다.
 
 | 영역 | 구현 상태 |
 | --- | --- |
@@ -192,8 +192,9 @@ Spring Boot(local profile)
 | 제조 제약 | 방향성 Changeover Time과 특정 날짜의 계획 정비시간 |
 | 화면 | 오더 큐, 작업·Changeover 간트, 납기 지연, 병목 후보, 기준정보 등록 |
 | 캐시 | 호출량·지연 근거 부족으로 Redis 도입 보류, 재검토 기준 문서화 |
+| 통합 테스트 | PostgreSQL Testcontainers 공통 기반과 Factory Repository 검증 |
 
-다음 구현 대상은 `035. Testcontainers 통합 테스트 기반`입니다. 운영 기반 `035~039`,
+다음 구현 대상은 `036. Docker 애플리케이션 이미지`입니다. 운영 기반 `036~039`,
 APS 엔진 고도화 `040~043`, 데이터 처리와 실행 운영 `044~047`은 아직 구현되지 않았습니다.
 
 ## 7. 아키텍처 경계

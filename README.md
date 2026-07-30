@@ -60,7 +60,7 @@ Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.c
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 캐시 필요성 검증까지 로드맵 `001~034`를 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 PostgreSQL Testcontainers 기반까지 로드맵 `001~035`를 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -79,7 +79,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 설비·이전 품목·다음 품목별 방향성 Changeover Time 기준정보
 - 실제 API 데이터 기반 작업·Changeover 간트, 납기 지연 및 병목 후보 화면
 - Redis 캐시는 반복 호출량과 성능 근거가 없어 현재 도입 보류
-- 다음 개발 단위: `035. Testcontainers 통합 테스트 기반`
+- Docker 사용 가능 시 PostgreSQL 컨테이너에서 Flyway·Repository 통합 검증
+- 다음 개발 단위: `036. Docker 애플리케이션 이미지`
 
 # Tech Stack
 
@@ -151,6 +152,7 @@ aps-engine
 - [순방향 스케줄링](docs/05-scheduling.md)
 - [CAPA 계산](docs/06-capacity.md)
 - [캐시 도입 판단](docs/08-cache-strategy.md)
+- [PostgreSQL Testcontainers](docs/09-testcontainers.md)
 
 ---
 
@@ -205,7 +207,7 @@ aps-engine
 - [x] 032. Lead Time 계산
 - [x] 033. Bottleneck 탐지
 - [x] 034. Redis 캐시 적용 대상 검증
-- [ ] 035. Testcontainers 통합 테스트 기반
+- [x] 035. Testcontainers 통합 테스트 기반
 - [ ] 036. Docker 애플리케이션 이미지
 - [ ] 037. GitHub Actions 빌드 검증
 - [ ] 038. 스케줄링 성능 기준선
@@ -366,13 +368,21 @@ POSTGRES_PORT=5433
 
 ## Test
 
-일반 단위 테스트는 다음과 같이 실행합니다.
+일반 테스트는 다음과 같이 실행합니다. Docker를 사용할 수 있으면 PostgreSQL Testcontainers 기반
+Repository 통합 테스트가 함께 실행되고, Docker를 사용할 수 없으면 해당 테스트만 자동으로 건너뜁니다.
 
 ```powershell
 .\gradlew.bat test
 ```
 
-실제 로컬 PostgreSQL 연결 및 JPA 매핑 테스트는 다음과 같이 명시적으로 실행합니다.
+컨테이너 기반 Repository 테스트만 실행하려면 다음 명령을 사용합니다.
+
+```powershell
+.\gradlew.bat test --tests "*FactoryRepositoryIntegrationTest"
+```
+
+아직 컨테이너 기반으로 전환하지 않은 심화 JPA·스케줄 테스트는 실제 로컬 PostgreSQL에 대해 다음과 같이
+명시적으로 실행합니다.
 
 ```powershell
 $env:APS_POSTGRES_INTEGRATION_TEST = "true"
@@ -386,6 +396,7 @@ $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 
 애플리케이션은 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` 환경변수로 연결 정보를 받습니다.
 시작 시 Flyway가 `src/main/resources/db/migration`의 버전 마이그레이션을 순서대로 적용하고, Hibernate는 스키마를 생성하지 않고 매핑만 검증합니다.
+컨테이너 테스트 상세 정책은 [PostgreSQL Testcontainers](docs/09-testcontainers.md)를 참고해 주세요.
 
 화면에서 생산 자원과 품목·Routing·근무시간·생산오더를 등록하고, 오더 확정 후 스케줄을 실행할 수 있습니다.
 최신 실행 결과는 설비별 간트, 납기 지연과 계획기간 CAPA 사용률로 표시됩니다.
