@@ -98,3 +98,18 @@ CONFIRMED 오더 조회
 여러 ProductionOrder가 같은 Routing을 공유하면 JPA collection fetch 결과에 같은 Operation이
 중복 materialize될 수 있습니다. 실행 서비스는 오더와 공정을 ID 기준으로 정규화한 뒤 알고리즘 입력을
 구성해 같은 오더·공정이 중복 저장되지 않도록 방어합니다.
+
+## 7. 계획 Lead Time
+
+저장된 ScheduleRun의 생산오더별 Lead Time은 `releaseAt`부터 마지막 공정 종료까지의 경과 분입니다.
+가공시간과 Changeover Time은 저장된 작업 분을 합산하고, 나머지를 계획 대기시간으로 계산합니다.
+
+```text
+waitingMinutes
+  = Duration(releaseAt, completionAt)
+  - Σ workingMinutes
+  - Σ changeoverMinutes
+```
+
+따라서 하루 경계, 주말, 비근무시간과 Maintenance로 작업하지 못한 시간은 대기시간에 남습니다.
+이는 계획 구조를 설명하기 위한 값이며 실제 생산실적이나 통계적 예측은 아닙니다.

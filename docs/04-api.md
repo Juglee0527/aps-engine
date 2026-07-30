@@ -543,3 +543,34 @@ GET /api/v1/machines/{machineId}/maintenances
 - 목록은 정비 시작시각 오름차순입니다.
 - 정비 구간은 `[startAt, endAt)`이므로 경계가 맞닿는 두 구간은 겹치지 않습니다.
 - 근무시간 밖 정비도 저장하지만 가용시간과 스케줄에는 겹치는 부분만 반영합니다.
+
+## 16. Planned Lead Time API
+
+```http
+GET /api/v1/schedules/{scheduleRunId}/lead-times
+```
+
+저장된 ScheduleRun의 생산오더별 계획 Lead Time을 생산오더 ID 오름차순으로 반환합니다.
+
+```json
+[
+  {
+    "productionOrderId": 20,
+    "orderNumber": "PO-2026-001",
+    "productId": 30,
+    "productCode": "PRODUCT-A",
+    "releaseAt": "2026-08-03T08:00:00+09:00",
+    "completionAt": "2026-08-03T13:00:00+09:00",
+    "plannedLeadTimeMinutes": 300,
+    "processingMinutes": 120,
+    "changeoverMinutes": 30,
+    "waitingMinutes": 150,
+    "operationCount": 2
+  }
+]
+```
+
+- 계산 시작은 생산오더 `releaseAt`, 완료는 마지막 저장 공정의 `endAt`입니다.
+- 대기시간에는 작업 전·공정 사이 대기와 휴무, 비근무 및 정비시간이 포함됩니다.
+- 저장 공정이 없는 실행은 빈 목록, 실행이 없으면 `404 SCHEDULE_RUN_NOT_FOUND`를 반환합니다.
+- 이 API는 저장된 계획 결과의 산술 분해이며 통계나 예측값을 만들지 않습니다.

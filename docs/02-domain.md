@@ -266,3 +266,27 @@ WorkingCalendar가 “평소 언제 일하는가”를 정의한다면 Maintenan
 - 근무시간 밖의 정비도 등록할 수 있지만 현재 CAPA에는 영향을 주지 않습니다. 이후 근무시간이 바뀌면
   겹치는 부분만 자동으로 비가용시간이 됩니다.
 - CAPA 조회와 스케줄러는 공통 `WorkingTimeCalculator`에서 근무시간에서 정비 구간을 차감합니다.
+
+## 13. PlannedLeadTime
+
+PlannedLeadTime은 저장된 ScheduleRun을 기준으로 생산오더가 투입 가능해진 시점부터 계획상
+완료될 때까지 걸리는 경과시간을 분해한 조회 모델입니다.
+
+| 속성 | 설명 |
+| --- | --- |
+| `releaseAt` | Lead Time 계산 시작인 생산오더 투입 가능시각 |
+| `completionAt` | 해당 오더의 마지막 ScheduledOperation 종료시각 |
+| `plannedLeadTimeMinutes` | `releaseAt`부터 `completionAt`까지의 전체 경과 분 |
+| `processingMinutes` | ScheduledOperation `workingMinutes` 합계 |
+| `changeoverMinutes` | ScheduledOperation `changeoverMinutes` 합계 |
+| `waitingMinutes` | 전체 Lead Time에서 가공시간과 Changeover Time을 뺀 분 |
+| `operationCount` | 저장된 공정 결과 수 |
+
+```text
+계획 Lead Time = 가공시간 + Changeover Time + 대기시간
+대기시간 = 계획 Lead Time - 가공시간 - Changeover Time
+```
+
+대기시간에는 최초 작업 전 큐 대기, 공정 사이 대기, 비근무시간, 휴무와 Maintenance가 포함됩니다.
+ScheduledOperation이 없는 실행은 계산할 생산오더가 없으므로 빈 목록을 반환합니다. 통계, 예측과
+실적 Lead Time은 현재 모델의 책임이 아닙니다.

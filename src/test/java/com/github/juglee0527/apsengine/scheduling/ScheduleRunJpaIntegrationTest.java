@@ -60,6 +60,9 @@ class ScheduleRunJpaIntegrationTest {
     @Autowired
     private ProductionOrderRepository productionOrderRepository;
 
+    @Autowired
+    private PlannedLeadTimeService plannedLeadTimeService;
+
     @Test
     void persistsScheduleAndMarksOrderAsScheduled() {
         ProductionOrder order = persistConfirmedOrder();
@@ -208,6 +211,18 @@ class ScheduleRunJpaIntegrationTest {
                 .isEqualTo(PLANNING_START.plusMinutes(105));
         assertThat(storedOperation.startAt())
                 .isAfter(storedOperation.changeoverStartAt());
+
+        PlannedLeadTime leadTime = plannedLeadTimeService
+                .calculate(scheduleRunId)
+                .stream()
+                .filter(result -> result.productionOrderId()
+                        == orderBId)
+                .findFirst()
+                .orElseThrow();
+        assertThat(leadTime.plannedLeadTimeMinutes()).isEqualTo(135);
+        assertThat(leadTime.processingMinutes()).isEqualTo(30);
+        assertThat(leadTime.changeoverMinutes()).isEqualTo(45);
+        assertThat(leadTime.waitingMinutes()).isEqualTo(60);
     }
 
     private ProductionOrder persistConfirmedOrder() {
