@@ -668,3 +668,47 @@ GET /api/v1/schedules/{scheduleRunId}/bottlenecks
 - 가용 분 0에 양의 부하가 있으면 사용률은 `null`, 사유는 `NO_AVAILABLE_CAPACITY`이며 최우선입니다.
 - 이후 사용률 내림차순, 동일 사용률은 설비 코드와 ID 오름차순으로 순위를 고정합니다.
 - 이 API는 진단 결과만 반환하며 설비 재배치나 스케줄 재실행을 수행하지 않습니다.
+
+## 18. 계획 데이터 CSV 미리보기 API
+
+```http
+POST /api/v1/planning-data/imports/preview
+Content-Type: multipart/form-data
+```
+
+`file` 파트에 UTF-8 CSV를 전송합니다. 최대 파일 크기는 2MB, 빈 행을 제외한 데이터는
+최대 2,000행입니다. 브라우저에서는 `/planning-data-template.csv` 샘플을 내려받을 수 있습니다.
+
+```json
+{
+  "readyToApply": false,
+  "totalRows": 6,
+  "validRows": 5,
+  "invalidRows": 1,
+  "rows": [
+    {
+      "rowNumber": 7,
+      "type": "PRODUCTION_ORDER",
+      "valid": false,
+      "normalizedValues": {},
+      "errors": [
+        {
+          "field": "routingCode",
+          "code": "REFERENCE_NOT_FOUND",
+          "message": "앞선 유효 행이나 DB에서 Routing을 찾을 수 없습니다."
+        }
+      ]
+    }
+  ]
+}
+```
+
+- 행 번호는 헤더를 1번으로 보는 논리 CSV 행 번호입니다.
+- 코드는 공백 제거 후 대문자로 정규화합니다.
+- 행 타입은 `FACTORY → PRODUCTION_LINE → MACHINE/PRODUCT → ROUTING → PRODUCTION_ORDER`
+  순서여야 합니다.
+- Routing 한 행은 Operation 한 건이며 같은 Routing의 여러 행은 이름을 같게 유지하고
+  Operation 순서와 코드를 중복할 수 없습니다.
+- 참조는 앞선 유효 행 또는 기존 DB 기준정보에서 확인합니다.
+- 열 개수 오류와 값·중복·참조 오류는 행별로 반환하고, 헤더·인코딩·파일 제한 오류는 `400`입니다.
+- 이 API는 트랜잭션을 읽기 전용으로 사용하며 DB에 데이터를 반영하지 않습니다.

@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 Frozen Horizon 재스케줄링까지 로드맵 `001~043`을 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 계획 데이터 CSV 검증 미리보기까지 로드맵 `001~044`를 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -103,7 +103,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 완료시각·후보 우선순위·설비 ID 기반 결정론적 대체 설비 선택
 - 명시적 우선순위·EDD·SPT 실행 선택과 지연·Makespan·설비 가동률 KPI 스냅샷
 - 시작·진행 작업을 유지하고 미래 작업·신규 확정 오더만 재배치하는 Frozen Horizon
-- 다음 개발 단위: `044. CSV 대량 입력 검증과 미리보기`
+- UTF-8 CSV 샘플·파일 제한·참조 순서·행별 오류를 제공하는 DB 무변경 미리보기
+- 다음 개발 단위: `045. 대량 입력 멱등성과 실패 복구`
 
 # Tech Stack
 
@@ -180,6 +181,7 @@ aps-engine
 - [PostgreSQL Testcontainers](docs/09-testcontainers.md)
 - [Docker 애플리케이션 이미지](docs/10-docker.md)
 - [GitHub Actions 빌드](docs/11-ci.md)
+- [계획 데이터 CSV 입력](docs/12-csv-import.md)
 
 ---
 
@@ -243,7 +245,7 @@ aps-engine
 - [x] 041. 결정론적 대체 설비 선택
 - [x] 042. Dispatching Rule과 계획 KPI 비교
 - [x] 043. Frozen Horizon 재스케줄링
-- [ ] 044. CSV 대량 입력 검증과 미리보기
+- [x] 044. CSV 대량 입력 검증과 미리보기
 - [ ] 045. 대량 입력 멱등성과 실패 복구
 - [ ] 046. 비동기 스케줄 실행과 이력 조회
 - [ ] 047. 스케줄 실행 관측성

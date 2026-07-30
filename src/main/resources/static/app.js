@@ -14,6 +14,7 @@ const API = {
     schedules: "/api/v1/schedules",
     reschedule: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/reschedule`,
+    planningDataPreview: "/api/v1/planning-data/imports/preview",
     latestSchedule: "/api/v1/schedules/latest",
     bottlenecks: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/bottlenecks`
@@ -85,8 +86,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function request(url, options = {}) {
     const {allowNotFound = false, ...fetchOptions} = options;
+    const defaultHeaders = fetchOptions.body instanceof FormData
+        ? {}
+        : {"Content-Type": "application/json"};
     const response = await fetch(url, {
-        headers: {"Content-Type": "application/json", ...fetchOptions.headers},
+        headers: {...defaultHeaders, ...fetchOptions.headers},
         ...fetchOptions
     });
     if (allowNotFound && response.status === 404) {
@@ -711,6 +715,58 @@ function bindActions() {
     document.querySelectorAll("[data-sample-step]").forEach((button) => {
         button.addEventListener("click", () => runSampleStep(button.dataset.sampleStep));
     });
+    bindCsvPreview();
+}
+
+function bindCsvPreview() {
+    const form = document.querySelector("#csv-preview-form");
+    form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const submit = form.querySelector("[type='submit']");
+        submit.disabled = true;
+        try {
+            const response = await request(API.planningDataPreview, {
+                method: "POST",
+                body: new FormData(form)
+            });
+            renderCsvPreview(response);
+            showToast(response.readyToApply
+                ? "모든 CSV 행이 검증을 통과했습니다."
+                : "수정이 필요한 CSV 행이 있습니다.",
+            !response.readyToApply);
+        } catch (error) {
+            showToast(error.message, true);
+        } finally {
+            submit.disabled = false;
+        }
+    });
+}
+
+function renderCsvPreview(preview) {
+    text("#csv-total-rows", number(preview.totalRows));
+    text("#csv-valid-rows", number(preview.validRows));
+    text("#csv-invalid-rows", number(preview.invalidRows));
+    const status = document.querySelector("#csv-preview-status");
+    status.textContent = preview.readyToApply ? "반영 준비 완료" : "수정 필요";
+    status.className = `status-pill ${preview.readyToApply ? "completed" : "delayed"}`;
+    const body = document.querySelector("#csv-preview-body");
+    body.innerHTML = preview.rows.map((row) => {
+        const normalized = Object.entries(row.normalizedValues)
+            .map(([key, value]) => `${escapeHtml(key)}=${escapeHtml(value)}`)
+            .join("<br>") || "-";
+        const errors = row.errors.length === 0
+            ? "정상"
+            : row.errors
+                .map((error) =>
+                    `[${escapeHtml(error.field)}] ${escapeHtml(error.message)}`)
+                .join("<br>");
+        return `<tr>
+            <td>${row.rowNumber}</td>
+            <td>${escapeHtml(row.type || "-")}</td>
+            <td>${normalized}</td>
+            <td class="${row.valid ? "" : "text-danger"}">${errors}</td>
+        </tr>`;
+    }).join("");
 }
 
 function bindForms() {

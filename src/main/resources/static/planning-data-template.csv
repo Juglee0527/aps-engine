@@ -1,0 +1,7 @@
+type,factoryCode,lineCode,machineCode,productCode,routingCode,orderNumber,name,status,unit,operationSequence,operationCode,operationName,processingTimeMinutes,quantity,releaseAt,dueAt,priority
+FACTORY,DEMO-BULK-FACTORY,,,,,,대량입력 데모 공장,,,,,,,,,,
+PRODUCTION_LINE,DEMO-BULK-FACTORY,DEMO-BULK-LINE,,,,,대량입력 데모 라인,,,,,,,,,,
+MACHINE,DEMO-BULK-FACTORY,DEMO-BULK-LINE,DEMO-BULK-MACHINE,,,,대량입력 데모 설비,AVAILABLE,,,,,,,,,
+PRODUCT,,,,DEMO-BULK-PRODUCT,,,대량입력 데모 품목,,PIECE,,,,,,,,
+ROUTING,DEMO-BULK-FACTORY,DEMO-BULK-LINE,DEMO-BULK-MACHINE,DEMO-BULK-PRODUCT,DEMO-BULK-ROUTING,,대량입력 데모 Routing,,,10,PROCESS,가공,30,,,,
+PRODUCTION_ORDER,,,,DEMO-BULK-PRODUCT,DEMO-BULK-ROUTING,DEMO-BULK-PO,,,,,,,,10,2026-08-03T08:00:00+09:00,2026-08-04T18:00:00+09:00,80

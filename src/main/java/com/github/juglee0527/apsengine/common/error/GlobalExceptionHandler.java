@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -79,6 +80,16 @@ public class GlobalExceptionHandler {
         ApiErrorResponse response =
                 ApiErrorResponse.of(errorCode, errorCode.defaultMessage());
 
+        return ResponseEntity.status(errorCode.httpStatus()).body(response);
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleMaxUploadSize() {
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        ApiErrorResponse response = ApiErrorResponse.of(
+                errorCode,
+                "CSV 파일은 2MB를 초과할 수 없습니다."
+        );
         return ResponseEntity.status(errorCode.httpStatus()).body(response);
     }
 

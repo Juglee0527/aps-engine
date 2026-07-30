@@ -4,5 +4,9 @@ spring:
   jackson:
     deserialization:
       adjust-dates-to-context-time-zone: false
+  servlet:
+    multipart:
+      max-file-size: 4MB
+      max-request-size: 4MB
   jpa:
     open-in-view: false

@@ -284,6 +284,44 @@
                 </div>
             </section>
 
+            <section class="panel guide-section">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">CSV PREVIEW</span>
+                        <h2>대량 데이터를 저장 전에 검증하세요</h2>
+                    </div>
+                    <a class="ghost-button" href="/planning-data-template.csv"
+                       download="planning-data-template.csv">샘플 CSV 받기</a>
+                </header>
+                <p class="modal-copy">
+                    최대 2MB·2,000행의 UTF-8 CSV를 검사합니다. 이 단계에서는 DB에 아무 데이터도 저장하지 않습니다.
+                </p>
+                <form id="csv-preview-form">
+                    <label>계획 데이터 CSV
+                        <input name="file" type="file" accept=".csv,text/csv" required>
+                    </label>
+                    <div class="modal-actions">
+                        <button type="submit" class="primary-button">검증 미리보기</button>
+                    </div>
+                </form>
+                <div class="run-meta" aria-live="polite">
+                    <span>전체 <strong id="csv-total-rows">0</strong></span>
+                    <span>성공 예상 <strong id="csv-valid-rows">0</strong></span>
+                    <span>실패 예상 <strong id="csv-invalid-rows">0</strong></span>
+                    <span id="csv-preview-status" class="status-pill neutral">검증 전</span>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                        <tr><th>행</th><th>타입</th><th>정규화 결과</th><th>검증 결과</th></tr>
+                        </thead>
+                        <tbody id="csv-preview-body">
+                        <tr><td colspan="4" class="empty-cell">샘플 CSV를 내려받거나 파일을 선택해 검증하세요.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
             <section class="guide-section">
                 <header class="guide-section-heading">
                     <div>

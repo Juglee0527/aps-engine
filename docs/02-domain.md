@@ -311,3 +311,18 @@ PlannedLeadTime은 저장된 ScheduleRun을 기준으로 생산오더가 투입 
 대기시간에는 최초 작업 전 큐 대기, 공정 사이 대기, 비근무시간, 휴무와 Maintenance가 포함됩니다.
 ScheduledOperation이 없는 실행은 계산할 생산오더가 없으므로 빈 목록을 반환합니다. 통계, 예측과
 실적 Lead Time은 현재 모델의 책임이 아닙니다.
+
+## 14. PlanningDataImportPreview
+
+PlanningDataImportPreview는 CSV를 DB에 반영하기 전에 구조·값·참조를 검증한 조회 모델입니다.
+
+| 속성 | 설명 |
+| --- | --- |
+| `readyToApply` | 모든 행이 유효해 다음 반영 단계로 넘길 수 있는지 여부 |
+| `totalRows` | 헤더와 빈 행을 제외한 데이터 행 수 |
+| `validRows` | 성공 예상 행 수 |
+| `invalidRows` | 실패 예상 행 수 |
+| `rows` | 논리 행 번호, 타입, 정규화 값과 오류 목록 |
+
+행 오류는 `field`, 안정적인 `code`, 사용자용 `message`로 구성합니다. 미리보기는 transient
+도메인 객체로 실제 생성 규칙을 검증하지만 Repository `save`를 호출하지 않습니다.
