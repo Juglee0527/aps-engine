@@ -60,7 +60,7 @@ Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.c
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 병목 설비 진단까지 로드맵 `001~033`을 구현했습니다.
+2026년 7월 30일 기준으로 Factory부터 캐시 필요성 검증까지 로드맵 `001~034`를 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -78,7 +78,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 실행 키 기반 중복 방지와 스케줄 결과 원자적 저장
 - 설비·이전 품목·다음 품목별 방향성 Changeover Time 기준정보
 - 실제 API 데이터 기반 작업·Changeover 간트, 납기 지연 및 병목 후보 화면
-- 다음 개발 단위: `034. Redis 캐시 적용 대상 검증`
+- Redis 캐시는 반복 호출량과 성능 근거가 없어 현재 도입 보류
+- 다음 개발 단위: `035. Testcontainers 통합 테스트 기반`
 
 # Tech Stack
 
@@ -149,6 +150,7 @@ aps-engine
 - [APS Schedule Control Tower](docs/05-mvp-ui.md)
 - [순방향 스케줄링](docs/05-scheduling.md)
 - [CAPA 계산](docs/06-capacity.md)
+- [캐시 도입 판단](docs/08-cache-strategy.md)
 
 ---
 
@@ -202,7 +204,7 @@ aps-engine
 - [x] 031. Maintenance 제약조건
 - [x] 032. Lead Time 계산
 - [x] 033. Bottleneck 탐지
-- [ ] 034. Redis 캐시 적용 대상 검증
+- [x] 034. Redis 캐시 적용 대상 검증
 - [ ] 035. Testcontainers 통합 테스트 기반
 - [ ] 036. Docker 애플리케이션 이미지
 - [ ] 037. GitHub Actions 빌드 검증
