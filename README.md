@@ -42,6 +42,20 @@ Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.c
 서버를 종료하려면 실행 중인 터미널에서 `Ctrl+C`를 누릅니다.
 상세 설정과 문제 해결 방법은 [Local Development](#local-development)를 참고해 주세요.
 
+## 애플리케이션까지 Docker로 실행
+
+`.env`를 준비한 뒤 PostgreSQL과 APS Engine 이미지를 함께 빌드·실행합니다.
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build
+docker compose ps
+```
+
+기본 접속 주소는 `http://localhost:8080`, 상태 확인 주소는
+`http://localhost:8080/actuator/health`입니다. 상세 환경변수와 종료 방법은
+[Docker 애플리케이션 이미지](docs/10-docker.md)를 참고해 주세요.
+
 ---
 
 # Goals
@@ -60,7 +74,7 @@ Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.c
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 PostgreSQL Testcontainers 기반까지 로드맵 `001~035`를 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 Docker 애플리케이션 이미지까지 로드맵 `001~036`을 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -80,7 +94,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 실제 API 데이터 기반 작업·Changeover 간트, 납기 지연 및 병목 후보 화면
 - Redis 캐시는 반복 호출량과 성능 근거가 없어 현재 도입 보류
 - Docker 사용 가능 시 PostgreSQL 컨테이너에서 Flyway·Repository 통합 검증
-- 다음 개발 단위: `036. Docker 애플리케이션 이미지`
+- 비루트 멀티 스테이지 애플리케이션 이미지와 PostgreSQL Compose 실행
+- 다음 개발 단위: `037. GitHub Actions 빌드 검증`
 
 # Tech Stack
 
@@ -91,14 +106,14 @@ Machine + Product 전환 방향 → ChangeoverTime
 | Backend | Java 21, Spring Boot 3.5.16, Gradle 8.14.4 |
 | Persistence | Spring Data JPA, Hibernate, Flyway |
 | Database | PostgreSQL 18.4 |
-| Test | JUnit 5, Mockito, Spring Boot Test |
-| Local Environment | Docker Compose |
+| Test | JUnit 5, Mockito, Spring Boot Test, Testcontainers |
+| Runtime | Multi-stage Docker image, Spring Boot Actuator |
+| Local Environment | PostgreSQL + APS Engine Docker Compose |
 | UI | Spring Boot Static Resources, Vanilla JavaScript |
 
 ## Planned
 
-QueryDSL, Redis, Testcontainers, 애플리케이션 Docker 이미지와 GitHub Actions는 목표 스택이며 아직 적용하지 않았습니다.
-각 기술은 로드맵 `034~037`에서 필요성을 검증한 뒤 추가합니다.
+QueryDSL과 GitHub Actions는 아직 적용하지 않았습니다. Redis는 측정 근거가 없어 도입을 보류했습니다.
 
 ---
 
@@ -153,6 +168,7 @@ aps-engine
 - [CAPA 계산](docs/06-capacity.md)
 - [캐시 도입 판단](docs/08-cache-strategy.md)
 - [PostgreSQL Testcontainers](docs/09-testcontainers.md)
+- [Docker 애플리케이션 이미지](docs/10-docker.md)
 
 ---
 
@@ -208,7 +224,7 @@ aps-engine
 - [x] 033. Bottleneck 탐지
 - [x] 034. Redis 캐시 적용 대상 검증
 - [x] 035. Testcontainers 통합 테스트 기반
-- [ ] 036. Docker 애플리케이션 이미지
+- [x] 036. Docker 애플리케이션 이미지
 - [ ] 037. GitHub Actions 빌드 검증
 - [ ] 038. 스케줄링 성능 기준선
 - [ ] 039. 측정 기반 성능 개선
@@ -261,6 +277,7 @@ POSTGRES_DB=aps
 POSTGRES_USER=aps
 POSTGRES_PASSWORD=<로컬에서 사용할 비밀번호>
 POSTGRES_PORT=5432
+APP_PORT=8080
 ```
 
 `.env`는 Git 추적 대상에서 제외됩니다. 실제 비밀번호를 `.env.example`이나 소스 코드에 기록하지 마세요.

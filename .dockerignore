@@ -1,0 +1,14 @@
+.git
+.github
+.gradle
+.gradle-user-home
+.idea
+build
+out
+
+.env
+*.log
+
+docs
+scripts
+src/test
