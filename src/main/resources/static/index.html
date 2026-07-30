@@ -250,8 +250,8 @@
                         어떤 주문을 먼저 만들고, 어느 설비에서 언제 작업할지
                         근무시간과 공정 순서를 반영해 계산합니다.
                     </p>
-                    <button class="primary-button" type="button" data-view-jump="master">
-                        첫 계획 준비하기 →
+                    <button class="primary-button" type="button" data-guide-start>
+                        샘플로 첫 계획 시작하기 →
                     </button>
                 </div>
                 <div class="guide-question-grid" aria-label="APS가 답하는 질문">
@@ -305,48 +305,110 @@
                 </div>
             </section>
 
-            <section class="panel guide-section">
+            <section id="guide-onboarding" class="panel guide-section guide-onboarding">
                 <header class="panel-header guide-panel-header">
                     <div>
-                        <span class="section-label">FIRST SCHEDULE</span>
-                        <h2>첫 생산계획 만들기</h2>
+                        <span class="section-label">GUIDED SAMPLE</span>
+                        <h2>샘플 데이터로 첫 생산계획 만들기</h2>
                     </div>
-                    <p>왼쪽부터 한 번씩 설정하면 스케줄을 실행할 수 있습니다.</p>
+                    <div class="guide-progress-summary">
+                        <strong id="guide-progress-text">0 / 4 단계 완료</strong>
+                        <div
+                            class="guide-progress-track"
+                            role="progressbar"
+                            aria-label="샘플 온보딩 진행률"
+                            aria-valuemin="0"
+                            aria-valuemax="4"
+                            aria-valuenow="0"
+                        >
+                            <span id="guide-progress-fill"></span>
+                        </div>
+                    </div>
                 </header>
                 <div class="guide-flow">
-                    <article class="guide-step">
+                    <article class="guide-step" data-guide-step-card="resources">
                         <span class="guide-step-number">1</span>
                         <div>
-                            <strong>생산 자원 등록</strong>
-                            <p>공장 → 라인 → 설비 순서로 등록하고, 각 설비의 월~금 근무시간을 설정합니다.</p>
-                            <button class="text-button" type="button" data-view-jump="master">마스터 데이터로 이동 →</button>
+                            <div class="guide-step-title">
+                                <strong>생산 자원 준비</strong>
+                                <span id="guide-step-resources-status" class="guide-step-status">시작 전</span>
+                            </div>
+                            <p>공장과 라인 아래에 절단·조립 설비를 만들고 월~금 08:00~17:00 근무시간을 설정합니다.</p>
+                            <ul class="guide-sample-preview">
+                                <li>데모 공장 / 기본 생산라인</li>
+                                <li>절단기 1대 / 조립기 1대</li>
+                            </ul>
+                            <button class="guide-step-action" type="button" data-sample-step="resources">
+                                샘플 생산 자원 등록
+                            </button>
                         </div>
                     </article>
-                    <article class="guide-step">
+                    <article class="guide-step" data-guide-step-card="process">
                         <span class="guide-step-number">2</span>
                         <div>
-                            <strong>품목과 공정 정의</strong>
-                            <p>품목을 등록한 뒤 Routing에 공정 순서, 분/개, 사용할 설비를 입력합니다.</p>
-                            <button class="text-button" type="button" data-open-dialog="routing-dialog">Routing 등록 열기 →</button>
+                            <div class="guide-step-title">
+                                <strong>품목과 공정 준비</strong>
+                                <span id="guide-step-process-status" class="guide-step-status">대기</span>
+                            </div>
+                            <p>완제품 A와 표준 Routing을 만들고 절단 → 조립 순서로 설비와 가공시간을 연결합니다.</p>
+                            <ul class="guide-sample-preview">
+                                <li>완제품 A / 단위 PIECE</li>
+                                <li>절단 15분 → 조립 20분</li>
+                            </ul>
+                            <button class="guide-step-action" type="button" data-sample-step="process">
+                                샘플 품목과 공정 등록
+                            </button>
                         </div>
                     </article>
-                    <article class="guide-step">
+                    <article class="guide-step" data-guide-step-card="orders">
                         <span class="guide-step-number">3</span>
                         <div>
-                            <strong>생산오더 확정</strong>
-                            <p>수량, 투입 가능시각, 납기, 우선순위를 입력하고 CONFIRMED 상태로 만듭니다.</p>
-                            <button class="text-button" type="button" data-view-jump="orders">생산오더로 이동 →</button>
+                            <div class="guide-step-title">
+                                <strong>생산오더 준비</strong>
+                                <span id="guide-step-orders-status" class="guide-step-status">대기</span>
+                            </div>
+                            <p>수량과 우선순위가 다른 오더 2건을 만들고 바로 확정해 배치 순서를 비교할 수 있게 합니다.</p>
+                            <ul class="guide-sample-preview">
+                                <li>긴급 오더 2개 / 우선순위 90</li>
+                                <li>일반 오더 3개 / 우선순위 60</li>
+                            </ul>
+                            <button class="guide-step-action" type="button" data-sample-step="orders">
+                                샘플 생산오더 등록
+                            </button>
                         </div>
                     </article>
-                    <article class="guide-step">
+                    <article class="guide-step" data-guide-step-card="schedule">
                         <span class="guide-step-number">4</span>
                         <div>
-                            <strong>계획 시작시각 선택</strong>
-                            <p>스케줄 실행을 누르면 계획 시작 이후 가능한 가장 이른 시간부터 작업을 배치합니다.</p>
-                            <button class="text-button" type="button" data-open-dialog="schedule-dialog">스케줄 실행 열기 →</button>
+                            <div class="guide-step-title">
+                                <strong>스케줄 실행과 확인</strong>
+                                <span id="guide-step-schedule-status" class="guide-step-status">대기</span>
+                            </div>
+                            <p>샘플 오더의 투입 시각부터 엔진을 실행하고 설비별 작업 순서와 납기 결과를 확인합니다.</p>
+                            <ul class="guide-sample-preview">
+                                <li>근무시간과 공정 선후관계 반영</li>
+                                <li>완료 후 스케줄 보드에서 확인</li>
+                            </ul>
+                            <button class="guide-step-action" type="button" data-sample-step="schedule">
+                                샘플 스케줄 실행
+                            </button>
                         </div>
                     </article>
                 </div>
+                <footer class="guide-onboarding-footer">
+                    <div>
+                        <span class="section-label">진행 안내</span>
+                        <p id="guide-sample-log" aria-live="polite">
+                            1단계 버튼을 누르면 샘플 데이터가 순서대로 등록됩니다.
+                        </p>
+                    </div>
+                    <div class="guide-manual-actions">
+                        <span>직접 입력하며 확인하고 싶으신가요?</span>
+                        <button class="text-button" type="button" data-view-jump="master">
+                            마스터 데이터 직접 등록 →
+                        </button>
+                    </div>
+                </footer>
             </section>
 
             <section class="guide-section">

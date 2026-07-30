@@ -15,6 +15,43 @@ const API = {
     latestSchedule: "/api/v1/schedules/latest"
 };
 
+const SAMPLE_DATA = {
+    factory: {code: "DEMO-FACTORY", name: "데모 공장"},
+    line: {code: "DEMO-LINE", name: "기본 생산라인"},
+    machines: [
+        {code: "DEMO-CUT", name: "데모 절단기", status: "AVAILABLE"},
+        {code: "DEMO-ASSEMBLY", name: "데모 조립기", status: "AVAILABLE"}
+    ],
+    weekdays: ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+    product: {code: "DEMO-PRODUCT", name: "완제품 A", unit: "PIECE"},
+    routing: {
+        code: "DEMO-ROUTING",
+        name: "표준 생산 Routing",
+        operations: [
+            {
+                sequence: 10,
+                code: "CUT",
+                name: "절단",
+                processingTimeMinutes: 15,
+                machineCode: "DEMO-CUT"
+            },
+            {
+                sequence: 20,
+                code: "ASSEMBLY",
+                name: "조립",
+                processingTimeMinutes: 20,
+                machineCode: "DEMO-ASSEMBLY"
+            }
+        ]
+    },
+    orders: [
+        {orderNumber: "DEMO-ORDER-HIGH", quantity: 2, priority: 90, dueWorkingDays: 2},
+        {orderNumber: "DEMO-ORDER-NORMAL", quantity: 3, priority: 60, dueWorkingDays: 3}
+    ]
+};
+
+const SAMPLE_STEP_KEYS = ["resources", "process", "orders", "schedule"];
+
 const state = {
     factories: [],
     lines: [],
@@ -23,11 +60,14 @@ const state = {
     routings: [],
     orders: [],
     latestSchedule: null,
-    capacity: new Map()
+    capacity: new Map(),
+    sampleCalendars: new Map()
 };
 
 const colors = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"];
 let toastTimer;
+let runningSampleStep = null;
+let guideLogMessage = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
     bindNavigation();
@@ -90,6 +130,7 @@ async function loadAll() {
             state.products.map((product) => request(API.routings(product.id)))
         );
         state.routings = routingLists.flat();
+        await loadSampleCalendars();
         await loadCapacity();
         setConnection("online");
         render();
@@ -98,6 +139,18 @@ async function loadAll() {
         showToast(error.message, true);
         render();
     }
+}
+
+async function loadSampleCalendars() {
+    state.sampleCalendars = new Map();
+    const {machines} = sampleEntities();
+    const existingMachines = machines.filter(Boolean);
+    const calendarLists = await Promise.all(
+        existingMachines.map((machine) => request(API.calendars(machine.id)))
+    );
+    existingMachines.forEach((machine, index) => {
+        state.sampleCalendars.set(machine.id, calendarLists[index]);
+    });
 }
 
 async function loadCapacity() {
@@ -146,6 +199,7 @@ function render() {
     renderLoadRanking();
     renderMasterData();
     renderGuide();
+    renderSampleOnboarding();
     populateSelects();
 }
 
@@ -172,6 +226,67 @@ function renderGuide() {
             ? `RUN #${state.latestSchedule.id} · 작업 ${state.latestSchedule.taskCount}건`
             : "실행 결과 없음"
     );
+}
+
+function renderSampleOnboarding() {
+    const completion = sampleCompletion();
+    const completedCount = SAMPLE_STEP_KEYS.filter((key) => completion[key]).length;
+    const firstIncompleteIndex = SAMPLE_STEP_KEYS.findIndex((key) => !completion[key]);
+    const currentIndex = firstIncompleteIndex === -1
+        ? SAMPLE_STEP_KEYS.length - 1
+        : firstIncompleteIndex;
+
+    text("#guide-progress-text", `${completedCount} / ${SAMPLE_STEP_KEYS.length} 단계 완료`);
+    const progressFill = document.querySelector("#guide-progress-fill");
+    progressFill.style.width = `${completedCount / SAMPLE_STEP_KEYS.length * 100}%`;
+    progressFill.parentElement.setAttribute("aria-valuenow", String(completedCount));
+
+    if (runningSampleStep === null && guideLogMessage === null) {
+        const nextStepNumber = completedCount === SAMPLE_STEP_KEYS.length
+            ? null
+            : completedCount + 1;
+        setGuideLog(nextStepNumber === null
+            ? "샘플 생산계획 준비가 끝났습니다. 스케줄 보드에서 결과를 확인해 주세요."
+            : `${nextStepNumber}단계부터 이어서 진행할 수 있습니다.`);
+    }
+
+    SAMPLE_STEP_KEYS.forEach((key, index) => {
+        const card = document.querySelector(`[data-guide-step-card="${key}"]`);
+        const button = card.querySelector("[data-sample-step]");
+        const status = document.querySelector(`#guide-step-${key}-status`);
+        const isComplete = completion[key];
+        const isRunning = runningSampleStep === key;
+        const isLocked = !isComplete && index > currentIndex;
+        const isCurrent = !isComplete && index === currentIndex;
+
+        card.classList.toggle("is-complete", isComplete);
+        card.classList.toggle("is-running", isRunning);
+        card.classList.toggle("is-locked", isLocked);
+        card.classList.toggle("is-current", isCurrent && !isRunning);
+
+        if (isRunning) {
+            status.textContent = "등록 중";
+        } else if (isComplete) {
+            status.textContent = "완료";
+        } else if (isLocked) {
+            status.textContent = "선행 단계 필요";
+        } else {
+            status.textContent = "다음 단계";
+        }
+
+        if (key === "schedule" && isComplete) {
+            button.textContent = "스케줄 보드에서 결과 보기";
+            button.disabled = runningSampleStep !== null;
+        } else {
+            button.textContent = {
+                resources: "샘플 생산 자원 등록",
+                process: "샘플 품목과 공정 등록",
+                orders: "샘플 생산오더 등록",
+                schedule: "샘플 스케줄 실행"
+            }[key];
+            button.disabled = isComplete || isLocked || runningSampleStep !== null;
+        }
+    });
 }
 
 function renderRunSummary() {
@@ -459,6 +574,15 @@ function bindDialogs() {
 function bindActions() {
     document.querySelector("#refresh-button").addEventListener("click", loadAll);
     document.querySelector("#add-operation-button").addEventListener("click", addOperationRow);
+    document.querySelector("[data-guide-start]").addEventListener("click", () => {
+        document.querySelector("#guide-onboarding").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    });
+    document.querySelectorAll("[data-sample-step]").forEach((button) => {
+        button.addEventListener("click", () => runSampleStep(button.dataset.sampleStep));
+    });
 }
 
 function bindForms() {
@@ -570,6 +694,364 @@ async function confirmOrder(orderId) {
     } catch (error) {
         showToast(error.message, true);
     }
+}
+
+async function runSampleStep(stepKey) {
+    if (runningSampleStep !== null) return;
+
+    const completion = sampleCompletion();
+    if (stepKey === "schedule" && completion.schedule) {
+        showView("schedule");
+        return;
+    }
+    const stepIndex = SAMPLE_STEP_KEYS.indexOf(stepKey);
+    const missingPreviousStep = SAMPLE_STEP_KEYS
+        .slice(0, stepIndex)
+        .some((key) => !completion[key]);
+    if (stepIndex < 0 || missingPreviousStep || completion[stepKey]) {
+        return;
+    }
+
+    runningSampleStep = stepKey;
+    renderSampleOnboarding();
+    setGuideLog({
+        resources: "공장부터 근무시간까지 순서대로 확인하고 있습니다.",
+        process: "품목과 Routing, 공정별 설비 연결을 등록하고 있습니다.",
+        orders: "샘플 오더 2건을 등록하고 CONFIRMED 상태로 확정하고 있습니다.",
+        schedule: "확정 오더를 읽어 설비별 작업 시간을 계산하고 있습니다."
+    }[stepKey]);
+
+    try {
+        await {
+            resources: createSampleResources,
+            process: createSampleProcess,
+            orders: createSampleOrders,
+            schedule: executeSampleSchedule
+        }[stepKey]();
+        await loadAll();
+        const message = {
+            resources: "1단계 완료: 생산 자원과 근무시간을 준비했습니다.",
+            process: "2단계 완료: 품목과 Routing을 준비했습니다.",
+            orders: "3단계 완료: 샘플 오더 2건을 확정했습니다.",
+            schedule: "4단계 완료: 샘플 스케줄을 생성했습니다."
+        }[stepKey];
+        setGuideLog(message);
+        showToast(message);
+        if (stepKey === "schedule") {
+            showView("schedule");
+        }
+    } catch (error) {
+        try {
+            await loadAll();
+        } catch {
+            // loadAll이 연결 상태와 오류 메시지를 화면에 반영합니다.
+        }
+        setGuideLog(`진행을 멈췄습니다: ${error.message}`);
+        showToast(error.message, true);
+    } finally {
+        runningSampleStep = null;
+        renderSampleOnboarding();
+    }
+}
+
+async function createSampleResources() {
+    let factory = state.factories.find(
+        (item) => item.code === SAMPLE_DATA.factory.code
+    );
+    if (!factory) {
+        setGuideLog("1/6 데모 공장을 등록하고 있습니다.");
+        factory = await request(API.factories, {
+            method: "POST",
+            body: JSON.stringify(SAMPLE_DATA.factory)
+        });
+    }
+    if (!factory.active) {
+        throw new Error("기존 데모 공장이 비활성 상태라 샘플을 이어갈 수 없습니다.");
+    }
+
+    let line = state.lines.find(
+        (item) => item.factoryId === factory.id && item.code === SAMPLE_DATA.line.code
+    );
+    if (!line) {
+        setGuideLog("2/6 데모 공장 아래에 기본 생산라인을 등록하고 있습니다.");
+        line = await request(API.lines(factory.id), {
+            method: "POST",
+            body: JSON.stringify(SAMPLE_DATA.line)
+        });
+    }
+    if (!line.active) {
+        throw new Error("기존 데모 생산라인이 비활성 상태라 샘플을 이어갈 수 없습니다.");
+    }
+
+    const machines = [];
+    for (let index = 0; index < SAMPLE_DATA.machines.length; index += 1) {
+        const sampleMachine = SAMPLE_DATA.machines[index];
+        let machine = state.machines.find(
+            (item) => item.productionLineId === line.id && item.code === sampleMachine.code
+        );
+        if (!machine) {
+            setGuideLog(`${index + 3}/6 ${sampleMachine.name}를 등록하고 있습니다.`);
+            machine = await request(API.machines(line.id), {
+                method: "POST",
+                body: JSON.stringify(sampleMachine)
+            });
+        }
+        if (machine.status !== "AVAILABLE") {
+            throw new Error(`${machine.name}가 AVAILABLE 상태가 아닙니다.`);
+        }
+        machines.push(machine);
+    }
+
+    for (let index = 0; index < machines.length; index += 1) {
+        const machine = machines[index];
+        setGuideLog(`${index + 5}/6 ${machine.name}의 월~금 근무시간을 확인하고 있습니다.`);
+        const existing = await request(API.calendars(machine.id));
+        const registeredDays = new Set(
+            existing.filter((calendar) => calendar.active)
+                .map((calendar) => calendar.dayOfWeek)
+        );
+        const missingDays = SAMPLE_DATA.weekdays.filter(
+            (dayOfWeek) => !registeredDays.has(dayOfWeek)
+        );
+        if (missingDays.length > 0) {
+            await request(API.calendars(machine.id), {
+                method: "POST",
+                body: JSON.stringify({
+                    entries: missingDays.map((dayOfWeek) => ({
+                        dayOfWeek,
+                        startTime: "08:00:00",
+                        endTime: "17:00:00"
+                    }))
+                })
+            });
+        }
+    }
+}
+
+async function createSampleProcess() {
+    const before = sampleEntities();
+    if (!sampleCompletion().resources) {
+        throw new Error("먼저 샘플 생산 자원을 준비해 주세요.");
+    }
+
+    let product = before.product;
+    if (!product) {
+        setGuideLog("1/2 완제품 A를 등록하고 있습니다.");
+        product = await request(API.products, {
+            method: "POST",
+            body: JSON.stringify(SAMPLE_DATA.product)
+        });
+    }
+    if (!product.active) {
+        throw new Error("기존 데모 품목이 비활성 상태라 샘플을 이어갈 수 없습니다.");
+    }
+
+    const existingRouting = state.routings.find(
+        (item) => item.productId === product.id && item.code === SAMPLE_DATA.routing.code
+    );
+    if (existingRouting) {
+        if (!isExpectedSampleRouting(existingRouting, before.machines)) {
+            throw new Error("기존 데모 Routing의 공정 구성이 샘플과 다릅니다.");
+        }
+        return;
+    }
+
+    setGuideLog("2/2 절단 → 조립 Routing을 등록하고 있습니다.");
+    const machinesByCode = new Map(
+        before.machines.map((machine) => [machine.code, machine])
+    );
+    const operations = SAMPLE_DATA.routing.operations.map((operation) => ({
+        sequence: operation.sequence,
+        code: operation.code,
+        name: operation.name,
+        processingTimeMinutes: operation.processingTimeMinutes,
+        machineId: machinesByCode.get(operation.machineCode).id
+    }));
+    await request(API.routings(product.id), {
+        method: "POST",
+        body: JSON.stringify({
+            code: SAMPLE_DATA.routing.code,
+            name: SAMPLE_DATA.routing.name,
+            operations
+        })
+    });
+}
+
+async function createSampleOrders() {
+    const context = sampleEntities();
+    if (!sampleCompletion().process) {
+        throw new Error("먼저 샘플 품목과 공정을 준비해 주세요.");
+    }
+
+    const {releaseAt} = samplePlanningDates();
+    for (let index = 0; index < SAMPLE_DATA.orders.length; index += 1) {
+        const sampleOrder = SAMPLE_DATA.orders[index];
+        let order = state.orders.find(
+            (item) => item.orderNumber === sampleOrder.orderNumber
+        );
+        if (!order) {
+            setGuideLog(`${index + 1}/2 ${sampleOrder.orderNumber} 오더를 등록하고 있습니다.`);
+            const dueAt = addWorkingDays(releaseAt, sampleOrder.dueWorkingDays);
+            dueAt.setHours(17, 0, 0, 0);
+            order = await request(API.orders, {
+                method: "POST",
+                body: JSON.stringify({
+                    orderNumber: sampleOrder.orderNumber,
+                    routingId: context.routing.id,
+                    quantity: sampleOrder.quantity,
+                    releaseAt: releaseAt.toISOString(),
+                    dueAt: dueAt.toISOString(),
+                    priority: sampleOrder.priority
+                })
+            });
+        }
+        if (order.routingId !== context.routing.id) {
+            throw new Error(`${order.orderNumber} 오더가 다른 Routing을 사용하고 있습니다.`);
+        }
+        if (order.status === "DRAFT") {
+            await request(API.confirmOrder(order.id), {method: "POST"});
+        } else if (!["CONFIRMED", "SCHEDULED"].includes(order.status)) {
+            throw new Error(`${order.orderNumber} 오더가 ${order.status} 상태라 사용할 수 없습니다.`);
+        }
+    }
+}
+
+async function executeSampleSchedule() {
+    const context = sampleEntities();
+    if (!sampleCompletion().orders) {
+        throw new Error("먼저 샘플 생산오더를 준비해 주세요.");
+    }
+    const confirmedOrders = context.orders.filter(
+        (order) => order?.status === "CONFIRMED"
+    );
+    if (confirmedOrders.length === 0) {
+        throw new Error("이미 샘플 오더의 스케줄 실행이 완료되었습니다.");
+    }
+    const planningStart = confirmedOrders
+        .map((order) => new Date(order.releaseAt))
+        .sort((left, right) => left - right)[0];
+    await request(API.schedules, {
+        method: "POST",
+        body: JSON.stringify({
+            executionKey: crypto.randomUUID(),
+            planningStart: planningStart.toISOString()
+        })
+    });
+}
+
+function sampleEntities() {
+    const factory = state.factories.find(
+        (item) => item.code === SAMPLE_DATA.factory.code
+    );
+    const line = factory && state.lines.find(
+        (item) => item.factoryId === factory.id && item.code === SAMPLE_DATA.line.code
+    );
+    const machines = SAMPLE_DATA.machines.map((sampleMachine) =>
+        line && state.machines.find(
+            (item) =>
+                item.productionLineId === line.id
+                && item.code === sampleMachine.code
+        )
+    );
+    const product = state.products.find(
+        (item) => item.code === SAMPLE_DATA.product.code
+    );
+    const routing = product && state.routings.find(
+        (item) =>
+            item.productId === product.id
+            && item.code === SAMPLE_DATA.routing.code
+    );
+    const orders = SAMPLE_DATA.orders.map((sampleOrder) =>
+        state.orders.find(
+            (item) => item.orderNumber === sampleOrder.orderNumber
+        )
+    );
+    return {factory, line, machines, product, routing, orders};
+}
+
+function sampleCompletion() {
+    const context = sampleEntities();
+    const resources = Boolean(
+        context.factory?.active
+        && context.line?.active
+        && context.machines.every((machine) =>
+            machine?.status === "AVAILABLE"
+            && hasWeekdayCalendar(machine.id)
+        )
+    );
+    const process = Boolean(
+        resources
+        && context.product?.active
+        && context.routing?.active
+        && isExpectedSampleRouting(context.routing, context.machines)
+    );
+    const orders = Boolean(
+        process
+        && context.orders.every((order) =>
+            order
+            && order.routingId === context.routing.id
+            && ["CONFIRMED", "SCHEDULED"].includes(order.status)
+        )
+    );
+    const schedule = Boolean(
+        orders
+        && context.orders.every((order) => order.status === "SCHEDULED")
+    );
+    return {resources, process, orders, schedule};
+}
+
+function hasWeekdayCalendar(machineId) {
+    const registeredDays = new Set(
+        (state.sampleCalendars.get(machineId) || [])
+            .filter((calendar) => calendar.active)
+            .map((calendar) => calendar.dayOfWeek)
+    );
+    return SAMPLE_DATA.weekdays.every((day) => registeredDays.has(day));
+}
+
+function isExpectedSampleRouting(routing, machines) {
+    if (!routing || machines.some((machine) => !machine)) return false;
+    if (routing.operations.length !== SAMPLE_DATA.routing.operations.length) {
+        return false;
+    }
+    const machineIdsByCode = new Map(
+        machines.map((machine) => [machine.code, machine.id])
+    );
+    return SAMPLE_DATA.routing.operations.every((expected) =>
+        routing.operations.some((operation) =>
+            operation.sequence === expected.sequence
+            && operation.code === expected.code
+            && operation.processingTimeMinutes === expected.processingTimeMinutes
+            && operation.machineId === machineIdsByCode.get(expected.machineCode)
+        )
+    );
+}
+
+function samplePlanningDates() {
+    const releaseAt = new Date();
+    releaseAt.setDate(releaseAt.getDate() + 1);
+    releaseAt.setHours(8, 0, 0, 0);
+    while ([0, 6].includes(releaseAt.getDay())) {
+        releaseAt.setDate(releaseAt.getDate() + 1);
+    }
+    return {releaseAt};
+}
+
+function addWorkingDays(value, days) {
+    const result = new Date(value);
+    let remaining = days;
+    while (remaining > 0) {
+        result.setDate(result.getDate() + 1);
+        if (![0, 6].includes(result.getDay())) {
+            remaining -= 1;
+        }
+    }
+    return result;
+}
+
+function setGuideLog(message) {
+    guideLogMessage = message;
+    text("#guide-sample-log", message);
 }
 
 function addOperationRow() {
