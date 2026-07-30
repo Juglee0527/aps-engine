@@ -8,6 +8,42 @@ APS Engine은 제조업의 생산계획(APS, Advanced Planning & Scheduling)의 
 
 ---
 
+# 🚀 로컬 서버 바로 실행
+
+Java 21과 Docker Desktop만 준비하고 Docker Desktop을 실행해 주세요.
+별도의 Gradle 및 PostgreSQL 설치는 필요하지 않습니다.
+
+## PowerShell에 복사해서 실행
+
+아래 블록을 한 번에 복사해 PowerShell에 붙여넣습니다.
+
+```powershell
+Set-Location C:\Users\user\IdeaProjects\aps-engine
+.\scripts\run-local.ps1
+```
+
+## 실행 파일을 눌러서 실행
+
+Windows 파일 탐색기에서 저장소 루트의 [`run-local.cmd`](run-local.cmd)를 더블클릭합니다.
+
+실행 스크립트가 다음 작업을 자동으로 처리합니다.
+
+1. `.env`가 없으면 `.env.example`을 복사해 생성합니다.
+2. Docker PostgreSQL을 시작하고 `healthy` 상태까지 기다립니다.
+3. `8080` 포트가 사용 중이면 `8081`부터 사용 가능한 포트를 선택합니다.
+4. 선택한 접속 주소를 출력하고 Spring Boot 서버를 실행합니다.
+
+터미널에 출력된 주소로 접속합니다.
+
+```text
+[APS] 서버 주소: http://localhost:8080
+```
+
+서버를 종료하려면 실행 중인 터미널에서 `Ctrl+C`를 누릅니다.
+상세 설정과 문제 해결 방법은 [Local Development](#local-development)를 참고해 주세요.
+
+---
+
 # Goals
 
 - APS 도메인 이해
@@ -163,23 +199,140 @@ aps-engine
 
 - Java 21
 - Docker Desktop
+- PowerShell
 
 별도의 Gradle 설치는 필요하지 않습니다. 저장소에 포함된 Gradle Wrapper를 사용합니다.
+아래 명령어는 저장소 루트인 `C:\Users\user\IdeaProjects\aps-engine`에서 실행합니다.
 
-## PostgreSQL
-
-환경변수 예시 파일을 복사한 뒤 로컬 개발용 비밀번호를 변경합니다.
+## Quick Start
 
 ```powershell
-Copy-Item .env.example .env
-docker compose up -d postgres
-docker compose ps
+.\scripts\run-local.ps1
+```
+
+스크립트는 `.env` 준비, PostgreSQL 실행과 상태 확인, 서버 포트 선택 및 Spring Boot 실행을 한 번에 처리합니다.
+`8080`이 사용 중이면 `8081`부터 순서대로 빈 포트를 찾아 실제 접속 주소를 터미널에 출력합니다.
+
+특정 포트를 사용하려면 다음과 같이 실행합니다. 해당 포트가 사용 중이면 다음 빈 포트를 자동으로 선택합니다.
+
+```powershell
+.\scripts\run-local.ps1 -ServerPort 9090
+```
+
+## Environment
+
+최초 실행 시 `.env`가 없으면 `.env.example`을 자동으로 복사합니다.
+필요하면 서버 실행 전에 `.env`에서 로컬 PostgreSQL 설정을 변경합니다.
+
+```dotenv
+POSTGRES_DB=aps
+POSTGRES_USER=aps
+POSTGRES_PASSWORD=<로컬에서 사용할 비밀번호>
+POSTGRES_PORT=5432
 ```
 
 `.env`는 Git 추적 대상에서 제외됩니다. 실제 비밀번호를 `.env.example`이나 소스 코드에 기록하지 마세요.
-호스트의 `5432` 포트가 이미 사용 중이면 `.env`의 `POSTGRES_PORT`를 빈 포트로 변경합니다.
+
+`run-local.ps1`은 다음 작업을 수행합니다.
+
+1. `.env`의 PostgreSQL 연결 정보를 현재 프로세스에 적용합니다.
+2. Docker Desktop과 PostgreSQL 컨테이너 상태를 확인합니다.
+3. PostgreSQL이 `healthy`가 될 때까지 최대 60초 기다립니다.
+4. 사용할 수 있는 서버 포트를 선택합니다.
+5. 저장소 내부의 `.gradle-user-home`을 Gradle 캐시로 사용합니다.
+6. `local` Spring Profile로 애플리케이션을 실행합니다.
+7. Flyway 마이그레이션을 적용하고 Hibernate 매핑을 검증합니다.
+
+첫 실행에서는 Gradle 8.14.4와 의존성을 다운로드하므로 시간이 걸릴 수 있습니다.
+
+## Open
+
+서버 시작 로그에서 `Started ApsEngineApplication`을 확인한 다음 브라우저에서 접속합니다.
+실제 주소는 `[APS] 서버 주소:` 다음에 출력되며, 포트 상황에 따라 `8080`, `8081` 등이 될 수 있습니다.
+
+왼쪽 아래 `ENGINE STATUS`가 `API ONLINE`이면 정상적으로 실행된 상태입니다.
+
+처음 사용하는 경우 화면의 `사용자 가이드` 메뉴에서 다음 흐름을 따라갈 수 있습니다.
+
+```text
+공장 · 라인 · 설비 · 근무시간
+  → 품목 · Routing · Operation
+    → 생산오더 등록 · 확정
+      → 스케줄 실행
+        → 설비별 간트 · 납기 지연 · CAPA 확인
+```
+
+## Stop
+
+Spring Boot가 실행 중인 터미널에서 `Ctrl+C`를 누른 뒤 PostgreSQL을 중지합니다.
+
+```powershell
+docker compose stop postgres
+```
+
+PostgreSQL 데이터는 `postgres-data` Docker Volume에 보존되므로 다음 실행에서도 유지됩니다.
+
+## Troubleshooting
+
+### `.env 파일이 없습니다`
+
+저장소 루트에서 다음 명령어를 실행합니다.
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### `POSTGRES_PASSWORD is required`
+
+`.env`의 `POSTGRES_PASSWORD`가 비어 있지 않은지 확인합니다.
+
+### `password authentication failed for user "aps"`
+
+현재 `.env`의 비밀번호와 기존 `postgres-data` Volume을 처음 만들 때 사용한 비밀번호가 다릅니다.
+기존 데이터가 필요하면 최초 비밀번호를 `.env`에 다시 설정합니다.
+
+기존 로컬 데이터를 삭제해도 되는 경우에만 다음 명령으로 DB를 초기화합니다.
+
+```powershell
+docker compose down
+docker volume rm aps-engine_postgres-data
+.\scripts\run-local.ps1
+```
+
+### PostgreSQL 상태가 `healthy`가 되지 않음
+
+컨테이너 로그에서 원인을 확인합니다.
+
+```powershell
+docker compose logs postgres
+```
+
+비밀번호 등 `.env` 값을 변경했지만 기존 PostgreSQL Volume을 계속 사용하고 있다면,
+최초 컨테이너 생성 시 적용된 계정 정보와 현재 설정이 다를 수 있습니다.
+
+### `5432` 포트가 이미 사용 중
+
+`.env`의 `POSTGRES_PORT`를 사용 가능한 포트로 변경한 뒤 PostgreSQL을 다시 실행합니다.
+
+```dotenv
+POSTGRES_PORT=5433
+```
+
+`run-local.ps1`도 같은 `.env`를 읽으므로 Spring Boot 설정을 별도로 변경할 필요가 없습니다.
+
+### `Port 8080 was already in use`
+
+최신 `run-local.ps1`은 `8080`이 사용 중이면 다음 빈 포트를 자동으로 선택합니다.
+터미널의 `[APS] 서버 주소:`에 출력된 실제 주소로 접속합니다.
+
+### Gradle 다운로드 실패
+
+첫 실행에는 `https://services.gradle.org`와 의존성 저장소에 접근할 수 있어야 합니다.
+사내망 또는 방화벽 환경이라면 네트워크와 프록시 설정을 확인합니다.
 
 ## Test
+
+일반 단위 테스트는 다음과 같이 실행합니다.
 
 ```powershell
 .\gradlew.bat test
@@ -197,17 +350,9 @@ $env:POSTGRES_PASSWORD = "<.env에 설정한 비밀번호>"
 .\gradlew.bat test --tests "*JpaIntegrationTest"
 ```
 
-## Run
-
-```powershell
-.\scripts\run-local.ps1
-```
-
 애플리케이션은 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD` 환경변수로 연결 정보를 받습니다.
-`run-local.ps1`은 Git에서 제외된 `.env`를 현재 프로세스에만 읽어들인 뒤 로컬 프로필로 서버를 실행합니다.
 시작 시 Flyway가 `src/main/resources/db/migration`의 버전 마이그레이션을 순서대로 적용하고, Hibernate는 스키마를 생성하지 않고 매핑만 검증합니다.
 
-서버가 시작되면 브라우저에서 `http://localhost:8080`에 접속해 APS Schedule Control Tower를 확인할 수 있습니다.
 화면에서 생산 자원과 품목·Routing·근무시간·생산오더를 등록하고, 오더 확정 후 스케줄을 실행할 수 있습니다.
 최신 실행 결과는 설비별 간트, 납기 지연과 계획기간 CAPA 사용률로 표시됩니다.
 상세 설계와 현재 제외 범위는 [APS Schedule Control Tower](docs/05-mvp-ui.md)를 참고해 주세요.
