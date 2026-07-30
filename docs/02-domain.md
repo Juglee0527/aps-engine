@@ -326,3 +326,32 @@ PlanningDataImportPreview는 CSV를 DB에 반영하기 전에 구조·값·참�
 
 행 오류는 `field`, 안정적인 `code`, 사용자용 `message`로 구성합니다. 미리보기는 transient
 도메인 객체로 실제 생성 규칙을 검증하지만 Repository `save`를 호출하지 않습니다.
+
+## 15. PlanningDataImportRun
+
+PlanningDataImportRun은 CSV 반영 요청의 멱등성과 복구 상태를 보존하는 Aggregate Root입니다.
+`requestKey`는 실행을 식별하고 `fileSha256`은 같은 키에 다른 파일이 섞이는 것을 막습니다.
+
+| 속성 | 설명 |
+| --- | --- |
+| `requestKey` | 클라이언트가 생성한 요청 고유 UUID |
+| `fileName`, `fileSha256` | 입력 파일 식별 정보 |
+| `totalRows`, `successRows`, `failedRows` | 전체·성공·실패 행 수 |
+| `retryCount` | 중단 후 같은 파일로 재개한 횟수 |
+| `status` | `RUNNING`, `COMPLETED`, `FAILED`, `INTERRUPTED` |
+| `failureReason` | 검증 또는 DB 반영 실패의 실행 단위 사유 |
+| `rows` | 종료된 실행의 행별 상태와 오류 |
+
+```text
+신규 요청 → RUNNING → COMPLETED
+                  └→ FAILED
+재시작 감지: RUNNING → INTERRUPTED → RUNNING(같은 키·같은 파일 재요청)
+```
+
+`COMPLETED`와 `FAILED`는 종료 상태입니다. 같은 키와 같은 파일을 다시 요청하면 저장된 결과를
+그대로 반환하고, 같은 키에 다른 파일 해시가 들어오면 충돌로 거부합니다. `INTERRUPTED`만 같은
+파일로 재시도할 수 있습니다.
+
+행 결과 상태는 `SUCCEEDED`, `FAILED`, `SKIPPED`입니다. 전체 반영이 성공해야 모든 행을
+`SUCCEEDED`로 기록합니다. 검증 오류나 DB 제약 위반이 있으면 실제 데이터는 모두 반영하지 않고,
+원인 행은 `FAILED`, 함께 되돌리거나 반영하지 않은 행은 `SKIPPED`로 명시합니다.

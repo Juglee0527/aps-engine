@@ -61,6 +61,8 @@
 | `CONFIRMED_PRODUCTION_ORDER_REQUIRED` | 409 | 실행할 확정 생산오더 없음 |
 | `SCHEDULE_RUN_NOT_FOUND` | 404 | 스케줄 실행 결과가 존재하지 않음 |
 | `SCHEDULE_EXECUTION_DUPLICATED` | 409 | 동일 실행 키가 동시에 저장됨 |
+| `PLANNING_DATA_IMPORT_NOT_FOUND` | 404 | 계획 데이터 입력 실행이 존재하지 않음 |
+| `PLANNING_DATA_IMPORT_REQUEST_CONFLICT` | 409 | 동일 요청 키에 다른 CSV 파일을 사용함 |
 | `CHANGEOVER_TIME_DUPLICATED` | 409 | 같은 설비·이전 품목·다음 품목 조합이 이미 존재함 |
 | `CHANGEOVER_TIME_NOT_FOUND` | 404 | 요청한 Changeover Time이 존재하지 않거나 비활성 상태임 |
 | `MAINTENANCE_OVERLAP` | 409 | 같은 설비의 활성 정비시간이 겹침 |
@@ -712,3 +714,71 @@ Content-Type: multipart/form-data
 - 참조는 앞선 유효 행 또는 기존 DB 기준정보에서 확인합니다.
 - 열 개수 오류와 값·중복·참조 오류는 행별로 반환하고, 헤더·인코딩·파일 제한 오류는 `400`입니다.
 - 이 API는 트랜잭션을 읽기 전용으로 사용하며 DB에 데이터를 반영하지 않습니다.
+
+## 19. 계획 데이터 CSV 반영·이력 API
+
+### 19.1 전체 반영
+
+```http
+POST /api/v1/planning-data/imports?requestKey={UUID}
+Content-Type: multipart/form-data
+```
+
+미리보기와 같은 `file` 파트를 전송합니다. 검증을 다시 수행한 뒤 모든 행을 하나의
+트랜잭션으로 반영합니다.
+
+```json
+{
+  "id": 31,
+  "requestKey": "0ee385d7-8f46-444d-84c2-f4075698063b",
+  "fileName": "planning-data.csv",
+  "fileSha256": "9a24a5d58e6c3ef336db56905d591e40f41c2fb52ea9990e0871634bac92e0fa",
+  "status": "FAILED",
+  "totalRows": 2,
+  "successRows": 0,
+  "failedRows": 1,
+  "skippedRows": 1,
+  "retryCount": 0,
+  "failureReason": "CSV 검증 오류로 데이터를 반영하지 않았습니다.",
+  "createdAt": "2026-07-30T17:00:00+09:00",
+  "startedAt": "2026-07-30T17:00:00+09:00",
+  "completedAt": "2026-07-30T17:00:00.050+09:00",
+  "rows": [
+    {
+      "rowNumber": 2,
+      "type": "FACTORY",
+      "status": "SKIPPED",
+      "errors": [
+        {
+          "field": "row",
+          "code": "FILE_VALIDATION_FAILED",
+          "message": "파일에 검증 오류가 있어 반영하지 않았습니다."
+        }
+      ]
+    }
+  ]
+}
+```
+
+- 같은 `requestKey`와 같은 파일 해시는 새 데이터를 만들지 않고 기존 실행을 반환합니다.
+- 같은 `requestKey`에 다른 파일을 보내면 `409 PLANNING_DATA_IMPORT_REQUEST_CONFLICT`입니다.
+- 헤더·인코딩·파일 제한처럼 행 결과를 만들 수 없는 구조 오류는 실행을 생성하지 않고
+  `400 INVALID_REQUEST`입니다.
+- 검증 실패와 DB 제약 위반은 실행 결과를 저장했으므로 HTTP `200`과 `FAILED` 상태로 반환합니다.
+- 반영 성공은 모든 행이 `SUCCEEDED`인 `COMPLETED`입니다.
+- 한 행이라도 DB 반영에 실패하면 계획 데이터 변경을 모두 롤백하고, 원인 행은
+  `DB_APPLY_FAILED`, 나머지는 `TRANSACTION_ROLLED_BACK`으로 기록합니다.
+- 동시에 들어온 동일 요청은 먼저 생성된 실행을 기준으로 하나만 반영합니다.
+
+### 19.2 실행 이력 조회
+
+```http
+GET /api/v1/planning-data/imports/{importRunId}
+```
+
+저장된 실행과 행 결과를 반환합니다. 존재하지 않으면
+`404 PLANNING_DATA_IMPORT_NOT_FOUND`입니다.
+
+애플리케이션 시작 시 남아 있는 `RUNNING`은 `INTERRUPTED`로 바꿉니다. 사용자가 같은 요청 키와
+같은 파일을 다시 전송하면 실행 ID를 유지한 채 `retryCount`를 올리고 처음부터 원자적으로
+재시도합니다. `COMPLETED`와 `FAILED`는 재실행하지 않습니다.

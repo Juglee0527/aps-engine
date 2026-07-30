@@ -294,7 +294,7 @@
                        download="planning-data-template.csv">샘플 CSV 받기</a>
                 </header>
                 <p class="modal-copy">
-                    최대 2MB·2,000행의 UTF-8 CSV를 검사합니다. 이 단계에서는 DB에 아무 데이터도 저장하지 않습니다.
+                    최대 2MB·2,000행의 UTF-8 CSV를 검사합니다. 검증 후 전체 반영을 누르면 한 행이라도 실패할 때 모두 되돌립니다.
                 </p>
                 <form id="csv-preview-form">
                     <label>계획 데이터 CSV
@@ -302,6 +302,8 @@
                     </label>
                     <div class="modal-actions">
                         <button type="submit" class="primary-button">검증 미리보기</button>
+                        <button id="csv-apply-button" type="button"
+                                class="ghost-button" disabled>검증 결과 전체 반영</button>
                     </div>
                 </form>
                 <div class="run-meta" aria-live="polite">

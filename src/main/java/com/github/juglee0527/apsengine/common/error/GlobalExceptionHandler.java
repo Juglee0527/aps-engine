@@ -10,6 +10,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -71,6 +72,22 @@ public class GlobalExceptionHandler {
                 List.of(fieldError)
         );
 
+        return ResponseEntity.status(errorCode.httpStatus()).body(response);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiErrorResponse> handleMissingRequestParameter(
+            MissingServletRequestParameterException exception
+    ) {
+        ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
+        FieldValidationError fieldError = new FieldValidationError(
+                exception.getParameterName(),
+                "필수 요청값입니다."
+        );
+        ApiErrorResponse response = ApiErrorResponse.withFieldErrors(
+                errorCode,
+                List.of(fieldError)
+        );
         return ResponseEntity.status(errorCode.httpStatus()).body(response);
     }
 

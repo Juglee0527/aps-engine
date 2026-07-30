@@ -97,6 +97,14 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "같은 실행 키의 스케줄이 처리 중입니다."
     ),
+    PLANNING_DATA_IMPORT_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "계획 데이터 입력 실행을 찾을 수 없습니다."
+    ),
+    PLANNING_DATA_IMPORT_REQUEST_CONFLICT(
+            HttpStatus.CONFLICT,
+            "같은 요청 키에 다른 CSV 파일을 사용할 수 없습니다."
+    ),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

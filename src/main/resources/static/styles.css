@@ -88,7 +88,7 @@ h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.025em; }
 .run-meta strong { margin-left: 5px; color: #dce7f3; font: 10px Consolas, monospace; }
 .status-pill { display: inline-flex; align-items: center; justify-content: center; min-width: 72px; padding: 5px 8px; font-size: 8px; font-weight: 900; letter-spacing: .08em; }
 .status-pill.confirmed, .status-pill.completed, .status-pill.scheduled { color: #285a00; background: #dcf7ab; }
-.status-pill.draft { color: #7d5300; background: #ffe9b8; }
+.status-pill.draft, .status-pill.running { color: #7d5300; background: #ffe9b8; }
 .status-pill.delayed, .status-pill.cancelled { color: #8a1c22; background: #ffd7da; }
 .status-pill.neutral { color: #637286; background: #e7ebf0; }
 

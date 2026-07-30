@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 계획 데이터 CSV 검증 미리보기까지 로드맵 `001~044`를 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 멱등한 계획 데이터 CSV 반영까지 로드맵 `001~045`를 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -104,7 +104,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - 명시적 우선순위·EDD·SPT 실행 선택과 지연·Makespan·설비 가동률 KPI 스냅샷
 - 시작·진행 작업을 유지하고 미래 작업·신규 확정 오더만 재배치하는 Frozen Horizon
 - UTF-8 CSV 샘플·파일 제한·참조 순서·행별 오류를 제공하는 DB 무변경 미리보기
-- 다음 개발 단위: `045. 대량 입력 멱등성과 실패 복구`
+- 요청 키·파일 해시 기반 중복 방지, 원자적 CSV 반영, 행별 결과 이력과 중단 재시도
+- 다음 개발 단위: `046. 비동기 스케줄 실행과 이력 조회`
 
 # Tech Stack
 
@@ -246,7 +247,7 @@ aps-engine
 - [x] 042. Dispatching Rule과 계획 KPI 비교
 - [x] 043. Frozen Horizon 재스케줄링
 - [x] 044. CSV 대량 입력 검증과 미리보기
-- [ ] 045. 대량 입력 멱등성과 실패 복구
+- [x] 045. 대량 입력 멱등성과 실패 복구
 - [ ] 046. 비동기 스케줄 실행과 이력 조회
 - [ ] 047. 스케줄 실행 관측성
 

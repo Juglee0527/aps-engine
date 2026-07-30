@@ -15,6 +15,7 @@ import com.github.juglee0527.apsengine.machine.MachineRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.product.ProductRepository;
 import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
+import com.github.juglee0527.apsengine.planningdata.PlanningDataImportRunRepository;
 import com.github.juglee0527.apsengine.scheduling.ScheduleRunRepository;
 
 import org.junit.jupiter.api.Test;
@@ -62,6 +63,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private ScheduleRunRepository scheduleRunRepository;
+
+    @MockitoBean
+    private PlanningDataImportRunRepository planningDataImportRunRepository;
 
     @Test
     void contextLoads() {

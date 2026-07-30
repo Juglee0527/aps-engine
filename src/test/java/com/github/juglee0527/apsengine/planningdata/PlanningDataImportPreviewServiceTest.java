@@ -245,6 +245,33 @@ class PlanningDataImportPreviewServiceTest {
                 );
     }
 
+    @Test
+    void rejectsMoreThanTwoThousandDataRows() {
+        StringBuilder csv = new StringBuilder(
+                PlanningDataCsvTestSupport.header()
+        );
+        for (int index = 1;
+                index <= PlanningDataImportPreviewService.MAX_DATA_ROWS + 1;
+                index++) {
+            csv.append("\n").append(row(Map.of(
+                    "type", "FACTORY",
+                    "factoryCode", "FACTORY-%04d".formatted(index),
+                    "name", "공장"
+            )));
+        }
+
+        assertThatThrownBy(() -> service.preview(file(csv.toString())))
+                .isInstanceOfSatisfying(
+                        ApplicationException.class,
+                        exception -> {
+                            assertThat(exception.errorCode())
+                                    .isEqualTo(ErrorCode.INVALID_REQUEST);
+                            assertThat(exception.getMessage())
+                                    .contains("2000");
+                        }
+                );
+    }
+
     private void emptyDatabase() {
         lenient().when(factoryRepository.findAll()).thenReturn(List.of());
         lenient().when(lineRepository.findAll()).thenReturn(List.of());

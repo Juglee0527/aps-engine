@@ -51,10 +51,14 @@ public class PlanningDataImportPreviewService {
 
     @Transactional(readOnly = true)
     public PlanningDataImportPreviewResponse preview(MultipartFile file) {
-        validateFile(file);
+        return preview(readValidatedBytes(file));
+    }
+
+    @Transactional(readOnly = true)
+    public PlanningDataImportPreviewResponse preview(byte[] fileBytes) {
         try {
             PlanningDataCsvParser.ParsedCsv csv = parser.parse(
-                    file.getBytes(),
+                    fileBytes,
                     MAX_DATA_ROWS
             );
             ExistingPlanningData existing = ExistingPlanningData.from(
@@ -68,17 +72,12 @@ public class PlanningDataImportPreviewService {
             List<PlanningDataImportRowPreview> rows =
                     validator.validate(csv, existing);
             return PlanningDataImportPreviewResponse.from(rows);
-        } catch (IOException exception) {
-            throw invalidFile(
-                    "CSV 파일을 읽을 수 없습니다.",
-                    exception
-            );
         } catch (IllegalArgumentException exception) {
             throw invalidFile(exception.getMessage(), exception);
         }
     }
 
-    private void validateFile(MultipartFile file) {
+    static byte[] readValidatedBytes(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw invalidFile("CSV 파일은 필수입니다.", null);
         }
@@ -88,9 +87,17 @@ public class PlanningDataImportPreviewService {
                     null
             );
         }
+        try {
+            return file.getBytes();
+        } catch (IOException exception) {
+            throw invalidFile(
+                    "CSV 파일을 읽을 수 없습니다.",
+                    exception
+            );
+        }
     }
 
-    private ApplicationException invalidFile(
+    private static ApplicationException invalidFile(
             String message,
             Throwable cause
     ) {

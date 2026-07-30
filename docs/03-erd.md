@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V16__add_frozen_horizon_trace.sql`입니다.
+현재 스키마 기준은 Flyway `V17__create_planning_data_import_tables.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -120,6 +120,35 @@ erDiagram
         BIGINT working_minutes
         BOOLEAN delayed
     }
+    PLANNING_DATA_IMPORT_RUN {
+        BIGINT planning_data_import_run_id PK
+        UUID request_key UK
+        VARCHAR_255 file_name
+        VARCHAR_64 file_sha256
+        INTEGER total_rows
+        INTEGER success_rows
+        INTEGER failed_rows
+        INTEGER retry_count
+        VARCHAR_20 status
+        VARCHAR_500 failure_reason
+        TIMESTAMPTZ created_at
+        TIMESTAMPTZ started_at
+        TIMESTAMPTZ completed_at
+    }
+    PLANNING_DATA_IMPORT_ROW {
+        BIGINT planning_data_import_row_id PK
+        BIGINT planning_data_import_run_id FK
+        INTEGER row_number
+        VARCHAR_30 data_type
+        VARCHAR_20 status
+    }
+    PLANNING_DATA_IMPORT_ROW_ERROR {
+        BIGINT planning_data_import_row_error_id PK
+        BIGINT planning_data_import_row_id FK
+        VARCHAR_50 error_field
+        VARCHAR_50 error_code
+        VARCHAR_500 error_message
+    }
     FACTORY ||--o{ PRODUCTION_LINE : contains
     PRODUCTION_LINE ||--o{ MACHINE : contains
     PRODUCT ||--o{ ROUTING : defines
@@ -138,6 +167,8 @@ erDiagram
     PRODUCTION_ORDER ||--o{ SCHEDULED_OPERATION : scheduled
     OPERATION ||--o{ SCHEDULED_OPERATION : plans
     MACHINE ||--o{ SCHEDULED_OPERATION : occupies
+    PLANNING_DATA_IMPORT_RUN ||--o{ PLANNING_DATA_IMPORT_ROW : contains
+    PLANNING_DATA_IMPORT_ROW ||--o{ PLANNING_DATA_IMPORT_ROW_ERROR : explains
 ```
 
 ### 제약조건
@@ -249,6 +280,23 @@ erDiagram
 
 `V16`은 일반 실행에는 null인 `source_schedule_run_id`, `frozen_at`을 추가합니다.
 재스케줄링 실행은 두 값을 함께 저장해 원본을 변경하지 않고 계획 계보를 남깁니다.
+
+### PlanningDataImport 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_planning_data_import_request_key` | `request_key` | 같은 요청 키의 중복 실행 방지 |
+| `ck_planning_data_import_hash` | `file_sha256` | 소문자 SHA-256 64자리 형식 보장 |
+| `ck_planning_data_import_counts` | 행 수·재시도 수 | 1~2,000행과 음수가 아닌 집계 보장 |
+| `ck_planning_data_import_status` | 실행 상태 | `RUNNING`, `COMPLETED`, `FAILED`, `INTERRUPTED`만 허용 |
+| `uk_planning_data_import_row_number` | 실행·행 번호 | 한 실행 안의 논리 CSV 행 중복 방지 |
+| `ck_planning_data_import_row_type` | 데이터 타입 | 지원하는 여섯 행 타입 또는 null만 허용 |
+| `ck_planning_data_import_row_status` | 행 상태 | `SUCCEEDED`, `FAILED`, `SKIPPED`만 허용 |
+| `fk_planning_data_import_row_run` | 실행 FK | 실행 삭제 시 행 결과 함께 삭제 |
+| `fk_planning_data_import_error_row` | 행 FK | 행 삭제 시 오류 결과 함께 삭제 |
+
+`V17`은 실행, 행 결과, 행 오류를 분리합니다. CSV 도메인 데이터 반영과 실행 완료 전이는
+같은 트랜잭션이고, 검증·반영 실패 결과는 롤백 후 별도 트랜잭션으로 저장합니다.
 
 ### ChangeoverTime 제약조건
 

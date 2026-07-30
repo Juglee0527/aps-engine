@@ -15,6 +15,7 @@ const API = {
     reschedule: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/reschedule`,
     planningDataPreview: "/api/v1/planning-data/imports/preview",
+    planningDataImports: "/api/v1/planning-data/imports",
     latestSchedule: "/api/v1/schedules/latest",
     bottlenecks: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/bottlenecks`
@@ -74,6 +75,8 @@ const colors = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"
 let toastTimer;
 let runningSampleStep = null;
 let guideLogMessage = null;
+let csvImportRequestKey = crypto.randomUUID();
+let csvPreviewReady = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
     bindNavigation();
@@ -720,6 +723,13 @@ function bindActions() {
 
 function bindCsvPreview() {
     const form = document.querySelector("#csv-preview-form");
+    const fileInput = form.querySelector("[name='file']");
+    const applyButton = document.querySelector("#csv-apply-button");
+    fileInput.addEventListener("change", () => {
+        csvImportRequestKey = crypto.randomUUID();
+        csvPreviewReady = false;
+        applyButton.disabled = true;
+    });
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const submit = form.querySelector("[type='submit']");
@@ -729,6 +739,8 @@ function bindCsvPreview() {
                 method: "POST",
                 body: new FormData(form)
             });
+            csvPreviewReady = response.readyToApply;
+            applyButton.disabled = !csvPreviewReady;
             renderCsvPreview(response);
             showToast(response.readyToApply
                 ? "모든 CSV 행이 검증을 통과했습니다."
@@ -738,6 +750,41 @@ function bindCsvPreview() {
             showToast(error.message, true);
         } finally {
             submit.disabled = false;
+        }
+    });
+    applyButton.addEventListener("click", async () => {
+        if (!csvPreviewReady || fileInput.files.length === 0) {
+            showToast("먼저 CSV 검증을 완료해 주세요.", true);
+            return;
+        }
+        applyButton.disabled = true;
+        try {
+            const query = new URLSearchParams({
+                requestKey: csvImportRequestKey
+            });
+            const response = await request(
+                `${API.planningDataImports}?${query}`,
+                {
+                    method: "POST",
+                    body: new FormData(form)
+                }
+            );
+            renderCsvImportRun(response);
+            const completed = response.status === "COMPLETED";
+            const interrupted = response.status === "INTERRUPTED";
+            csvPreviewReady = interrupted;
+            applyButton.disabled = !interrupted;
+            showToast(
+                completed
+                    ? `${number(response.successRows)}개 행을 모두 반영했습니다.`
+                    : response.failureReason
+                        || "CSV 반영 결과를 확인해 주세요.",
+                !completed
+            );
+            if (completed) await loadAll();
+        } catch (error) {
+            applyButton.disabled = false;
+            showToast(error.message, true);
         }
     });
 }
@@ -767,6 +814,53 @@ function renderCsvPreview(preview) {
             <td class="${row.valid ? "" : "text-danger"}">${errors}</td>
         </tr>`;
     }).join("");
+}
+
+function renderCsvImportRun(run) {
+    text("#csv-total-rows", number(run.totalRows));
+    text("#csv-valid-rows", number(run.successRows));
+    text(
+        "#csv-invalid-rows",
+        number(run.failedRows + run.skippedRows)
+    );
+    const status = document.querySelector("#csv-preview-status");
+    const labels = {
+        RUNNING: "반영 중",
+        COMPLETED: "반영 완료",
+        FAILED: "반영 실패",
+        INTERRUPTED: "재시도 가능"
+    };
+    status.textContent = labels[run.status] || run.status;
+    status.className = `status-pill ${
+        run.status === "COMPLETED"
+            ? "completed"
+            : run.status === "RUNNING"
+                ? "running"
+                : "delayed"
+    }`;
+    const body = document.querySelector("#csv-preview-body");
+    body.innerHTML = run.rows.length === 0
+        ? `<tr><td colspan="4" class="empty-cell">${
+            escapeHtml(run.failureReason || "반영 결과를 준비 중입니다.")
+        }</td></tr>`
+        : run.rows.map((row) => {
+            const errors = row.errors.length === 0
+                ? "반영 완료"
+                : row.errors
+                    .map((error) =>
+                        `[${escapeHtml(error.code)}] ${
+                            escapeHtml(error.message)
+                        }`)
+                    .join("<br>");
+            return `<tr>
+                <td>${row.rowNumber}</td>
+                <td>${escapeHtml(row.type || "-")}</td>
+                <td>-</td>
+                <td class="${
+                    row.status === "SUCCEEDED" ? "" : "text-danger"
+                }">${errors}</td>
+            </tr>`;
+        }).join("");
 }
 
 function bindForms() {

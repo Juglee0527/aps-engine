@@ -23,11 +23,12 @@ JUnit 5
 - Hibernate `ddl-auto=validate`
 - Flyway migration 파일명 검증
 - Docker를 사용할 수 없을 때 컨테이너 테스트 자동 skip
+- 테스트 클래스 종료 후 Spring Context를 폐기해 다음 컨테이너의 동적 JDBC URL과 연결 풀이 섞이지 않게 격리
 
 테스트용 스키마 SQL을 별도로 복제하지 않습니다. 애플리케이션과 같은
 `src/main/resources/db/migration`을 적용해 운영 스키마 계약과의 차이를 막습니다.
 
-## 3. 첫 적용 대상
+## 3. 적용 대상
 
 `FactoryRepositoryIntegrationTest`가 공통 기반을 상속하고 실제 `FactoryRepository`로 다음 흐름을
 검증합니다.
@@ -42,6 +43,19 @@ Factory 생성
 
 테스트는 트랜잭션 rollback을 사용하므로 다른 테스트에 데이터를 남기지 않습니다.
 
+`PlanningDataImportExecutionPostgreSqlIntegrationTest`는 실제 PostgreSQL 제약과 트랜잭션으로
+다음 경계를 추가 검증합니다.
+
+- 완전한 CSV 반영과 동일 요청의 멱등 응답
+- 동일 요청 키·다른 파일 충돌
+- 일부 참조 오류 시 전체 미반영
+- DB 유일 제약 위반 시 전체 롤백과 실패 이력
+- 중단 실행의 같은 파일 재시도
+- 허용 상한 2,000행 반영
+
+이 테스트는 클래스 전용 컨테이너에서 각 테스트 전에 관련 테이블을 초기화해
+`REQUIRES_NEW`로 커밋되는 실행 이력까지 격리합니다.
+
 ## 4. 실행
 
 Docker Desktop 또는 호환 Docker daemon이 실행 중이면 일반 테스트 명령에 컨테이너 테스트가
@@ -55,6 +69,7 @@ Docker Desktop 또는 호환 Docker daemon이 실행 중이면 일반 테스트 
 
 ```powershell
 .\gradlew.bat test --tests "*FactoryRepositoryIntegrationTest"
+.\gradlew.bat test --tests "*PlanningDataImportExecutionPostgreSqlIntegrationTest"
 ```
 
 첫 실행은 `postgres:17-alpine` 이미지를 내려받으므로 네트워크 상태에 따라 시간이 더 걸릴 수 있습니다.
