@@ -74,7 +74,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 GitHub Actions 빌드까지 로드맵 `001~037`을 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 스케줄링 성능 기준선까지 로드맵 `001~038`을 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -96,7 +96,8 @@ Machine + Product 전환 방향 → ChangeoverTime
 - Docker 사용 가능 시 PostgreSQL 컨테이너에서 Flyway·Repository 통합 검증
 - 비루트 멀티 스테이지 애플리케이션 이미지와 PostgreSQL Compose 실행
 - push·pull request에서 Java 21 Gradle 테스트와 결과 보존
-- 다음 개발 단위: `038. 스케줄링 성능 기준선`
+- 소·중·대 입력을 분리 실행하는 ForwardScheduler 성능 기준선
+- 다음 개발 단위: `039. 측정 기반 성능 개선`
 
 # Tech Stack
 
@@ -168,6 +169,7 @@ aps-engine
 - [APS Schedule Control Tower](docs/05-mvp-ui.md)
 - [순방향 스케줄링](docs/05-scheduling.md)
 - [CAPA 계산](docs/06-capacity.md)
+- [스케줄링 성능 기준선](docs/07-performance.md)
 - [캐시 도입 판단](docs/08-cache-strategy.md)
 - [PostgreSQL Testcontainers](docs/09-testcontainers.md)
 - [Docker 애플리케이션 이미지](docs/10-docker.md)
@@ -229,7 +231,7 @@ aps-engine
 - [x] 035. Testcontainers 통합 테스트 기반
 - [x] 036. Docker 애플리케이션 이미지
 - [x] 037. GitHub Actions 빌드 검증
-- [ ] 038. 스케줄링 성능 기준선
+- [x] 038. 스케줄링 성능 기준선
 - [ ] 039. 측정 기반 성능 개선
 - [ ] 040. Operation 대체 설비 모델
 - [ ] 041. 결정론적 대체 설비 선택
@@ -396,6 +398,12 @@ Repository 통합 테스트가 함께 실행되고, Docker를 사용할 수 없�
 ```
 
 이 명령은 GitHub Actions 빌드의 로컬 재현 명령과 같습니다.
+
+성능 기준선은 일반 테스트와 분리해 실행합니다.
+
+```powershell
+.\gradlew.bat performanceTest --no-daemon
+```
 
 컨테이너 기반 Repository 테스트만 실행하려면 다음 명령을 사용합니다.
 

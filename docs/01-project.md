@@ -179,7 +179,7 @@ Spring Boot(local profile)
 
 ## 6. 현재 구현 스냅샷
 
-2026년 7월 30일 기준 로드맵 `001~037`과 APS Schedule Control Tower가 구현되어 있습니다.
+2026년 7월 30일 기준 로드맵 `001~038`과 APS Schedule Control Tower가 구현되어 있습니다.
 
 | 영역 | 구현 상태 |
 | --- | --- |
@@ -195,8 +195,9 @@ Spring Boot(local profile)
 | 통합 테스트 | PostgreSQL Testcontainers 공통 기반과 Factory Repository 검증 |
 | 실행 환경 | 비루트 멀티 스테이지 Docker 이미지와 PostgreSQL Compose |
 | CI | push·pull request Java 21 Gradle 테스트와 결과 artifact |
+| 성능 | 일반 테스트와 분리된 소·중·대 ForwardScheduler 기준선 |
 
-다음 구현 대상은 `038. 스케줄링 성능 기준선`입니다. 운영 기반 `038~039`,
+다음 구현 대상은 `039. 측정 기반 성능 개선`입니다. 운영 기반 `039`,
 APS 엔진 고도화 `040~043`, 데이터 처리와 실행 운영 `044~047`은 아직 구현되지 않았습니다.
 
 ## 7. 아키텍처 경계
