@@ -40,7 +40,8 @@ GET /api/v1/schedules/executions?limit=20
 | `FAILED` | 계산 오류, 중단 또는 대기열 거부 |
 
 예상 가능한 `ApplicationException`은 사용자 메시지를 실패 사유로 저장합니다. 그 밖의 내부 예외는
-상세를 서버 로그에 남기고 실행 이력에는 일반 메시지만 저장합니다.
+실행 이력에 일반 메시지만 저장하고, 서버 구조화 로그에는 민감한 입력이나 예외 메시지 대신
+예외 유형과 실패 단계만 남깁니다.
 
 ## 4. 멱등성과 동시 실행 정책
 
@@ -74,3 +75,6 @@ GET /api/v1/schedules/executions?limit=20
 - 시작 시 RUNNING 대조 후 QUEUED 재배차
 - PostgreSQL 유일 제약, offset 복원, 결과 연결과 중단 실패
 - 기존 동기 계산 서비스와 ScheduleRun JPA 회귀
+
+실행시간, 입력·출력 규모, 실패 단계와 DB 쿼리 관찰 방법은
+[스케줄 실행 관측성](14-observability.md)을 참고합니다.

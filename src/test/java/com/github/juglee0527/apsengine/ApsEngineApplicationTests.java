@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.hasItem;
 
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
@@ -96,5 +97,20 @@ class ApsEngineApplicationTests {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void exposesSchedulingMetricsWithoutBusinessIdentifiers()
+            throws Exception {
+        mockMvc.perform(get("/actuator/metrics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath(
+                        "$.names",
+                        hasItem("aps.schedule.execution.duration")
+                ))
+                .andExpect(jsonPath(
+                        "$.names",
+                        hasItem("aps.schedule.execution.failures")
+                ));
     }
 }

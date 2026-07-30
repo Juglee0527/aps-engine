@@ -1,5 +1,7 @@
 package com.github.juglee0527.apsengine.scheduling;
 
+import java.time.Duration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,25 +18,34 @@ class ScheduleExecutionDispatcher {
     private final TaskExecutor taskExecutor;
     private final ScheduleExecutionWorker worker;
     private final ScheduleExecutionTransactionService transactionService;
+    private final ScheduleExecutionMetrics metrics;
 
     ScheduleExecutionDispatcher(
             @Qualifier("scheduleTaskExecutor") TaskExecutor taskExecutor,
             ScheduleExecutionWorker worker,
-            ScheduleExecutionTransactionService transactionService
+            ScheduleExecutionTransactionService transactionService,
+            ScheduleExecutionMetrics metrics
     ) {
         this.taskExecutor = taskExecutor;
         this.worker = worker;
         this.transactionService = transactionService;
+        this.metrics = metrics;
     }
 
     void dispatch(Long executionId) {
         try {
             taskExecutor.execute(() -> worker.execute(executionId));
         } catch (TaskRejectedException exception) {
+            metrics.recordFailure(
+                    Duration.ZERO,
+                    ScheduleExecutionFailureStage.QUEUE
+            );
             log.warn(
-                    "Schedule execution queue rejected. executionId={}",
+                    "event=schedule_execution_failed executionId={} "
+                            + "outcome=failure failureStage=queue "
+                            + "failureType={}",
                     executionId,
-                    exception
+                    exception.getClass().getSimpleName()
             );
             transactionService.fail(
                     executionId,

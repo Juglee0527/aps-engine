@@ -53,7 +53,8 @@ docker compose ps
 ```
 
 기본 접속 주소는 `http://localhost:8080`, 상태 확인 주소는
-`http://localhost:8080/actuator/health`입니다. 상세 환경변수와 종료 방법은
+`http://localhost:8080/actuator/health`, 메트릭 목록은
+`http://localhost:8080/actuator/metrics`입니다. 상세 환경변수와 종료 방법은
 [Docker 애플리케이션 이미지](docs/10-docker.md)를 참고해 주세요.
 
 ---
@@ -74,7 +75,7 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 비동기 스케줄 실행 이력까지 로드맵 `001~046`을 완료했습니다.
+2026년 7월 30일 기준으로 Factory부터 스케줄 실행 관측성까지 핵심 로드맵 `001~047`을 완료했습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -106,7 +107,7 @@ Machine + Product 전환 방향 → ChangeoverTime
 - UTF-8 CSV 샘플·파일 제한·참조 순서·행별 오류를 제공하는 DB 무변경 미리보기
 - 요청 키·파일 해시 기반 중복 방지, 원자적 CSV 반영, 행별 결과 이력과 중단 재시도
 - 단일 내부 작업자 기반 비동기 스케줄 큐, 상태·실패 이력 조회와 재시작 복구
-- 다음 개발 단위: `047. 스케줄 실행 관측성`
+- Actuator·Micrometer 기반 실행시간·입력 규모·생성 작업·실패 단계 메트릭과 구조화 로그
 
 # Tech Stack
 
@@ -118,7 +119,7 @@ Machine + Product 전환 방향 → ChangeoverTime
 | Persistence | Spring Data JPA, Hibernate, Flyway |
 | Database | PostgreSQL 18.4 |
 | Test | JUnit 5, Mockito, Spring Boot Test, Testcontainers |
-| Runtime | Multi-stage Docker image, Spring Boot Actuator |
+| Runtime | Multi-stage Docker image, Spring Boot Actuator, Micrometer |
 | Local Environment | PostgreSQL + APS Engine Docker Compose |
 | CI | GitHub Actions, Gradle Wrapper validation and cache |
 | UI | Spring Boot Static Resources, Vanilla JavaScript |
@@ -185,6 +186,7 @@ aps-engine
 - [GitHub Actions 빌드](docs/11-ci.md)
 - [계획 데이터 CSV 입력](docs/12-csv-import.md)
 - [비동기 스케줄 실행](docs/13-async-scheduling.md)
+- [스케줄 실행 관측성](docs/14-observability.md)
 
 ---
 
@@ -251,7 +253,7 @@ aps-engine
 - [x] 044. CSV 대량 입력 검증과 미리보기
 - [x] 045. 대량 입력 멱등성과 실패 복구
 - [x] 046. 비동기 스케줄 실행과 이력 조회
-- [ ] 047. 스케줄 실행 관측성
+- [x] 047. 스케줄 실행 관측성
 
 상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 

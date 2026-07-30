@@ -10,3 +10,12 @@ spring:
       max-request-size: 4MB
   jpa:
     open-in-view: false
+    properties:
+      hibernate:
+        generate_statistics: ${APS_HIBERNATE_STATISTICS:false}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics

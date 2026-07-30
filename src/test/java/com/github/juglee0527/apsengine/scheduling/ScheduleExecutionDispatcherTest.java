@@ -1,8 +1,11 @@
 package com.github.juglee0527.apsengine.scheduling;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+
+import java.time.Duration;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +27,9 @@ class ScheduleExecutionDispatcherTest {
     @Mock
     private ScheduleExecutionTransactionService transactionService;
 
+    @Mock
+    private ScheduleExecutionMetrics metrics;
+
     @InjectMocks
     private ScheduleExecutionDispatcher dispatcher;
 
@@ -38,6 +44,10 @@ class ScheduleExecutionDispatcherTest {
         verify(transactionService).fail(
                 31L,
                 "스케줄 실행 대기열이 가득 찼습니다."
+        );
+        verify(metrics).recordFailure(
+                eq(Duration.ZERO),
+                eq(ScheduleExecutionFailureStage.QUEUE)
         );
     }
 }

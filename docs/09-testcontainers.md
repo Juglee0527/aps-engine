@@ -60,6 +60,10 @@ Factory 생성
 재스케줄 요청, `RUNNING`과 이미 커밋된 ScheduleRun의 재시작 대조, 결과 없는 중단 실행의
 `FAILED` 전이를 검증합니다.
 
+`SchedulingObservabilityPostgreSqlIntegrationTest`는 Hibernate 통계를 명시적으로 활성화한
+별도 컨텍스트에서 실제 Repository 쿼리를 실행하고 `hibernate.query.executions` Micrometer
+카운터가 증가하는지 검증합니다. 기본 애플리케이션 설정에서는 통계 수집을 비활성화합니다.
+
 ## 4. 실행
 
 Docker Desktop 또는 호환 Docker daemon이 실행 중이면 일반 테스트 명령에 컨테이너 테스트가
@@ -75,6 +79,7 @@ Docker Desktop 또는 호환 Docker daemon이 실행 중이면 일반 테스트 
 .\gradlew.bat test --tests "*FactoryRepositoryIntegrationTest"
 .\gradlew.bat test --tests "*PlanningDataImportExecutionPostgreSqlIntegrationTest"
 .\gradlew.bat test --tests "*ScheduleExecutionPostgreSqlIntegrationTest"
+.\gradlew.bat test --tests "*SchedulingObservabilityPostgreSqlIntegrationTest"
 ```
 
 첫 실행은 `postgres:17-alpine` 이미지를 내려받으므로 네트워크 상태에 따라 시간이 더 걸릴 수 있습니다.

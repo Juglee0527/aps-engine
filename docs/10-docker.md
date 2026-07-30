@@ -43,6 +43,7 @@ docker compose ps
 ```text
 애플리케이션: http://localhost:8080
 Health:       http://localhost:8080/actuator/health
+Metrics:      http://localhost:8080/actuator/metrics
 PostgreSQL:   localhost:5432
 ```
 
@@ -65,9 +66,13 @@ POSTGRES_PORT=5433
 | `POSTGRES_PORT` | `5432` | 호스트 PostgreSQL 포트 |
 | `APP_PORT` | `8080` | 호스트 애플리케이션 포트 |
 | `JAVA_TOOL_OPTIONS` | 없음 | 선택 JVM 옵션 |
+| `APS_HIBERNATE_STATISTICS` | `false` | Hibernate DB 쿼리 통계 수집 여부 |
 
 Compose는 앱에 `SPRING_PROFILES_ACTIVE=local`, `POSTGRES_HOST=postgres`와 컨테이너 내부 포트를
 명시적으로 전달합니다. 비밀번호는 이미지에 포함하지 않습니다.
+
+스케줄 메트릭과 선택적 DB 쿼리 통계 확인 방법은
+[스케줄 실행 관측성](14-observability.md)을 참고합니다.
 
 ## 5. 종료
 

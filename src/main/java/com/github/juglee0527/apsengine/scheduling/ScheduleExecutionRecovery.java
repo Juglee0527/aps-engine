@@ -34,7 +34,7 @@ class ScheduleExecutionRecovery {
         }
         if (reconciled > 0 || !queuedIds.isEmpty()) {
             log.info(
-                    "Recovered schedule executions. reconciled={}, "
+                    "event=schedule_execution_recovery reconciled={} "
                             + "redispatched={}",
                     reconciled,
                     queuedIds.size()
