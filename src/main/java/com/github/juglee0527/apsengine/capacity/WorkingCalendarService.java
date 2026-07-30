@@ -8,6 +8,8 @@ import java.util.List;
 
 import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
 import com.github.juglee0527.apsengine.machine.Machine;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
 import com.github.juglee0527.apsengine.machine.MachineStatus;
@@ -22,14 +24,17 @@ public class WorkingCalendarService {
 
     private final MachineRepository machineRepository;
     private final WorkingCalendarRepository workingCalendarRepository;
+    private final MachineMaintenanceRepository maintenanceRepository;
     private final WorkingTimeCalculator workingTimeCalculator;
 
     public WorkingCalendarService(
             MachineRepository machineRepository,
-            WorkingCalendarRepository workingCalendarRepository
+            WorkingCalendarRepository workingCalendarRepository,
+            MachineMaintenanceRepository maintenanceRepository
     ) {
         this.machineRepository = machineRepository;
         this.workingCalendarRepository = workingCalendarRepository;
+        this.maintenanceRepository = maintenanceRepository;
         this.workingTimeCalculator = new WorkingTimeCalculator();
     }
 
@@ -112,9 +117,20 @@ public class WorkingCalendarService {
         }
         List<WeeklyWorkingTime> weeklyTimes =
                 getWeeklyTimes(machineId);
+        List<UnavailableInterval> unavailableIntervals =
+                maintenanceRepository
+                        .findAllByMachine_IdAndActiveTrueAndStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(
+                                machineId,
+                                to,
+                                from
+                        )
+                        .stream()
+                        .map(MachineMaintenance::toUnavailableInterval)
+                        .toList();
         List<AvailabilityInterval> intervals =
                 workingTimeCalculator.intervalsBetween(
                         weeklyTimes,
+                        unavailableIntervals,
                         from,
                         to
                 );

@@ -13,10 +13,13 @@ import java.util.UUID;
 import com.github.juglee0527.apsengine.capacity.WeeklyWorkingTime;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
+import com.github.juglee0527.apsengine.capacity.UnavailableInterval;
 import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
 import com.github.juglee0527.apsengine.machine.MachineStatus;
 import com.github.juglee0527.apsengine.order.ProductionOrder;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
@@ -33,6 +36,7 @@ public class ScheduleRunService {
     private final ProductionOrderRepository productionOrderRepository;
     private final WorkingCalendarRepository workingCalendarRepository;
     private final ChangeoverTimeRepository changeoverTimeRepository;
+    private final MachineMaintenanceRepository maintenanceRepository;
     private final ScheduleRunRepository scheduleRunRepository;
     private final ForwardScheduler forwardScheduler;
 
@@ -40,11 +44,13 @@ public class ScheduleRunService {
             ProductionOrderRepository productionOrderRepository,
             WorkingCalendarRepository workingCalendarRepository,
             ChangeoverTimeRepository changeoverTimeRepository,
+            MachineMaintenanceRepository maintenanceRepository,
             ScheduleRunRepository scheduleRunRepository
     ) {
         this.productionOrderRepository = productionOrderRepository;
         this.workingCalendarRepository = workingCalendarRepository;
         this.changeoverTimeRepository = changeoverTimeRepository;
+        this.maintenanceRepository = maintenanceRepository;
         this.scheduleRunRepository = scheduleRunRepository;
         this.forwardScheduler = new ForwardScheduler();
     }
@@ -76,7 +82,7 @@ public class ScheduleRunService {
             );
         }
 
-        SchedulingContext context = createContext(orders);
+        SchedulingContext context = createContext(orders, planningStart);
         SchedulingPlan plan;
         try {
             plan = forwardScheduler.schedule(
@@ -151,7 +157,8 @@ public class ScheduleRunService {
     }
 
     private SchedulingContext createContext(
-            List<ProductionOrder> orders
+            List<ProductionOrder> orders,
+            OffsetDateTime planningStart
     ) {
         Set<Long> machineIds = new HashSet<>();
         Map<Long, ProductionOrder> ordersById = new HashMap<>();
@@ -177,6 +184,8 @@ public class ScheduleRunService {
                 loadWorkingTimes(machineIds);
         List<SchedulingChangeoverInput> changeoverInputs =
                 loadChangeoverInputs(machineIds);
+        Map<Long, List<UnavailableInterval>> unavailableByMachine =
+                loadUnavailableIntervals(machineIds, planningStart);
         List<SchedulingOrderInput> inputs =
                 new ArrayList<>(orders.size());
         for (ProductionOrder order : orders) {
@@ -204,7 +213,11 @@ public class ScheduleRunService {
                         operation.code(),
                         operation.name(),
                         operation.processingTimeMinutes(),
-                        workingTimes
+                        workingTimes,
+                        unavailableByMachine.getOrDefault(
+                                operation.machine().id(),
+                                List.of()
+                        )
                 ));
             }
             inputs.add(new SchedulingOrderInput(
@@ -224,6 +237,28 @@ public class ScheduleRunService {
                 Map.copyOf(ordersById),
                 Map.copyOf(operationsById)
         );
+    }
+
+    private Map<Long, List<UnavailableInterval>> loadUnavailableIntervals(
+            Set<Long> machineIds,
+            OffsetDateTime planningStart
+    ) {
+        List<MachineMaintenance> maintenances = maintenanceRepository
+                .findAllByMachine_IdInAndActiveTrueAndEndAtGreaterThanOrderByStartAtAsc(
+                        machineIds,
+                        planningStart
+                );
+        Map<Long, List<UnavailableInterval>> unavailableByMachine =
+                new HashMap<>();
+        for (MachineMaintenance maintenance : maintenances) {
+            unavailableByMachine
+                    .computeIfAbsent(
+                            maintenance.machine().id(),
+                            ignored -> new ArrayList<>()
+                    )
+                    .add(maintenance.toUnavailableInterval());
+        }
+        return unavailableByMachine;
     }
 
     private List<SchedulingChangeoverInput> loadChangeoverInputs(

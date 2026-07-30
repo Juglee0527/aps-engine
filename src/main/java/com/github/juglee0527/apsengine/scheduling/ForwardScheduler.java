@@ -95,6 +95,7 @@ public class ForwardScheduler {
                     WorkingAllocation changeoverAllocation =
                             workingTimeCalculator.allocate(
                                     operation.workingTimes(),
+                                    operation.unavailableIntervals(),
                                     earliestStart,
                                     changeoverMinutes
                             );
@@ -106,6 +107,7 @@ public class ForwardScheduler {
                 WorkingAllocation allocation =
                         workingTimeCalculator.allocate(
                                 operation.workingTimes(),
+                                operation.unavailableIntervals(),
                                 earliestStart,
                                 requiredMinutes
                         );

@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
@@ -154,6 +155,12 @@ class ScheduleRunJpaIntegrationTest {
                 productB,
                 45
         ));
+        entityManager.persist(MachineMaintenance.create(
+                machine,
+                PLANNING_START.plusMinutes(15),
+                PLANNING_START.plusMinutes(45),
+                "정기 점검"
+        ));
         ProductionOrder orderA = ProductionOrder.create(
                 routingA,
                 "PO-CHANGEOVER-A",
@@ -197,6 +204,8 @@ class ScheduleRunJpaIntegrationTest {
 
         assertThat(storedOperation.changeoverMinutes()).isEqualTo(45);
         assertThat(storedOperation.changeoverStartAt()).isNotNull();
+        assertThat(storedOperation.startAt())
+                .isEqualTo(PLANNING_START.plusMinutes(105));
         assertThat(storedOperation.startAt())
                 .isAfter(storedOperation.changeoverStartAt());
     }

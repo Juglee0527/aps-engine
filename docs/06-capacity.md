@@ -8,9 +8,10 @@
 ```text
 Machine
   → Weekly Working Calendar
-    → 요청 기간의 실제 가용 구간
+    → Machine Maintenance 차감
+      → 요청 기간의 실제 가용 구간
       → 총 가용 분
-        → ScheduledOperation 작업 분
+        → ScheduledOperation 가공 분 + Changeover 분
           → 계획기간 CAPA 사용률
 ```
 
@@ -28,8 +29,10 @@ Machine
 
 - 조회 구간 밖의 근무시간은 경계에서 잘라냅니다.
 - 여러 근무일에 걸친 총 가용 분을 합산합니다.
+- 활성 계획 정비와 겹치는 근무시간을 실제 가용 구간에서 제외합니다.
+- 정비가 근무시간 밖에 있거나 경계에만 맞닿으면 가용 분은 줄어들지 않습니다.
 - 작업시간이 하루 근무시간을 넘으면 다음 근무일로 이어서 종료시각을 계산합니다.
-- 주말과 비근무시간은 작업시간에 포함하지 않습니다.
+- 주말, 비근무시간과 정비시간은 작업시간에 포함하지 않습니다.
 - 무한 탐색을 방지하기 위해 최대 10년까지만 작업 배정을 탐색합니다.
 
 ## 4. 계획 부하와 사용률
@@ -37,7 +40,7 @@ Machine
 APS Schedule Control Tower는 최신 ScheduleRun의 설비별 부하를 다음 식으로 계산합니다.
 
 ```text
-설비 부하(분) = 해당 설비 ScheduledOperation.workingMinutes 합계
+설비 부하(분) = 해당 설비 (workingMinutes + changeoverMinutes) 합계
 CAPA 사용률(%) = 설비 부하 ÷ 계획기간 가용 분 × 100
 ```
 
@@ -52,4 +55,4 @@ ScheduleRun의 `planningOffsetSeconds`를 CAPA 조회에 다시 사용해 DB가 
 근무시간을 실행 당시 공장 현지시각으로 계산합니다.
 지역별 DST가 필요한 시점에는 `ZoneId` 기반 캘린더로 확장해야 합니다.
 
-공휴일, 계획 정비, 휴게시간 예외, 교대조 캘린더, Changeover 부하는 아직 포함하지 않습니다.
+공휴일, 비정기 휴게시간 예외와 교대조 캘린더는 아직 포함하지 않습니다.

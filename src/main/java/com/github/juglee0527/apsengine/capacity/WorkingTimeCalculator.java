@@ -17,8 +17,22 @@ public class WorkingTimeCalculator {
             OffsetDateTime from,
             OffsetDateTime to
     ) {
+        return intervalsBetween(weeklyTimes, List.of(), from, to);
+    }
+
+    public List<AvailabilityInterval> intervalsBetween(
+            List<WeeklyWorkingTime> weeklyTimes,
+            List<UnavailableInterval> unavailableIntervals,
+            OffsetDateTime from,
+            OffsetDateTime to
+    ) {
         validateRange(weeklyTimes, from, to);
-        List<AvailabilityInterval> intervals = new ArrayList<>();
+        if (unavailableIntervals == null) {
+            throw new IllegalArgumentException(
+                    "비가용시간 목록은 null일 수 없습니다."
+            );
+        }
+        List<AvailabilityInterval> workingIntervals = new ArrayList<>();
         ZoneOffset offset = from.getOffset();
         LocalDate date = from.toLocalDate();
         LocalDate lastDate = to.toLocalDate();
@@ -30,14 +44,18 @@ public class WorkingTimeCalculator {
                     offset,
                     from,
                     to,
-                    intervals
+                    workingIntervals
             );
             date = date.plusDays(1);
         }
-        intervals.sort(Comparator.comparing(
+        workingIntervals.sort(Comparator.comparing(
                 AvailabilityInterval::startAt
         ));
-        return List.copyOf(intervals);
+        return subtractUnavailableIntervals(
+                workingIntervals,
+                unavailableIntervals,
+                offset
+        );
     }
 
     public long availableMinutes(
@@ -45,9 +63,19 @@ public class WorkingTimeCalculator {
             OffsetDateTime from,
             OffsetDateTime to
     ) {
+        return availableMinutes(weeklyTimes, List.of(), from, to);
+    }
+
+    public long availableMinutes(
+            List<WeeklyWorkingTime> weeklyTimes,
+            List<UnavailableInterval> unavailableIntervals,
+            OffsetDateTime from,
+            OffsetDateTime to
+    ) {
         long totalMinutes = 0;
         for (AvailabilityInterval interval : intervalsBetween(
                 weeklyTimes,
+                unavailableIntervals,
                 from,
                 to
         )) {
@@ -67,6 +95,20 @@ public class WorkingTimeCalculator {
             OffsetDateTime earliestStart,
             long requiredWorkingMinutes
     ) {
+        return allocate(
+                weeklyTimes,
+                List.of(),
+                earliestStart,
+                requiredWorkingMinutes
+        );
+    }
+
+    public WorkingAllocation allocate(
+            List<WeeklyWorkingTime> weeklyTimes,
+            List<UnavailableInterval> unavailableIntervals,
+            OffsetDateTime earliestStart,
+            long requiredWorkingMinutes
+    ) {
         if (weeklyTimes == null || weeklyTimes.isEmpty()) {
             throw new IllegalArgumentException(
                     "근무시간이 하나 이상 필요합니다."
@@ -75,6 +117,11 @@ public class WorkingTimeCalculator {
         if (requiredWorkingMinutes < 1) {
             throw new IllegalArgumentException(
                     "필요 작업시간은 1분 이상이어야 합니다."
+            );
+        }
+        if (unavailableIntervals == null) {
+            throw new IllegalArgumentException(
+                    "비가용시간 목록은 null일 수 없습니다."
             );
         }
 
@@ -91,6 +138,7 @@ public class WorkingTimeCalculator {
                     .atOffset(cursor.getOffset());
             List<AvailabilityInterval> intervals = intervalsBetween(
                     weeklyTimes,
+                    unavailableIntervals,
                     cursor,
                     dayEnd
             );
@@ -118,6 +166,72 @@ public class WorkingTimeCalculator {
         throw new IllegalStateException(
                 "10년 이내에 필요한 작업시간을 배정할 수 없습니다."
         );
+    }
+
+    private List<AvailabilityInterval> subtractUnavailableIntervals(
+            List<AvailabilityInterval> workingIntervals,
+            List<UnavailableInterval> unavailableIntervals,
+            ZoneOffset offset
+    ) {
+        List<UnavailableInterval> normalizedUnavailable =
+                unavailableIntervals.stream()
+                        .map(interval -> new UnavailableInterval(
+                                interval.startAt().withOffsetSameInstant(
+                                        offset
+                                ),
+                                interval.endAt().withOffsetSameInstant(
+                                        offset
+                                )
+                        ))
+                        .sorted(Comparator.comparing(
+                                UnavailableInterval::startAt
+                        ))
+                        .toList();
+        List<AvailabilityInterval> result = new ArrayList<>();
+        for (AvailabilityInterval workingInterval : workingIntervals) {
+            List<AvailabilityInterval> remaining =
+                    List.of(workingInterval);
+            for (UnavailableInterval unavailable
+                    : normalizedUnavailable) {
+                if (remaining.isEmpty()) {
+                    break;
+                }
+                List<AvailabilityInterval> next = new ArrayList<>();
+                for (AvailabilityInterval interval : remaining) {
+                    appendDifference(interval, unavailable, next);
+                }
+                remaining = next;
+            }
+            result.addAll(remaining);
+        }
+        result.sort(Comparator.comparing(AvailabilityInterval::startAt));
+        return List.copyOf(result);
+    }
+
+    private void appendDifference(
+            AvailabilityInterval available,
+            UnavailableInterval unavailable,
+            List<AvailabilityInterval> target
+    ) {
+        if (!unavailable.startAt().isBefore(available.endAt())
+                || !available.startAt().isBefore(
+                        unavailable.endAt()
+                )) {
+            target.add(available);
+            return;
+        }
+        if (unavailable.startAt().isAfter(available.startAt())) {
+            target.add(new AvailabilityInterval(
+                    available.startAt(),
+                    unavailable.startAt()
+            ));
+        }
+        if (unavailable.endAt().isBefore(available.endAt())) {
+            target.add(new AvailabilityInterval(
+                    unavailable.endAt(),
+                    available.endAt()
+            ));
+        }
     }
 
     private void appendIntervalsForDate(

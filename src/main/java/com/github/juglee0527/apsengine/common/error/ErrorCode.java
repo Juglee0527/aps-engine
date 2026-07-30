@@ -77,6 +77,14 @@ public enum ErrorCode {
             HttpStatus.NOT_FOUND,
             "Changeover Time을 찾을 수 없습니다."
     ),
+    MAINTENANCE_OVERLAP(
+            HttpStatus.CONFLICT,
+            "해당 설비에 겹치는 정비시간이 이미 존재합니다."
+    ),
+    MAINTENANCE_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "정비시간을 찾을 수 없습니다."
+    ),
     CONFIRMED_PRODUCTION_ORDER_REQUIRED(
             HttpStatus.CONFLICT,
             "스케줄링할 확정 생산오더가 필요합니다."

@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLineRepository;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
@@ -54,6 +55,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private ChangeoverTimeRepository changeoverTimeRepository;
+
+    @MockitoBean
+    private MachineMaintenanceRepository machineMaintenanceRepository;
 
     @MockitoBean
     private ScheduleRunRepository scheduleRunRepository;

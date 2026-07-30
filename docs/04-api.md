@@ -63,6 +63,8 @@
 | `SCHEDULE_EXECUTION_DUPLICATED` | 409 | 동일 실행 키가 동시에 저장됨 |
 | `CHANGEOVER_TIME_DUPLICATED` | 409 | 같은 설비·이전 품목·다음 품목 조합이 이미 존재함 |
 | `CHANGEOVER_TIME_NOT_FOUND` | 404 | 요청한 Changeover Time이 존재하지 않거나 비활성 상태임 |
+| `MAINTENANCE_OVERLAP` | 409 | 같은 설비의 활성 정비시간이 겹침 |
+| `MAINTENANCE_NOT_FOUND` | 404 | 요청한 정비시간이 존재하지 않거나 비활성 상태임 |
 | `INTERNAL_ERROR` | 500 | 사전에 정의하지 못한 서버 내부 오류 |
 
 표에는 현재 `ErrorCode`에 정의되어 실제 유스케이스에서 사용하는 코드만 기록합니다.
@@ -398,7 +400,7 @@ GET /api/v1/machines/{machineId}/availability?from=2026-08-03T08:00:00%2B09:00&t
 ```
 
 가용시간 응답은 총 `availableMinutes`와 날짜별 실제 `intervals`를 반환합니다.
-조회 구간은 최대 366일입니다.
+조회 구간은 최대 366일이며 활성 계획 정비와 겹치는 부분은 가용 구간에서 제외합니다.
 
 ## 13. 스케줄 실행과 결과 조회 API
 
@@ -509,3 +511,35 @@ GET /api/v1/machines/{machineId}/changeover-times
 - 설비별 목록은 활성 기준정보를 이전 품목 ID, 다음 품목 ID 오름차순으로 반환합니다.
 - 동일 품목의 전환시간과 등록되지 않은 방향성 조합은 스케줄링 정책에서 기본값 0분으로 해석합니다.
 - 스케줄러는 활성 기준정보를 실행 시점 스냅샷으로 읽어 다음 가공 전에 반영합니다.
+
+## 15. Machine Maintenance API
+
+### 계획 정비 등록
+
+```http
+POST /api/v1/machines/{machineId}/maintenances
+Content-Type: application/json
+```
+
+```json
+{
+  "startAt": "2026-08-03T10:00:00+09:00",
+  "endAt": "2026-08-03T11:30:00+09:00",
+  "reason": "월간 예방 점검"
+}
+```
+
+성공하면 `201 Created`, `/api/v1/maintenances/{maintenanceId}` Location과 등록 결과를 반환합니다.
+종료가 시작보다 이후가 아니면 `400 INVALID_REQUEST`, 같은 설비의 기존 활성 구간과 겹치면
+`409 MAINTENANCE_OVERLAP`을 반환합니다.
+
+### 단건 및 설비별 목록 조회
+
+```http
+GET /api/v1/maintenances/{maintenanceId}
+GET /api/v1/machines/{machineId}/maintenances
+```
+
+- 목록은 정비 시작시각 오름차순입니다.
+- 정비 구간은 `[startAt, endAt)`이므로 경계가 맞닿는 두 구간은 겹치지 않습니다.
+- 근무시간 밖 정비도 저장하지만 가용시간과 스케줄에는 겹치는 부분만 반영합니다.

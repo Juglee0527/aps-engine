@@ -7,11 +7,14 @@ import static org.mockito.Mockito.when;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
@@ -31,6 +34,9 @@ class WorkingCalendarServiceTest {
 
     @Mock
     private WorkingCalendarRepository workingCalendarRepository;
+
+    @Mock
+    private MachineMaintenanceRepository maintenanceRepository;
 
     @InjectMocks
     private WorkingCalendarService workingCalendarService;
@@ -81,6 +87,44 @@ class WorkingCalendarServiceTest {
                 exception -> assertThat(exception.errorCode())
                         .isEqualTo(ErrorCode.WORKING_CALENDAR_OVERLAP)
         );
+    }
+
+    @Test
+    void excludesMaintenanceFromAvailability() {
+        Machine machine = machine();
+        WorkingCalendar calendar = WorkingCalendar.create(
+                machine,
+                DayOfWeek.MONDAY,
+                LocalTime.of(8, 0),
+                LocalTime.of(17, 0)
+        );
+        OffsetDateTime from =
+                OffsetDateTime.parse("2026-08-03T08:00:00+09:00");
+        OffsetDateTime to =
+                OffsetDateTime.parse("2026-08-03T17:00:00+09:00");
+        MachineMaintenance maintenance = MachineMaintenance.create(
+                machine,
+                OffsetDateTime.parse("2026-08-03T10:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-03T11:00:00+09:00"),
+                "정기 점검"
+        );
+        when(machineRepository.existsById(1L)).thenReturn(true);
+        when(workingCalendarRepository
+                .findAllByMachine_IdAndActiveTrueOrderByDayOfWeekAscStartTimeAsc(
+                        1L
+                )).thenReturn(List.of(calendar));
+        when(maintenanceRepository
+                .findAllByMachine_IdAndActiveTrueAndStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(
+                        1L,
+                        to,
+                        from
+                )).thenReturn(List.of(maintenance));
+
+        MachineAvailabilityResponse result =
+                workingCalendarService.getAvailability(1L, from, to);
+
+        assertThat(result.availableMinutes()).isEqualTo(480);
+        assertThat(result.intervals()).hasSize(2);
     }
 
     private WorkingCalendarEntryRequest entry(

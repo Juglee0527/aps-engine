@@ -2,6 +2,7 @@ package com.github.juglee0527.apsengine.scheduling;
 
 import java.util.List;
 
+import com.github.juglee0527.apsengine.capacity.UnavailableInterval;
 import com.github.juglee0527.apsengine.capacity.WeeklyWorkingTime;
 
 public record SchedulingOperationInput(
@@ -11,8 +12,30 @@ public record SchedulingOperationInput(
         String operationCode,
         String operationName,
         long processingTimeMinutesPerUnit,
-        List<WeeklyWorkingTime> workingTimes
+        List<WeeklyWorkingTime> workingTimes,
+        List<UnavailableInterval> unavailableIntervals
 ) {
+
+    public SchedulingOperationInput(
+            long operationId,
+            long machineId,
+            int sequence,
+            String operationCode,
+            String operationName,
+            long processingTimeMinutesPerUnit,
+            List<WeeklyWorkingTime> workingTimes
+    ) {
+        this(
+                operationId,
+                machineId,
+                sequence,
+                operationCode,
+                operationName,
+                processingTimeMinutesPerUnit,
+                workingTimes,
+                List.of()
+        );
+    }
 
     public SchedulingOperationInput {
         if (operationId < 1 || machineId < 1) {
@@ -33,5 +56,8 @@ public record SchedulingOperationInput(
         workingTimes = workingTimes == null
                 ? List.of()
                 : List.copyOf(workingTimes);
+        unavailableIntervals = unavailableIntervals == null
+                ? List.of()
+                : List.copyOf(unavailableIntervals);
     }
 }

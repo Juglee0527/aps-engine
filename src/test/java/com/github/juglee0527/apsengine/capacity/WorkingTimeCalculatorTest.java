@@ -66,6 +66,124 @@ class WorkingTimeCalculatorTest {
         ));
     }
 
+    @Test
+    void excludesMaintenanceFromAvailability() {
+        OffsetDateTime from =
+                OffsetDateTime.parse("2026-08-03T08:00:00+09:00");
+        OffsetDateTime to =
+                OffsetDateTime.parse("2026-08-03T17:00:00+09:00");
+        UnavailableInterval maintenance = new UnavailableInterval(
+                OffsetDateTime.parse("2026-08-03T10:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-03T11:00:00+09:00")
+        );
+
+        List<AvailabilityInterval> intervals =
+                calculator.intervalsBetween(
+                        weekdayTimes(),
+                        List.of(maintenance),
+                        from,
+                        to
+                );
+
+        assertThat(intervals).containsExactly(
+                new AvailabilityInterval(
+                        from,
+                        OffsetDateTime.parse(
+                                "2026-08-03T10:00:00+09:00"
+                        )
+                ),
+                new AvailabilityInterval(
+                        OffsetDateTime.parse(
+                                "2026-08-03T11:00:00+09:00"
+                        ),
+                        to
+                )
+        );
+        assertThat(calculator.availableMinutes(
+                weekdayTimes(),
+                List.of(maintenance),
+                from,
+                to
+        )).isEqualTo(480);
+    }
+
+    @Test
+    void ignoresMaintenanceOutsideWorkingCalendar() {
+        OffsetDateTime from =
+                OffsetDateTime.parse("2026-08-03T08:00:00+09:00");
+        OffsetDateTime to =
+                OffsetDateTime.parse("2026-08-03T17:00:00+09:00");
+        UnavailableInterval maintenance = new UnavailableInterval(
+                OffsetDateTime.parse("2026-08-03T18:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-03T19:00:00+09:00")
+        );
+
+        long minutes = calculator.availableMinutes(
+                weekdayTimes(),
+                List.of(maintenance),
+                from,
+                to
+        );
+
+        assertThat(minutes).isEqualTo(540);
+    }
+
+    @Test
+    void treatsTouchingMaintenanceBoundaryAsNonOverlapping() {
+        OffsetDateTime from =
+                OffsetDateTime.parse("2026-08-03T08:00:00+09:00");
+        OffsetDateTime to =
+                OffsetDateTime.parse("2026-08-03T17:00:00+09:00");
+        List<UnavailableInterval> maintenances = List.of(
+                new UnavailableInterval(
+                        OffsetDateTime.parse(
+                                "2026-08-03T07:00:00+09:00"
+                        ),
+                        from
+                ),
+                new UnavailableInterval(
+                        to,
+                        OffsetDateTime.parse(
+                                "2026-08-03T18:00:00+09:00"
+                        )
+                )
+        );
+
+        long minutes = calculator.availableMinutes(
+                weekdayTimes(),
+                maintenances,
+                from,
+                to
+        );
+
+        assertThat(minutes).isEqualTo(540);
+    }
+
+    @Test
+    void allocatesWorkAroundMaintenance() {
+        WorkingAllocation allocation = calculator.allocate(
+                weekdayTimes(),
+                List.of(new UnavailableInterval(
+                        OffsetDateTime.parse(
+                                "2026-08-03T10:00:00+09:00"
+                        ),
+                        OffsetDateTime.parse(
+                                "2026-08-03T11:00:00+09:00"
+                        )
+                )),
+                OffsetDateTime.parse("2026-08-03T09:00:00+09:00"),
+                120
+        );
+
+        assertThat(allocation.startAt()).isEqualTo(
+                OffsetDateTime.parse("2026-08-03T09:00:00+09:00")
+        );
+        assertThat(allocation.endAt()).isEqualTo(
+                OffsetDateTime.parse("2026-08-03T12:00:00+09:00")
+        );
+        assertThat(allocation.workingMinutes()).isEqualTo(120);
+    }
+
     private List<WeeklyWorkingTime> weekdayTimes() {
         return List.of(
                 workingTime(DayOfWeek.MONDAY),

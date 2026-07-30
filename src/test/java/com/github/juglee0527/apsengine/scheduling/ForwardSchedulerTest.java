@@ -9,6 +9,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import com.github.juglee0527.apsengine.capacity.UnavailableInterval;
 import com.github.juglee0527.apsengine.capacity.WeeklyWorkingTime;
 
 import org.junit.jupiter.api.Test;
@@ -309,6 +310,36 @@ class ForwardSchedulerTest {
                 .isEqualTo(tuesdayEight.plusHours(1));
         assertThat(secondTask.endAt())
                 .isEqualTo(tuesdayEight.plusHours(2));
+    }
+
+    @Test
+    void schedulesProcessingAroundMaintenanceWindow() {
+        SchedulingOperationInput operation =
+                new SchedulingOperationInput(
+                        11L,
+                        101L,
+                        1,
+                        "CUT",
+                        "절단",
+                        1,
+                        weeklyTimes(),
+                        List.of(new UnavailableInterval(
+                                MONDAY_EIGHT.plusHours(1),
+                                MONDAY_EIGHT.plusHours(2)
+                        ))
+                );
+        SchedulingOrderInput order =
+                order(1L, "PO-001", 120, 5, operation);
+
+        SchedulingPlan plan =
+                scheduler.schedule(MONDAY_EIGHT, List.of(order));
+
+        assertThat(plan.tasks().getFirst().startAt())
+                .isEqualTo(MONDAY_EIGHT);
+        assertThat(plan.tasks().getFirst().endAt())
+                .isEqualTo(MONDAY_EIGHT.plusHours(3));
+        assertThat(plan.tasks().getFirst().workingMinutes())
+                .isEqualTo(120);
     }
 
     private SchedulingOrderInput order(

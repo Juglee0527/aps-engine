@@ -10,7 +10,7 @@ ProductionOrder
   → Priority Rule
     → Operation Sequence
       → Directional Changeover Time
-        → Machine Working Calendar
+        → Machine Working Calendar − Maintenance
         → ScheduledTask
 ```
 
@@ -18,6 +18,7 @@ ProductionOrder
 
 `SchedulingOrderInput`은 생산오더 식별자, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록을 가집니다.
 `SchedulingOperationInput`은 공정, 설비, 순서, 단위 처리시간과 설비 근무시간 스냅샷을 가집니다.
+각 공정 입력에는 계획 시작 이후의 설비 Maintenance 비가용 구간도 함께 포함됩니다.
 `SchedulingChangeoverInput`은 설비, 이전 품목, 다음 품목과 방향성 전환시간 스냅샷을 가집니다.
 
 필요 작업시간은 다음과 같이 계산합니다.
@@ -54,6 +55,8 @@ ProductionOrder
 전환이 근무 종료를 넘으면 다음 근무일에 이어서 배정한 뒤 가공을 시작합니다.
 
 실제 배정은 설비의 근무시간 안에서만 진행하며 비근무시간과 주말은 건너뜁니다.
+활성 Maintenance와 겹치는 근무시간도 건너뛰며, 정비시간 밖에서 남은 가공 또는 Changeover를
+이어서 배정합니다.
 PostgreSQL이 오더 시각을 UTC offset으로 복원하더라도, 반복 근무시간은 실행 요청의
 `planningStart` offset으로 정규화해 공장 현지시각 기준을 유지합니다.
 Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도록 명시적으로 설정합니다.
@@ -64,12 +67,13 @@ Spring JSON 역직렬화도 요청 offset을 UTC로 자동 조정하지 않도�
 - 같은 설비의 작업은 서로 겹치지 않습니다.
 - 후속 공정은 선행 공정이 끝난 뒤 시작합니다.
 - Changeover와 가공은 같은 설비에서 순서대로 배정되어 서로 겹치지 않습니다.
+- 가공과 Changeover는 계획 정비 구간과 겹치지 않습니다.
 - 같은 입력은 같은 결과를 반환합니다.
 - 작업시간 곱셈 오버플로와 근무시간 누락을 명시적으로 실패 처리합니다.
 
 ## 5. 제한사항
 
-Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색은 현재 범위에 없습니다.
+병렬 설비 선택, 작업 분할 정책과 최적화 탐색은 현재 범위에 없습니다.
 
 ## 6. 실행과 저장
 
@@ -78,7 +82,7 @@ Maintenance, 병렬 설비 선택, 작업 분할 정책과 최적화 탐색은 �
 ```text
 CONFIRMED 오더 조회
   → Routing·Operation·Machine 조회
-    → WorkingCalendar·Changeover Time 스냅샷 구성
+    → WorkingCalendar·Changeover Time·Maintenance 스냅샷 구성
       → ForwardScheduler 실행
         → ScheduleRun·ScheduledOperation 저장
           → 오더를 SCHEDULED로 변경

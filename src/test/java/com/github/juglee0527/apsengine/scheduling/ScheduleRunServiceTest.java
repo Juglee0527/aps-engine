@@ -24,6 +24,8 @@ import com.github.juglee0527.apsengine.common.error.ApplicationException;
 import com.github.juglee0527.apsengine.common.error.ErrorCode;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
 import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
 import com.github.juglee0527.apsengine.machine.Machine;
@@ -61,6 +63,9 @@ class ScheduleRunServiceTest {
     private ChangeoverTimeRepository changeoverTimeRepository;
 
     @Mock
+    private MachineMaintenanceRepository maintenanceRepository;
+
+    @Mock
     private ScheduleRunRepository scheduleRunRepository;
 
     private ScheduleRunService scheduleRunService;
@@ -71,6 +76,7 @@ class ScheduleRunServiceTest {
                 productionOrderRepository,
                 workingCalendarRepository,
                 changeoverTimeRepository,
+                maintenanceRepository,
                 scheduleRunRepository
         );
     }
@@ -184,6 +190,12 @@ class ScheduleRunServiceTest {
         );
         ChangeoverTime changeoverTime =
                 ChangeoverTime.create(machine, productA, productB, 30);
+        MachineMaintenance maintenance = MachineMaintenance.create(
+                machine,
+                PLANNING_START.plusMinutes(15),
+                PLANNING_START.plusMinutes(45),
+                "정기 점검"
+        );
         List<WorkingCalendar> calendars =
                 weekdayCalendars(machine);
         UUID executionKey = UUID.randomUUID();
@@ -199,6 +211,11 @@ class ScheduleRunServiceTest {
         when(changeoverTimeRepository
                 .findAllByMachine_IdInAndActiveTrue(anySet()))
                 .thenReturn(List.of(changeoverTime));
+        when(maintenanceRepository
+                .findAllByMachine_IdInAndActiveTrueAndEndAtGreaterThanOrderByStartAtAsc(
+                        anySet(),
+                        any(OffsetDateTime.class)
+                )).thenReturn(List.of(maintenance));
         when(scheduleRunRepository.saveAndFlush(any(ScheduleRun.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -208,6 +225,8 @@ class ScheduleRunServiceTest {
         );
 
         assertThat(result.scheduledOperations()).hasSize(2);
+        assertThat(result.scheduledOperations().getFirst().endAt())
+                .isEqualTo(PLANNING_START.plusMinutes(90));
         ScheduledOperation second =
                 result.scheduledOperations().get(1);
         assertThat(second.productionOrder()).isSameAs(orderB);

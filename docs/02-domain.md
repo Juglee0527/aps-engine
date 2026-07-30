@@ -178,7 +178,7 @@ WorkingCalendar는 Machine의 반복 주간 근무시간 한 구간입니다.
 | 모델 | 책임 |
 | --- | --- |
 | `SchedulingOrderInput` | 오더·품목 ID, 번호, 수량, 투입 가능시각, 납기, 우선순위와 공정 목록 |
-| `SchedulingOperationInput` | 공정·설비 ID, 순서, 단위 처리시간과 설비 근무시간 |
+| `SchedulingOperationInput` | 공정·설비 ID, 순서, 단위 처리시간, 설비 근무시간과 정비 비가용 구간 |
 | `SchedulingChangeoverInput` | 설비·이전 품목·다음 품목과 방향성 전환시간 스냅샷 |
 | `ScheduledTask` | 배정된 오더·공정·설비, 전환 시작·분, 가공 시작·종료·분과 납기 지연 여부 |
 | `SchedulingPlan` | 계획 시작, 전체 종료와 작업 목록 |
@@ -246,3 +246,23 @@ ChangeoverTime은 한 설비에서 이전 품목 생산을 마치고 다음 품�
 - 실제 준비작업이 필요 없는 조합을 명시하기 위해 서로 다른 품목에는 0분을 등록할 수 있습니다.
 - 스케줄러는 설비의 직전 배정 품목을 추적해 다음 가공 전에 방향성 전환시간을 배정합니다.
 - 첫 배정, 동일 품목과 매핑이 없는 조합은 전환시간 0분으로 처리합니다.
+
+## 12. MachineMaintenance
+
+MachineMaintenance는 설비의 반복 근무시간 중 특정 날짜와 시간에 발생하는 계획 정비 예외입니다.
+WorkingCalendar가 “평소 언제 일하는가”를 정의한다면 Maintenance는 “그중 언제 일할 수 없는가”를
+정의하므로 두 모델을 분리합니다.
+
+| 속성 | 타입 | 규칙 |
+| --- | --- | --- |
+| `machine` | Machine | 정비 대상 설비 |
+| `startAt` | OffsetDateTime | 정비 시작 instant |
+| `endAt` | OffsetDateTime | 시작보다 이후인 정비 종료 instant |
+| `reason` | String | 공백이 아닌 200자 이하 사유 |
+| `active` | boolean | 신규 생성 시 `true` |
+
+- 같은 설비의 활성 정비 구간은 서로 겹칠 수 없습니다.
+- `[startAt, endAt)` 반개방 구간을 사용하므로 한 정비의 종료와 다음 정비의 시작이 같으면 허용합니다.
+- 근무시간 밖의 정비도 등록할 수 있지만 현재 CAPA에는 영향을 주지 않습니다. 이후 근무시간이 바뀌면
+  겹치는 부분만 자동으로 비가용시간이 됩니다.
+- CAPA 조회와 스케줄러는 공통 `WorkingTimeCalculator`에서 근무시간에서 정비 구간을 차감합니다.

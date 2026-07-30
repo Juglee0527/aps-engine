@@ -2,7 +2,7 @@
 
 ## 1. Current Schema
 
-현재 스키마 기준은 Flyway `V12__add_changeover_to_scheduled_operation.sql`입니다.
+현재 스키마 기준은 Flyway `V13__create_machine_maintenance_table.sql`입니다.
 JPA는 `ddl-auto=validate`로 아래 테이블과 매핑의 일치 여부만 검증합니다.
 
 ```mermaid
@@ -76,6 +76,14 @@ erDiagram
         INTEGER changeover_minutes
         BOOLEAN active
     }
+    MACHINE_MAINTENANCE {
+        BIGINT machine_maintenance_id PK
+        BIGINT machine_id FK
+        TIMESTAMPTZ start_at
+        TIMESTAMPTZ end_at
+        VARCHAR_200 maintenance_reason
+        BOOLEAN active
+    }
     SCHEDULE_RUN {
         BIGINT schedule_run_id PK
         UUID execution_key UK
@@ -107,6 +115,7 @@ erDiagram
     ROUTING ||--o{ PRODUCTION_ORDER : produces
     MACHINE ||--o{ WORKING_CALENDAR : available
     MACHINE ||--o{ CHANGEOVER_TIME : configures
+    MACHINE ||--o{ MACHINE_MAINTENANCE : unavailable
     PRODUCT ||--o{ CHANGEOVER_TIME : from_product
     PRODUCT ||--o{ CHANGEOVER_TIME : to_product
     SCHEDULE_RUN ||--o{ SCHEDULED_OPERATION : contains
@@ -215,3 +224,14 @@ erDiagram
 | `ck_changeover_time_minutes` | `changeover_minutes` | 0분 이상 보장 |
 | `ix_changeover_time_machine_id` | `machine_id` | 설비별 전환시간 조회 지원 |
 | `ix_changeover_time_product_pair` | 이전 품목·다음 품목 | 품목 전환 조합 조회 지원 |
+
+### MachineMaintenance 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `pk_machine_maintenance` | `machine_maintenance_id` | 계획 정비 내부 식별자 |
+| `fk_machine_maintenance_machine` | `machine_id` | 정비 대상 설비 참조 |
+| `ck_machine_maintenance_period` | 시작·종료 | 종료가 시작보다 이후임을 보장 |
+| `ck_machine_maintenance_reason_not_blank` | `maintenance_reason` | 공백 사유 저장 방지 |
+| `ex_machine_maintenance_no_overlap` | 설비·정비 구간 | PostgreSQL GiST 배제 제약으로 동시 요청의 겹침까지 차단 |
+| `ix_machine_maintenance_machine_start` | 설비·시작 | 설비별 정비시간 조회 지원 |
