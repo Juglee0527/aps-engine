@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionResponse;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionService;
+import com.github.juglee0527.apsengine.scheduling.DispatchingRuleComparisonResponse;
+import com.github.juglee0527.apsengine.scheduling.ScheduleRunService;
 
 import jakarta.validation.Valid;
 
@@ -23,13 +25,16 @@ public class LearningScenarioController {
 
     private final LearningScenarioService service;
     private final ScheduleExecutionService executionService;
+    private final ScheduleRunService scheduleRunService;
 
     public LearningScenarioController(
             LearningScenarioService service,
-            ScheduleExecutionService executionService
+            ScheduleExecutionService executionService,
+            ScheduleRunService scheduleRunService
     ) {
         this.service = service;
         this.executionService = executionService;
+        this.scheduleRunService = scheduleRunService;
     }
 
     @GetMapping("/scenarios")
@@ -83,5 +88,16 @@ public class LearningScenarioController {
                         "/api/v1/schedules/executions/" + execution.id()
                 ))
                 .body(execution);
+    }
+
+    @GetMapping("/instances/{instanceId}/rule-comparison")
+    public DispatchingRuleComparisonResponse compareRules(
+            @PathVariable long instanceId
+    ) {
+        LearningScenarioPlanScope scope = service.planScope(instanceId);
+        return scheduleRunService.compareDispatchingRules(
+                scope.planningStart(),
+                scope.productionOrderIds()
+        );
     }
 }

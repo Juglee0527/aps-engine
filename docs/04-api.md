@@ -842,6 +842,7 @@ GET /api/v1/learning/scenarios
 | `FINITE_CAPACITY` | 직렬 배치, 비근무시간, 대기 | 1설비·1품목·4오더 |
 | `PRECEDENCE` | 가공→검사→포장 선후관계 | 3설비·1품목·2오더 |
 | `TARDINESS` | 지연 오더와 지연시간 KPI | 1설비·2품목·4오더 |
+| `RULE_COMPARISON` | Priority·EDD·SPT 순서와 KPI 비교 | 1설비·3품목·6오더 |
 
 ### 20.2 실습 인스턴스 생성
 
@@ -897,3 +898,31 @@ Content-Type: application/json
 스케줄 실행을 생성합니다. 따라서 다른 학습 인스턴스나 사용자가 직접 등록한 오더가 섞이지 않습니다.
 생성된 `SCHEDULE_EXECUTION`도 인스턴스 초기화 대상으로 추적합니다. 생산오더가 아직 없거나 이미
 초기화한 인스턴스는 `400 INVALID_REQUEST`이며, 응답과 조회 방식은 일반 스케줄 실행 API와 같습니다.
+
+### 20.5 Dispatching Rule 비파괴 비교
+
+```http
+GET /api/v1/learning/instances/{instanceId}/rule-comparison
+```
+
+```json
+{
+  "recommendedRule": "EDD",
+  "recommendationReason": "총 지연시간, 지연 오더 수, Makespan 순으로 비교했습니다.",
+  "results": [
+    {
+      "dispatchingRule": "EDD",
+      "totalTardinessMinutes": 30,
+      "delayedOrderCount": 1,
+      "makespanMinutes": 480,
+      "machineUtilizationPercent": 75.00,
+      "orderSequence": ["RC-MED-1", "RC-SHORT-1", "RC-LONG-1"],
+      "tasks": []
+    }
+  ]
+}
+```
+
+세 결과는 같은 오더 스냅샷을 사용하며 조회만으로 ScheduleRun이나 오더 상태를 변경하지 않습니다.
+완전 동률은 `EXPLICIT_PRIORITY`, `EDD`, `SPT` 순으로 결정합니다. 비교 후 확정할 때만 20.4 API에
+선택한 `dispatchingRule`을 보내 기존 비동기 실행 경로를 사용합니다.

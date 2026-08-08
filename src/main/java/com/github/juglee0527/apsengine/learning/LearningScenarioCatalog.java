@@ -26,6 +26,7 @@ public class LearningScenarioCatalog {
         register(values, finiteCapacity());
         register(values, precedence());
         register(values, tardiness());
+        register(values, ruleComparison());
         this.blueprints = Collections.unmodifiableMap(values);
     }
 
@@ -173,6 +174,34 @@ public class LearningScenarioCatalog {
         );
     }
 
+    private LearningScenarioBlueprint ruleComparison() {
+        return new LearningScenarioBlueprint(
+                "RULE_COMPARISON",
+                "C",
+                "Dispatching Rule 비교",
+                "우선순위·납기·가공시간이 서로 다른 오더를 세 규칙으로 동시에 계산합니다.",
+                "배차 규칙이 작업 순서와 KPI를 어떻게 바꾸는지 비교합니다.",
+                "Priority, EDD, SPT가 각각 어떤 오더를 첫 작업으로 고를지 예상해 보세요.",
+                List.of("규칙별 첫 오더", "총 지연시간", "Makespan과 가동률"),
+                "같은 입력도 규칙의 첫 정렬 기준이 달라 작업 순서와 납기 성과가 달라집니다.",
+                "추천 규칙과 다른 규칙을 확정 실행해 간트의 첫 작업을 확인해 보세요.",
+                List.of(new MachineSpec("CELL", "공용 가공 셀")),
+                List.of(
+                        comparisonProduct("LONG", "장시간 부품", 180),
+                        comparisonProduct("MEDIUM", "중간 부품", 90),
+                        comparisonProduct("SHORT", "단시간 부품", 30)
+                ),
+                List.of(
+                        order("LONG", "RC-LONG-1", 2, 0, 1_200, 100),
+                        order("MEDIUM", "RC-MED-1", 1, 0, 240, 50),
+                        order("SHORT", "RC-SHORT-1", 1, 0, 480, 20),
+                        order("LONG", "RC-LONG-2", 1, 0, 1_440, 90),
+                        order("MEDIUM", "RC-MED-2", 1, 0, 600, 40),
+                        order("SHORT", "RC-SHORT-2", 1, 0, 720, 10)
+                )
+        );
+    }
+
     private ProductSpec product(
             String code,
             String name,
@@ -195,6 +224,24 @@ public class LearningScenarioCatalog {
                 name,
                 List.of(new OperationSpec(
                         1, "WELD", "용접", 180, "WELD"
+                ))
+        );
+    }
+
+    private ProductSpec comparisonProduct(
+            String code,
+            String name,
+            int processingMinutes
+    ) {
+        return new ProductSpec(
+                code,
+                name,
+                List.of(new OperationSpec(
+                        1,
+                        "PROCESS",
+                        "가공",
+                        processingMinutes,
+                        "CELL"
                 ))
         );
     }

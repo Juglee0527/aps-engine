@@ -15,9 +15,12 @@ import java.util.List;
 import java.util.UUID;
 
 import com.github.juglee0527.apsengine.scheduling.DispatchingRule;
+import com.github.juglee0527.apsengine.scheduling.DispatchingRuleComparisonResponse;
+import com.github.juglee0527.apsengine.scheduling.DispatchingRuleComparisonResult;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionResponse;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionService;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionStatus;
+import com.github.juglee0527.apsengine.scheduling.ScheduleRunService;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +40,9 @@ class LearningScenarioControllerTest {
 
     @MockitoBean
     private ScheduleExecutionService executionService;
+
+    @MockitoBean
+    private ScheduleRunService scheduleRunService;
 
     @Test
     void listsScenarioDefinitions() throws Exception {
@@ -134,6 +140,46 @@ class LearningScenarioControllerTest {
                 .andExpect(jsonPath("$.productionOrderIds[0]").value(7));
 
         verify(service).trackScheduleExecution(4L, 31L);
+    }
+
+    @Test
+    void comparesDispatchingRulesWithoutCreatingScheduleRun()
+            throws Exception {
+        OffsetDateTime planningStart = OffsetDateTime.parse(
+                "2026-08-10T08:00:00+09:00"
+        );
+        when(service.planScope(4L)).thenReturn(
+                new LearningScenarioPlanScope(
+                        null,
+                        planningStart,
+                        List.of(7L, 9L)
+                )
+        );
+        when(scheduleRunService.compareDispatchingRules(
+                planningStart,
+                List.of(7L, 9L)
+        )).thenReturn(new DispatchingRuleComparisonResponse(
+                DispatchingRule.EDD,
+                "총 지연시간 우선",
+                List.of(new DispatchingRuleComparisonResult(
+                        DispatchingRule.EDD,
+                        30,
+                        1,
+                        240,
+                        new java.math.BigDecimal("75.00"),
+                        List.of("PO-02", "PO-01"),
+                        List.of()
+                ))
+        ));
+
+        mockMvc.perform(get(
+                        "/api/v1/learning/instances/4/rule-comparison"
+                ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.recommendedRule").value("EDD"))
+                .andExpect(jsonPath(
+                        "$.results[0].orderSequence[0]"
+                ).value("PO-02"));
     }
 
     private LearningScenarioInstanceResponse response(

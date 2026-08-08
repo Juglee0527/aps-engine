@@ -25,7 +25,9 @@ export const API = {
     learningScenarioInstances: (scenarioKey) =>
         `/api/v1/learning/scenarios/${scenarioKey}/instances`,
     learningInstanceSchedules: (instanceId) =>
-        `/api/v1/learning/instances/${instanceId}/schedules`
+        `/api/v1/learning/instances/${instanceId}/schedules`,
+    learningRuleComparison: (instanceId) =>
+        `/api/v1/learning/instances/${instanceId}/rule-comparison`
 };
 
 export async function request(url, options = {}) {

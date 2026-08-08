@@ -104,7 +104,7 @@ APS 결과는 하나의 절대적인 정답이 아닙니다. 선택한 우선순
 | `FINITE_CAPACITY` | 1설비·1품목·4오더 | 유한 CAPA, 비근무시간과 대기 |
 | `PRECEDENCE` | 3설비·1품목·2오더 | 가공→검사→포장 공정 선후관계 |
 | `TARDINESS` | 1설비·2품목·4오더 | 납기 지연과 지연 KPI 읽기 |
-| `RULE_COMPARISON` | 4설비·30오더 | Priority·EDD·SPT의 순서와 KPI 차이 |
+| `RULE_COMPARISON` | 1설비·3품목·6오더 | Priority·EDD·SPT의 순서와 KPI 차이 |
 | `BOTTLENECK` | 6설비·60오더 | 특정 공정의 높은 가동률과 대기 누적 |
 | `CHANGEOVER` | 5설비·5품목·50오더 | 품목 순서에 따른 준비시간 변화 |
 | `ALTERNATIVE_MACHINE` | 8설비·40오더 | 후보 설비의 가장 이른 완료시각 선택 |

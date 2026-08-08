@@ -345,7 +345,7 @@
                         <span class="section-label">LEARNING PATH</span>
                         <h2>기초부터 계획 변경까지 여섯 과정으로 학습합니다</h2>
                     </div>
-                    <p>첫 계획, 유한 CAPA, 공정 선후관계와 납기 지연 실습을 바로 실행할 수 있습니다.</p>
+                    <p>기초 네 실습과 Priority·EDD·SPT 비교 실험실을 바로 실행할 수 있습니다.</p>
                 </header>
                 <div class="guide-course-grid">
                     <article class="guide-course-card is-available" data-learning-course="A">
@@ -362,12 +362,12 @@
                         <ul><li>가용시간</li><li>작업·공정 대기</li><li>Lead Time</li></ul>
                         <button type="button" class="text-button" data-guide-target="guide-scenario-labs">CAPA 실습으로 이동 →</button>
                     </article>
-                    <article class="guide-course-card" data-learning-course="C">
+                    <article class="guide-course-card is-available" data-learning-course="C">
                         <span class="guide-course-index">COURSE C · RULES</span>
                         <strong>배차 규칙 비교하기</strong>
                         <p>같은 오더를 Priority, EDD, SPT로 계산해 계획 차이를 비교합니다.</p>
                         <ul><li>작업 순서</li><li>총 지연</li><li>Makespan</li></ul>
-                        <small>054에서 비교 실험실 제공</small>
+                        <button type="button" class="text-button" data-guide-target="guide-scenario-labs">규칙 비교 실습으로 이동 →</button>
                     </article>
                     <article class="guide-course-card" data-learning-course="D">
                         <span class="guide-course-index">COURSE D · CONSTRAINTS</span>
@@ -490,6 +490,17 @@
                     <p>카드를 읽고 결과를 먼저 예상한 다음, 격리된 샘플 데이터와 계획을 한 번에 만드세요.</p>
                 </header>
                 <div id="guide-scenario-grid" class="guide-scenario-grid" aria-live="polite"></div>
+            </section>
+
+            <section id="guide-rule-comparison" class="guide-section" hidden>
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">RULE COMPARISON</span>
+                        <h2>같은 오더, 다른 작업 순서와 KPI</h2>
+                    </div>
+                    <p id="guide-rule-reason"></p>
+                </header>
+                <div id="guide-rule-result-grid" class="guide-rule-grid" aria-live="polite"></div>
             </section>
 
             <section id="guide-onboarding" class="panel guide-section guide-onboarding">

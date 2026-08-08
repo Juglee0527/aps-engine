@@ -10,5 +10,7 @@ export const state = {
     bottleneckAnalysis: null,
     sampleCalendars: new Map(),
     learningScenarios: [],
-    runningLearningScenario: null
+    runningLearningScenario: null,
+    learningInstance: null,
+    learningComparison: null
 };

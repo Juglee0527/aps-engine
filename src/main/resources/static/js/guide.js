@@ -51,7 +51,38 @@ export function renderLearningScenarios() {
                     type="button"
                     data-learning-scenario="${escapeHtml(scenario.key)}"
                     ${state.runningLearningScenario ? "disabled" : ""}
-                >${running ? "데이터 생성 및 계산 중…" : "이 실습 생성하고 실행"}</button>
+                >${running ? "데이터 생성 및 비교 중…" : "이 실습으로 규칙 비교"}</button>
+            </article>
+        `;
+    }).join("");
+}
+
+export function renderRuleComparison() {
+    const section = document.querySelector("#guide-rule-comparison");
+    const container = document.querySelector("#guide-rule-result-grid");
+    const comparison = state.learningComparison;
+    section.hidden = !comparison;
+    if (!comparison) {
+        container.innerHTML = "";
+        return;
+    }
+    text("#guide-rule-reason", comparison.recommendationReason);
+    container.innerHTML = comparison.results.map((result) => {
+        const recommended = result.dispatchingRule === comparison.recommendedRule;
+        return `
+            <article class="guide-rule-card ${recommended ? "is-recommended" : ""}">
+                <span>${recommended ? "RECOMMENDED" : "RULE"}</span>
+                <strong>${escapeHtml(result.dispatchingRule)}</strong>
+                <dl>
+                    <div><dt>총 지연</dt><dd>${result.totalTardinessMinutes}분</dd></div>
+                    <div><dt>지연 오더</dt><dd>${result.delayedOrderCount}건</dd></div>
+                    <div><dt>Makespan</dt><dd>${result.makespanMinutes}분</dd></div>
+                    <div><dt>가동률</dt><dd>${result.machineUtilizationPercent}%</dd></div>
+                </dl>
+                <p>${result.orderSequence.map(escapeHtml).join(" → ")}</p>
+                <button class="guide-step-action" type="button" data-confirm-learning-rule="${escapeHtml(result.dispatchingRule)}">
+                    이 규칙으로 확정 실행
+                </button>
             </article>
         `;
     }).join("");

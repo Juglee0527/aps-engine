@@ -2,6 +2,7 @@ package com.github.juglee0527.apsengine.scheduling;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -137,6 +138,88 @@ public class ScheduleRunService {
             order.markScheduled();
         }
         return saveScheduleRun(scheduleRun);
+    }
+
+    @Transactional(readOnly = true)
+    public DispatchingRuleComparisonResponse compareDispatchingRules(
+            OffsetDateTime planningStart,
+            List<Long> productionOrderIds
+    ) {
+        if (planningStart == null) {
+            throw new ApplicationException(ErrorCode.INVALID_REQUEST);
+        }
+        List<ProductionOrder> orders = findPlanningOrders(
+                productionOrderIds
+        );
+        if (orders.isEmpty()) {
+            throw new ApplicationException(
+                    ErrorCode.CONFIRMED_PRODUCTION_ORDER_REQUIRED
+            );
+        }
+        SchedulingContext context = createContext(orders, planningStart);
+        List<DispatchingRuleComparisonResult> results = List.of(
+                DispatchingRule.EXPLICIT_PRIORITY,
+                DispatchingRule.EDD,
+                DispatchingRule.SPT
+        ).stream().map(rule -> comparisonResult(
+                rule,
+                calculateSchedule(
+                        planningStart,
+                        rule,
+                        context,
+                        FrozenScheduleSeed.empty()
+                )
+        )).toList();
+        DispatchingRuleComparisonResult recommended = results.stream()
+                .min(Comparator
+                        .comparingLong(
+                                DispatchingRuleComparisonResult
+                                        ::totalTardinessMinutes
+                        )
+                        .thenComparingInt(
+                                DispatchingRuleComparisonResult
+                                        ::delayedOrderCount
+                        )
+                        .thenComparingLong(
+                                DispatchingRuleComparisonResult
+                                        ::makespanMinutes
+                        )
+                        .thenComparingInt(result ->
+                                ruleOrder(result.dispatchingRule())))
+                .orElseThrow();
+        return new DispatchingRuleComparisonResponse(
+                recommended.dispatchingRule(),
+                "총 지연시간, 지연 오더 수, Makespan 순으로 비교했습니다. "
+                        + "동률이면 Priority, EDD, SPT 순으로 결정합니다.",
+                results
+        );
+    }
+
+    private DispatchingRuleComparisonResult comparisonResult(
+            DispatchingRule rule,
+            ScheduleCalculation calculation
+    ) {
+        LinkedHashMap<String, Boolean> sequence = new LinkedHashMap<>();
+        calculation.plan().tasks().forEach(task ->
+                sequence.putIfAbsent(task.orderNumber(), Boolean.TRUE));
+        ScheduleKpis kpis = calculation.kpis();
+        return new DispatchingRuleComparisonResult(
+                rule,
+                kpis.totalTardinessMinutes(),
+                kpis.delayedOrderCount(),
+                kpis.makespanMinutes(),
+                kpis.machineUtilizationPercent(),
+                List.copyOf(sequence.keySet()),
+                calculation.plan().tasks()
+        );
+    }
+
+    private int ruleOrder(DispatchingRule rule) {
+        return switch (rule) {
+            case EXPLICIT_PRIORITY -> 0;
+            case EDD -> 1;
+            case SPT -> 2;
+        };
     }
 
     private List<ProductionOrder> findPlanningOrders(

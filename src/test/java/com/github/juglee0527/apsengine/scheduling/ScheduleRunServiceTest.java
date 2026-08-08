@@ -204,6 +204,85 @@ class ScheduleRunServiceTest {
     }
 
     @Test
+    void comparesRulesWithDifferentSequencesWithoutChangingOrders() {
+        TestData data = testData();
+        ProductionOrder urgentDue = ProductionOrder.create(
+                data.order().routing(),
+                "PO-DUE-FIRST",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusHours(4),
+                10
+        );
+        ReflectionTestUtils.setField(urgentDue, "id", 10L);
+        urgentDue.confirm();
+        when(productionOrderRepository.findAllInScope(
+                List.of(9L, 10L),
+                ProductionOrderStatus.CONFIRMED
+        )).thenReturn(List.of(data.order(), urgentDue));
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(data.calendars());
+
+        DispatchingRuleComparisonResponse comparison =
+                scheduleRunService.compareDispatchingRules(
+                        PLANNING_START,
+                        List.of(9L, 10L)
+                );
+
+        DispatchingRuleComparisonResult priority = comparison.results()
+                .stream()
+                .filter(result -> result.dispatchingRule()
+                        == DispatchingRule.EXPLICIT_PRIORITY)
+                .findFirst()
+                .orElseThrow();
+        DispatchingRuleComparisonResult edd = comparison.results()
+                .stream()
+                .filter(result -> result.dispatchingRule()
+                        == DispatchingRule.EDD)
+                .findFirst()
+                .orElseThrow();
+        assertThat(priority.orderSequence().getFirst()).isEqualTo("PO-001");
+        assertThat(edd.orderSequence().getFirst())
+                .isEqualTo("PO-DUE-FIRST");
+        assertThat(data.order().status())
+                .isEqualTo(ProductionOrderStatus.CONFIRMED);
+        assertThat(urgentDue.status())
+                .isEqualTo(ProductionOrderStatus.CONFIRMED);
+        verify(scheduleRunRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void resolvesComparisonTieInDocumentedRuleOrder() {
+        TestData data = testData();
+        when(productionOrderRepository.findAllInScope(
+                List.of(9L),
+                ProductionOrderStatus.CONFIRMED
+        )).thenReturn(List.of(data.order()));
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(data.calendars());
+
+        DispatchingRuleComparisonResponse comparison =
+                scheduleRunService.compareDispatchingRules(
+                        PLANNING_START,
+                        List.of(9L)
+                );
+
+        assertThat(comparison.recommendedRule())
+                .isEqualTo(DispatchingRule.EXPLICIT_PRIORITY);
+        assertThat(comparison.results())
+                .extracting(
+                        DispatchingRuleComparisonResult::dispatchingRule
+                )
+                .containsExactly(
+                        DispatchingRule.EXPLICIT_PRIORITY,
+                        DispatchingRule.EDD,
+                        DispatchingRule.SPT
+                );
+    }
+
+    @Test
     void reschedulesOnlyFutureTasksAndIncludesNewConfirmedOrder() {
         TestData data = testData();
         ScheduleRun source = sourceScheduleRun(data);

@@ -604,7 +604,7 @@ README와 로드맵에서 048~059의 범위와 현재 상태를 추적할 수 �
 권장 커밋 메시지: feat: add foundational aps learning scenarios
 ```
 
-### [ ] 054. Dispatching Rule 비교 실험실
+### [x] 054. Dispatching Rule 비교 실험실
 
 ```text
 같은 오더 스냅샷을 Priority, EDD, SPT로 계산하고 KPI와 작업 순서를 나란히 비교하는 비파괴 실행을 구현해 주세요.

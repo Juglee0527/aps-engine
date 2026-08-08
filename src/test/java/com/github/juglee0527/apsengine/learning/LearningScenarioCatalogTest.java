@@ -27,14 +27,15 @@ class LearningScenarioCatalogTest {
     }
 
     @Test
-    void exposesFourFoundationalScenarioLessons() {
+    void exposesFoundationalAndRuleComparisonLessons() {
         assertThat(catalog.findAll())
                 .extracting(LearningScenarioDefinition::key)
                 .containsExactly(
                         "FIRST_PLAN",
                         "FINITE_CAPACITY",
                         "PRECEDENCE",
-                        "TARDINESS"
+                        "TARDINESS",
+                        "RULE_COMPARISON"
                 );
         assertThat(catalog.findAll())
                 .allSatisfy(definition -> {

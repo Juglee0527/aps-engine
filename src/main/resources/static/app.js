@@ -3,6 +3,7 @@ import {SAMPLE_DATA, SAMPLE_STEP_KEYS} from "./js/guide-data.js";
 import {
     renderGuideStatus,
     renderLearningScenarios,
+    renderRuleComparison,
     renderSampleOnboarding as renderGuideOnboarding
 } from "./js/guide.js";
 import {renderMasterData, populateSelects} from "./js/master-data.js";
@@ -154,6 +155,7 @@ function render() {
     renderMasterData();
     renderGuideStatus();
     renderLearningScenarios();
+    renderRuleComparison();
     renderSampleOnboarding();
     populateSelects();
 }
@@ -251,6 +253,15 @@ function bindActions() {
             if (button) runLearningScenario(button.dataset.learningScenario);
         }
     );
+    document.querySelector("#guide-rule-comparison").addEventListener(
+        "click",
+        (event) => {
+            const button = event.target.closest("[data-confirm-learning-rule]");
+            if (button) confirmLearningRule(
+                button.dataset.confirmLearningRule
+            );
+        }
+    );
     bindCsvPreview();
 }
 
@@ -266,14 +277,38 @@ async function runLearningScenario(scenarioKey) {
                 body: JSON.stringify({requestKey: crypto.randomUUID()})
             }
         );
+        const comparison = await request(
+            API.learningRuleComparison(instance.id)
+        );
+        state.learningInstance = instance;
+        state.learningComparison = comparison;
+        renderRuleComparison();
+        document.querySelector("#guide-rule-comparison").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+        showToast(`${scenarioKey}의 세 규칙 비교를 완료했습니다.`);
+    } catch (error) {
+        showToast(error.message, true);
+    } finally {
+        state.runningLearningScenario = null;
+        renderLearningScenarios();
+    }
+}
+
+async function confirmLearningRule(dispatchingRule) {
+    if (!state.learningInstance || state.runningLearningScenario) return;
+    state.runningLearningScenario = "CONFIRM";
+    renderLearningScenarios();
+    try {
         await submitScheduleExecution(
-            API.learningInstanceSchedules(instance.id),
+            API.learningInstanceSchedules(state.learningInstance.id),
             {
                 executionKey: crypto.randomUUID(),
-                dispatchingRule: "EXPLICIT_PRIORITY"
+                dispatchingRule
             }
         );
-        showToast(`${scenarioKey} 실습 계획을 만들었습니다.`);
+        showToast(`${dispatchingRule} 규칙으로 실습 계획을 확정했습니다.`);
         await loadAll();
         showView("schedule");
     } catch (error) {

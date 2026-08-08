@@ -402,3 +402,9 @@ LearningScenarioInstance는 반복 가능한 APS 실습 한 회차의 수명주�
 LearningScenarioEntity는 인스턴스가 만든 업무 엔티티의 종류와 ID만 추적합니다. 초기화는 실행 결과,
 생산오더, 제약, 기준정보 순으로 추적된 ID만 삭제하므로 사용자가 직접 등록한 데이터와 다른 실습
 인스턴스는 보존됩니다. 생성과 초기화는 각각 하나의 트랜잭션으로 처리됩니다.
+
+Dispatching Rule 비교는 별도의 Aggregate를 저장하지 않는 읽기 모델입니다. 같은 인스턴스의
+`CONFIRMED` 오더 스냅샷을 `EXPLICIT_PRIORITY`, `EDD`, `SPT`로 각각 계산해 작업 순서와 KPI를
+반환하지만 ScheduleRun을 저장하거나 오더를 `SCHEDULED`로 바꾸지 않습니다. 추천 규칙은 총
+지연시간, 지연 오더 수, Makespan 순으로 고르고 완전 동률이면 위 규칙 순서를 사용합니다. 사용자가
+선택한 규칙만 일반 학습 스케줄 실행 경로를 거쳐 영속화됩니다.

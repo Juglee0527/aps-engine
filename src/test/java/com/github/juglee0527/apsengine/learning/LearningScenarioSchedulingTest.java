@@ -13,11 +13,13 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.juglee0527.apsengine.capacity.WeeklyWorkingTime;
 import com.github.juglee0527.apsengine.scheduling.ForwardScheduler;
+import com.github.juglee0527.apsengine.scheduling.EarliestDueDateRule;
 import com.github.juglee0527.apsengine.scheduling.ScheduleKpiCalculator;
 import com.github.juglee0527.apsengine.scheduling.ScheduleKpis;
 import com.github.juglee0527.apsengine.scheduling.SchedulingOperationInput;
 import com.github.juglee0527.apsengine.scheduling.SchedulingOrderInput;
 import com.github.juglee0527.apsengine.scheduling.SchedulingPlan;
+import com.github.juglee0527.apsengine.scheduling.ShortestProcessingTimeRule;
 
 import org.junit.jupiter.api.Test;
 
@@ -93,6 +95,25 @@ class LearningScenarioSchedulingTest {
 
         assertThat(kpis.delayedOrderCount()).isGreaterThan(0);
         assertThat(kpis.totalTardinessMinutes()).isGreaterThan(0);
+    }
+
+    @Test
+    void comparisonScenarioProducesThreeDifferentFirstOrders() {
+        ScenarioInput input = input("RULE_COMPARISON");
+
+        String priorityFirst = scheduler.schedule(START, input.orders())
+                .tasks().getFirst().orderNumber();
+        String eddFirst = new ForwardScheduler(new EarliestDueDateRule())
+                .schedule(START, input.orders())
+                .tasks().getFirst().orderNumber();
+        String sptFirst = new ForwardScheduler(
+                new ShortestProcessingTimeRule()
+        ).schedule(START, input.orders())
+                .tasks().getFirst().orderNumber();
+
+        assertThat(priorityFirst).isEqualTo("RC-LONG-1");
+        assertThat(eddFirst).isEqualTo("RC-MED-1");
+        assertThat(sptFirst).isEqualTo("RC-SHORT-1");
     }
 
     private ScenarioInput input(String scenarioKey) {
