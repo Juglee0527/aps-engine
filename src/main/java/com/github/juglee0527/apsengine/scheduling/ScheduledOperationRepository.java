@@ -20,9 +20,9 @@ public interface ScheduledOperationRepository
             SELECT task
             FROM ScheduledOperation task
             WHERE task.scheduleRun.id = :scheduleRunId
-              AND (:machineId IS NULL OR task.machine.id = :machineId)
-              AND (:fromAt IS NULL OR task.endAt > :fromAt)
-              AND (:toAt IS NULL OR task.startAt < :toAt)
+              AND (:filterByMachine = FALSE OR task.machine.id = :machineId)
+              AND (:filterByFrom = FALSE OR task.endAt > :fromAt)
+              AND (:filterByTo = FALSE OR task.startAt < :toAt)
               AND (:query = ''
                    OR LOWER(task.productionOrder.orderNumber) LIKE CONCAT('%', :query, '%')
                    OR LOWER(task.operation.code) LIKE CONCAT('%', :query, '%'))
@@ -30,8 +30,11 @@ public interface ScheduledOperationRepository
             """)
     Page<ScheduledOperation> search(
             @Param("scheduleRunId") long scheduleRunId,
+            @Param("filterByMachine") boolean filterByMachine,
             @Param("machineId") Long machineId,
+            @Param("filterByFrom") boolean filterByFrom,
             @Param("fromAt") OffsetDateTime fromAt,
+            @Param("filterByTo") boolean filterByTo,
             @Param("toAt") OffsetDateTime toAt,
             @Param("query") String query,
             Pageable pageable

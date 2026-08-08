@@ -107,8 +107,11 @@ public class ScheduleRunController {
         scheduleRunService.getSummaryById(scheduleRunId);
         Page<ScheduledOperation> page = scheduledOperationRepository.search(
                 scheduleRunId,
+                request.machineId() != null,
                 request.machineId(),
+                request.from() != null,
                 request.from(),
+                request.to() != null,
                 request.to(),
                 request.query(),
                 PageRequest.of(request.page(), request.size())

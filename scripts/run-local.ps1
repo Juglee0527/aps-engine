@@ -3,6 +3,7 @@
 )
 
 $ErrorActionPreference = "Stop"
+& chcp.com 65001 | Out-Null
 [Console]::InputEncoding = [System.Text.UTF8Encoding]::new($false)
 [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 $OutputEncoding = [Console]::OutputEncoding
