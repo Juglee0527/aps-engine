@@ -664,7 +664,7 @@ Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 
 
 상세한 진단, 디자인 원칙과 완료 기준은 [16-ui-modernization.md](16-ui-modernization.md)를 따릅니다.
 
-### [ ] 060. UI 기반과 디자인 시스템
+### [x] 060. UI 기반과 디자인 시스템
 
 ### [ ] 061. 앱 셸과 반응형 내비게이션
 

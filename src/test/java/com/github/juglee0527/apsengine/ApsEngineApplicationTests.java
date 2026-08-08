@@ -191,6 +191,40 @@ class ApsEngineApplicationTests {
     }
 
     @Test
+    void servesUiDesignFoundation() throws Exception {
+        mockMvc.perform(get("/index.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "class=\"nav-icon\" aria-hidden=\"true\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "class=\"button-icon\""
+                        )
+                ));
+
+        mockMvc.perform(get("/styles.css"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "--radius-lg: 16px"
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "--focus-ring:"
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                ".nav-icon svg, .button-icon"
+                        )
+                ));
+    }
+
+    @Test
     void exposesHealthEndpoint() throws Exception {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
