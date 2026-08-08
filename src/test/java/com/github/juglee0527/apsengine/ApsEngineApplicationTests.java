@@ -203,6 +203,16 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "class=\"button-icon\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"mobile-nav-toggle\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"view-description\""
+                        )
                 ));
 
         mockMvc.perform(get("/styles.css"))
@@ -220,6 +230,13 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 ".nav-icon svg, .button-icon"
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.not(
+                                org.hamcrest.Matchers.containsString(
+                                        "min-width: 1180px"
+                                )
                         )
                 ));
     }

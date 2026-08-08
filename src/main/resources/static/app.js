@@ -237,11 +237,27 @@ function renderSampleOnboarding() {
 }
 
 function bindNavigation() {
+    const sidebar = document.querySelector("#app-sidebar");
+    const toggle = document.querySelector("#mobile-nav-toggle");
+    const setNavigationOpen = (open) => {
+        sidebar.classList.toggle("is-open", open);
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.setAttribute("aria-label", open ? "주 메뉴 닫기" : "주 메뉴 열기");
+    };
+    toggle.addEventListener("click", () => {
+        setNavigationOpen(!sidebar.classList.contains("is-open"));
+    });
     document.querySelectorAll("[data-view]").forEach((button) => {
-        button.addEventListener("click", () => showView(button.dataset.view));
+        button.addEventListener("click", () => {
+            showView(button.dataset.view);
+            setNavigationOpen(false);
+        });
     });
     document.querySelectorAll("[data-view-jump]").forEach((button) => {
         button.addEventListener("click", () => showView(button.dataset.viewJump));
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") setNavigationOpen(false);
     });
 }
 
@@ -252,11 +268,25 @@ function showView(view) {
         master: "마스터 데이터",
         guide: "APS 사용자 가이드"
     };
+    const descriptions = {
+        schedule: "최신 계획 상태와 설비별 작업 흐름을 한눈에 확인합니다.",
+        orders: "생산 요구를 검색하고 상태와 납기 우선순위를 관리합니다.",
+        master: "공장, 설비, 품목과 공정 경로를 계획 기준정보로 구성합니다.",
+        guide: "APS 개념을 배우고 결정론적 시나리오로 직접 실험합니다."
+    };
     document.querySelectorAll(".view").forEach((element) => element.classList.remove("is-active"));
     document.querySelector(`#${view}-view`)?.classList.add("is-active");
-    document.querySelectorAll(".nav-item").forEach((item) =>
-        item.classList.toggle("is-active", item.dataset.view === view));
+    document.querySelectorAll(".nav-item").forEach((item) => {
+        const active = item.dataset.view === view;
+        item.classList.toggle("is-active", active);
+        if (active) item.setAttribute("aria-current", "page");
+        else item.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("[data-view-actions]").forEach((actions) => {
+        actions.hidden = actions.dataset.viewActions !== view;
+    });
     text("#view-title", titles[view]);
+    text("#view-description", descriptions[view]);
 }
 
 function bindDialogs() {
