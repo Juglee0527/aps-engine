@@ -226,6 +226,14 @@ function bindActions() {
             block: "start"
         });
     });
+    document.querySelectorAll("[data-guide-target]").forEach((button) => {
+        button.addEventListener("click", () => {
+            document.getElementById(button.dataset.guideTarget)?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        });
+    });
     document.querySelectorAll("[data-sample-step]").forEach((button) => {
         button.addEventListener("click", () => runSampleStep(button.dataset.sampleStep));
     });

@@ -255,14 +255,14 @@
         <section id="guide-view" class="view">
             <section class="guide-hero">
                 <div class="guide-hero-copy">
-                    <span class="section-label">START HERE</span>
-                    <h2>APS는 생산오더를<br>실행 가능한 시간표로 바꿉니다.</h2>
+                    <span class="section-label">APS LEARNING LAB</span>
+                    <h2>설명만 읽지 말고<br>직접 계획하며 배우세요.</h2>
                     <p>
-                        어떤 주문을 먼저 만들고, 어느 설비에서 언제 작업할지
-                        근무시간과 공정 순서를 반영해 계산합니다.
+                        APS가 어떤 입력을 받아 왜 이런 작업 순서를 만드는지,
+                        개념을 익힌 뒤 샘플 공장을 직접 운영하며 확인합니다.
                     </p>
                     <button class="primary-button" type="button" data-guide-start>
-                        샘플로 첫 계획 시작하기 →
+                        첫 번째 학습 시작하기 →
                     </button>
                 </div>
                 <div class="guide-question-grid" aria-label="APS가 답하는 질문">
@@ -282,6 +282,131 @@
                         <p>납기 지연과 설비 부하를 보여줘 먼저 볼 문제를 좁힙니다.</p>
                     </article>
                 </div>
+            </section>
+
+            <nav class="guide-local-nav" aria-label="APS 학습 가이드 목차">
+                <a href="#guide-aps-map">APS 한눈에 보기</a>
+                <a href="#guide-curriculum">학습 과정</a>
+                <a href="#guide-onboarding">첫 계획 실습</a>
+                <a href="#guide-result-reading">결과 읽기</a>
+                <a href="#guide-glossary">용어 사전</a>
+            </nav>
+
+            <section id="guide-aps-map" class="panel guide-section guide-aps-map">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">APS IN ONE VIEW</span>
+                        <h2>APS는 제한된 자원으로 실행 가능한 계획을 만듭니다</h2>
+                    </div>
+                    <p>입력이 바뀌면 결과도 달라집니다. APS 결과는 하나의 절대적인 정답이 아닙니다.</p>
+                </header>
+                <div class="guide-engine-flow" aria-label="APS 입력, 엔진, 출력 흐름">
+                    <article class="guide-engine-node is-input">
+                        <span>INPUT</span>
+                        <strong>무엇을 만들어야 하나?</strong>
+                        <ul>
+                            <li>생산오더 · 수량</li>
+                            <li>투입 가능시각 · 납기</li>
+                            <li>Routing · Operation</li>
+                        </ul>
+                    </article>
+                    <span class="guide-engine-arrow" aria-hidden="true">→</span>
+                    <article class="guide-engine-node is-engine">
+                        <span>APS ENGINE</span>
+                        <strong>어떻게 배치할까?</strong>
+                        <ul>
+                            <li>Priority · EDD · SPT</li>
+                            <li>유한 CAPA와 근무시간</li>
+                            <li>정비 · 전환 · 대체 설비</li>
+                        </ul>
+                    </article>
+                    <span class="guide-engine-arrow" aria-hidden="true">→</span>
+                    <article class="guide-engine-node is-output">
+                        <span>OUTPUT</span>
+                        <strong>무엇을 확인해야 하나?</strong>
+                        <ul>
+                            <li>작업 순서 · 설비 · 시각</li>
+                            <li>납기 지연 · Lead Time</li>
+                            <li>가동률 · 병목 후보</li>
+                        </ul>
+                    </article>
+                </div>
+                <div class="guide-system-boundaries">
+                    <article><strong>ERP</strong><span>주문·구매·회계</span><small>무엇을 사고팔았는가</small></article>
+                    <article><strong>MRP</strong><span>자재 소요계획</span><small>무엇을 언제 준비할까</small></article>
+                    <article class="is-current"><strong>APS</strong><span>생산 상세계획</span><small>어디에서 언제 만들까</small></article>
+                    <article><strong>MES</strong><span>현장 실행관리</span><small>지금 실제로 무엇이 진행 중인가</small></article>
+                </div>
+            </section>
+
+            <section id="guide-curriculum" class="guide-section">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">LEARNING PATH</span>
+                        <h2>기초부터 계획 변경까지 여섯 과정으로 학습합니다</h2>
+                    </div>
+                    <p>현재 첫 계획 실습을 사용할 수 있으며 심화 시나리오는 순서대로 추가됩니다.</p>
+                </header>
+                <div class="guide-course-grid">
+                    <article class="guide-course-card is-available" data-learning-course="A">
+                        <span class="guide-course-index">COURSE A · START</span>
+                        <strong>APS 시작하기</strong>
+                        <p>기준정보와 생산오더를 만들고 첫 유한능력 계획을 실행합니다.</p>
+                        <ul><li>공장·설비</li><li>Routing·Operation</li><li>간트 읽기</li></ul>
+                        <button type="button" class="text-button" data-guide-target="guide-onboarding">첫 실습으로 이동 →</button>
+                    </article>
+                    <article class="guide-course-card" data-learning-course="B">
+                        <span class="guide-course-index">COURSE B · CAPACITY</span>
+                        <strong>유한 CAPA 이해하기</strong>
+                        <p>근무시간, 공정 선후관계와 대기가 일정에 미치는 영향을 봅니다.</p>
+                        <ul><li>가용시간</li><li>작업·공정 대기</li><li>Lead Time</li></ul>
+                        <small>053에서 실습 시나리오 제공</small>
+                    </article>
+                    <article class="guide-course-card" data-learning-course="C">
+                        <span class="guide-course-index">COURSE C · RULES</span>
+                        <strong>배차 규칙 비교하기</strong>
+                        <p>같은 오더를 Priority, EDD, SPT로 계산해 계획 차이를 비교합니다.</p>
+                        <ul><li>작업 순서</li><li>총 지연</li><li>Makespan</li></ul>
+                        <small>054에서 비교 실험실 제공</small>
+                    </article>
+                    <article class="guide-course-card" data-learning-course="D">
+                        <span class="guide-course-index">COURSE D · CONSTRAINTS</span>
+                        <strong>제조 제약 실험하기</strong>
+                        <p>정비, 품목 전환과 대체 설비가 결과를 바꾸는 이유를 확인합니다.</p>
+                        <ul><li>Changeover</li><li>Maintenance</li><li>병목</li></ul>
+                        <small>055에서 제약 실습 제공</small>
+                    </article>
+                    <article class="guide-course-card" data-learning-course="E">
+                        <span class="guide-course-index">COURSE E · CHANGE</span>
+                        <strong>계획 변경 대응하기</strong>
+                        <p>긴급오더가 들어왔을 때 기존 작업을 보호하며 다시 계획합니다.</p>
+                        <ul><li>Frozen Horizon</li><li>고정 작업</li><li>재스케줄링</li></ul>
+                        <small>056에서 재계획 실습 제공</small>
+                    </article>
+                    <article class="guide-course-card" data-learning-course="F">
+                        <span class="guide-course-index">COURSE F · SCALE</span>
+                        <strong>운영과 성능 이해하기</strong>
+                        <p>대량 데이터를 탐색하고 비동기 실행과 메트릭을 관찰합니다.</p>
+                        <ul><li>CSV</li><li>실행 이력</li><li>성능 메트릭</li></ul>
+                        <small>057~058에서 운영 실습 제공</small>
+                    </article>
+                </div>
+            </section>
+
+            <section class="guide-section guide-learning-method" aria-labelledby="learning-method-title">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">HOW TO LEARN</span>
+                        <h2 id="learning-method-title">모든 실습은 같은 학습 순서로 진행합니다</h2>
+                    </div>
+                </header>
+                <ol>
+                    <li><span>01</span><strong>개념</strong><p>이번 실습에서 사용할 APS 개념을 짧게 읽습니다.</p></li>
+                    <li><span>02</span><strong>예상</strong><p>어떤 오더와 설비가 먼저 배치될지 생각합니다.</p></li>
+                    <li><span>03</span><strong>실행</strong><p>결정론적 샘플을 준비하고 엔진을 실행합니다.</p></li>
+                    <li><span>04</span><strong>관찰</strong><p>간트, 납기, 가동률과 대기구간을 찾습니다.</p></li>
+                    <li><span>05</span><strong>해설</strong><p>입력과 제약이 결과를 만든 이유를 확인합니다.</p></li>
+                </ol>
             </section>
 
             <section class="panel guide-section">
@@ -384,10 +509,10 @@
                                 <strong>생산 자원 준비</strong>
                                 <span id="guide-step-resources-status" class="guide-step-status">시작 전</span>
                             </div>
-                            <p>공장과 라인 아래에 절단·조립 설비를 만들고 월~금 08:00~17:00 근무시간을 설정합니다.</p>
+                            <p><b>개념:</b> 설비와 근무시간이 계획의 유한 CAPA를 결정합니다.</p>
                             <ul class="guide-sample-preview">
-                                <li>데모 공장 / 기본 생산라인</li>
-                                <li>절단기 1대 / 조립기 1대</li>
+                                <li><b>예상:</b> 작업은 근무시간 안에서만 배정됩니다.</li>
+                                <li><b>준비:</b> 절단기·조립기와 월~금 08:00~17:00</li>
                             </ul>
                             <button class="guide-step-action" type="button" data-sample-step="resources">
                                 샘플 생산 자원 등록
@@ -401,10 +526,10 @@
                                 <strong>품목과 공정 준비</strong>
                                 <span id="guide-step-process-status" class="guide-step-status">대기</span>
                             </div>
-                            <p>완제품 A와 표준 Routing을 만들고 절단 → 조립 순서로 설비와 가공시간을 연결합니다.</p>
+                            <p><b>개념:</b> Routing은 품목을 만드는 Operation의 순서입니다.</p>
                             <ul class="guide-sample-preview">
-                                <li>완제품 A / 단위 PIECE</li>
-                                <li>절단 15분 → 조립 20분</li>
+                                <li><b>예상:</b> 조립은 절단이 끝난 뒤 시작됩니다.</li>
+                                <li><b>준비:</b> 절단 15분 → 조립 20분</li>
                             </ul>
                             <button class="guide-step-action" type="button" data-sample-step="process">
                                 샘플 품목과 공정 등록
@@ -418,10 +543,10 @@
                                 <strong>생산오더 준비</strong>
                                 <span id="guide-step-orders-status" class="guide-step-status">대기</span>
                             </div>
-                            <p>수량과 우선순위가 다른 오더 2건을 만들고 바로 확정해 배치 순서를 비교할 수 있게 합니다.</p>
+                            <p><b>개념:</b> CONFIRMED 오더만 계획 대상이 되며 수량만큼 가공시간이 늘어납니다.</p>
                             <ul class="guide-sample-preview">
-                                <li>긴급 오더 2개 / 우선순위 90</li>
-                                <li>일반 오더 3개 / 우선순위 60</li>
+                                <li><b>예상:</b> 우선순위 90 오더가 먼저 배치됩니다.</li>
+                                <li><b>준비:</b> 긴급 2개 / 일반 3개</li>
                             </ul>
                             <button class="guide-step-action" type="button" data-sample-step="orders">
                                 샘플 생산오더 등록
@@ -435,10 +560,10 @@
                                 <strong>스케줄 실행과 확인</strong>
                                 <span id="guide-step-schedule-status" class="guide-step-status">대기</span>
                             </div>
-                            <p>샘플 오더의 투입 시각부터 엔진을 실행하고 설비별 작업 순서와 납기 결과를 확인합니다.</p>
+                            <p><b>실행:</b> 명시적 우선순위 규칙으로 유한능력 순방향 계획을 만듭니다.</p>
                             <ul class="guide-sample-preview">
-                                <li>근무시간과 공정 선후관계 반영</li>
-                                <li>완료 후 스케줄 보드에서 확인</li>
+                                <li><b>관찰:</b> 긴급 오더 순서와 절단→조립 흐름</li>
+                                <li><b>해설:</b> 보드에서 납기·CAPA·대기를 확인</li>
                             </ul>
                             <button class="guide-step-action" type="button" data-sample-step="schedule">
                                 샘플 스케줄 실행
@@ -462,7 +587,7 @@
                 </footer>
             </section>
 
-            <section class="guide-section">
+            <section id="guide-result-reading" class="guide-section">
                 <header class="guide-section-heading">
                     <div>
                         <span class="section-label">READ THE RESULT</span>
@@ -493,7 +618,7 @@
             </section>
 
             <section class="guide-reference-grid">
-                <section class="panel guide-glossary">
+                <section id="guide-glossary" class="panel guide-glossary">
                     <header class="panel-header compact">
                         <div>
                             <span class="section-label">APS WORDS</span>

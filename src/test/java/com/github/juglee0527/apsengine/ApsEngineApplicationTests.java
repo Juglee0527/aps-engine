@@ -89,6 +89,21 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "Schedule Control Tower"
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "APS LEARNING LAB"
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"guide-aps-map\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "class=\"guide-local-nav\" aria-label="
+                        )
                 ));
     }
 
