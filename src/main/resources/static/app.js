@@ -456,6 +456,20 @@ function bindExplorationControls() {
     });
     document.querySelector("#gantt-prev-page")?.addEventListener("click", () => changeTaskPage(-1));
     document.querySelector("#gantt-next-page")?.addEventListener("click", () => changeTaskPage(1));
+    document.querySelectorAll("[data-gantt-range]").forEach((button) => {
+        button.addEventListener("click", () => {
+            state.ganttView = {mode: button.dataset.ganttRange, offset: 0};
+            renderScheduleBoard();
+        });
+    });
+    document.querySelector("#gantt-shift-prev")?.addEventListener("click", () => {
+        state.ganttView.offset -= 1;
+        renderScheduleBoard();
+    });
+    document.querySelector("#gantt-shift-next")?.addEventListener("click", () => {
+        state.ganttView.offset += 1;
+        renderScheduleBoard();
+    });
     document.querySelector("#gantt-reset-button")?.addEventListener("click", async () => {
         state.scheduleTaskFilters = {
             ...state.scheduleTaskFilters,
@@ -465,6 +479,7 @@ function bindExplorationControls() {
             from: "",
             to: ""
         };
+        state.ganttView = {mode: "fit", offset: 0};
         document.querySelector("#gantt-filter-form")?.reset();
         await loadScheduleTasks();
         renderScheduleBoard();

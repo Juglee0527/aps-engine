@@ -10,6 +10,7 @@ import {
 } from "./ui.js";
 
 const COLORS = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"];
+const HOUR = 3_600_000;
 let selectedTaskId = null;
 
 export function renderScheduleBoard() {
@@ -108,14 +109,9 @@ function renderGantt() {
         return;
     }
 
-    const start = state.scheduleTaskFilters.from
-        ? new Date(state.scheduleTaskFilters.from).getTime()
-        : new Date(schedule.planningStart).getTime();
-    const requestedEnd = state.scheduleTaskFilters.to
-        ? new Date(state.scheduleTaskFilters.to).getTime()
-        : new Date(schedule.schedulingEnd).getTime();
-    const end = Math.max(requestedEnd, start + 3600000);
+    const {start, end} = resolveTimelineWindow(schedule, schedule.tasks);
     const duration = end - start;
+    updateTimelineControls(start, end);
     const chart = document.createElement("div");
     chart.className = "gantt-chart";
     chart.append(createGanttHeader(start, duration));
@@ -131,11 +127,15 @@ function renderGantt() {
             <span>${escapeHtml(first.machineCode)} · ${tasks.length} TASKS</span>`;
         const timeline = document.createElement("div");
         timeline.className = "timeline";
+        appendPlanningStartLine(timeline, schedule, start, end);
         for (const task of tasks) {
             appendChangeover(timeline, task, start, duration);
             const bar = document.createElement("button");
             const taskStart = new Date(task.startAt).getTime();
             const taskEnd = new Date(task.endAt).getTime();
+            const visibleStart = Math.max(start, taskStart);
+            const visibleEnd = Math.min(end, taskEnd);
+            if (visibleEnd <= visibleStart) continue;
             bar.className = `gantt-bar${task.delayed ? " is-delayed" : ""}`;
             bar.type = "button";
             bar.dataset.taskId = task.id;
@@ -143,8 +143,8 @@ function renderGantt() {
                 "aria-label",
                 `${task.orderNumber} ${task.operationName} 작업 상세 보기`
             );
-            bar.style.left = `${Math.max(0, (taskStart - start) / duration * 100)}%`;
-            bar.style.width = `${Math.max(1.2, (taskEnd - taskStart) / duration * 100)}%`;
+            bar.style.left = `${(visibleStart - start) / duration * 100}%`;
+            bar.style.width = `${Math.max(1.2, (visibleEnd - visibleStart) / duration * 100)}%`;
             bar.style.background = colorFor(task.productionOrderId);
             bar.title = `${task.orderNumber} / ${task.operationName}\n${formatDateTime(task.startAt)} → ${formatDateTime(task.endAt)}\n작업 ${task.workingMinutes}분`;
             bar.innerHTML = `<strong>${escapeHtml(task.orderNumber)} · ${escapeHtml(task.operationCode)}</strong>
@@ -173,6 +173,74 @@ function renderGantt() {
     changeoverLegend.innerHTML = '<i class="legend-color changeover-color"></i>Changeover';
     legend.append(changeoverLegend);
     document.querySelector("#task-detail-close").onclick = closeTaskDetail;
+}
+
+export function resolveTimelineWindow(schedule, tasks) {
+    const explicitStart = state.scheduleTaskFilters.from
+        ? new Date(state.scheduleTaskFilters.from).getTime() : null;
+    const explicitEnd = state.scheduleTaskFilters.to
+        ? new Date(state.scheduleTaskFilters.to).getTime() : null;
+    if (explicitStart != null || explicitEnd != null) {
+        const start = explicitStart
+            ?? new Date(schedule.planningStart).getTime();
+        return {
+            start,
+            end: Math.max(explicitEnd ?? start + HOUR, start + HOUR)
+        };
+    }
+
+    const starts = tasks.map((task) => new Date(
+        task.changeoverStartAt || task.startAt
+    ).getTime());
+    const ends = tasks.map((task) => new Date(task.endAt).getTime());
+    const firstTask = Math.min(...starts);
+    const lastTask = Math.max(...ends);
+    const mode = state.ganttView.mode;
+    if (mode === "full") {
+        const start = new Date(schedule.planningStart).getTime();
+        return {
+            start,
+            end: Math.max(
+                new Date(schedule.schedulingEnd).getTime(),
+                start + HOUR
+            )
+        };
+    }
+    if (mode === "8h" || mode === "24h") {
+        const windowSize = (mode === "8h" ? 8 : 24) * HOUR;
+        const base = Math.floor(firstTask / HOUR) * HOUR;
+        const start = base + state.ganttView.offset * windowSize;
+        return {start, end: start + windowSize};
+    }
+    const taskSpan = Math.max(HOUR, lastTask - firstTask);
+    const padding = Math.max(HOUR / 2, taskSpan * .06);
+    return {start: firstTask - padding, end: lastTask + padding};
+}
+
+function updateTimelineControls(start, end) {
+    document.querySelectorAll("[data-gantt-range]").forEach((button) => {
+        const active = button.dataset.ganttRange === state.ganttView.mode;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+    });
+    text(
+        "#gantt-window-label",
+        `${formatDateTime(new Date(start))} — ${formatDateTime(new Date(end))}`
+    );
+    const shiftEnabled = state.ganttView.mode === "8h"
+        || state.ganttView.mode === "24h";
+    document.querySelector("#gantt-shift-prev").disabled = !shiftEnabled;
+    document.querySelector("#gantt-shift-next").disabled = !shiftEnabled;
+}
+
+function appendPlanningStartLine(timeline, schedule, start, end) {
+    const planningStart = new Date(schedule.planningStart).getTime();
+    if (planningStart <= start || planningStart >= end) return;
+    const marker = document.createElement("span");
+    marker.className = "planning-start-line";
+    marker.style.left = `${(planningStart - start) / (end - start) * 100}%`;
+    marker.setAttribute("aria-label", "계획 시작 기준선");
+    timeline.append(marker);
 }
 
 function showTaskDetail(task, bar) {
@@ -209,9 +277,13 @@ function appendChangeover(timeline, task, start, duration) {
     const bar = document.createElement("div");
     const changeoverStart = new Date(task.changeoverStartAt).getTime();
     const operationStart = new Date(task.startAt).getTime();
+    const end = start + duration;
+    const visibleStart = Math.max(start, changeoverStart);
+    const visibleEnd = Math.min(end, operationStart);
+    if (visibleEnd <= visibleStart) return;
     bar.className = "gantt-bar gantt-changeover";
-    bar.style.left = `${Math.max(0, (changeoverStart - start) / duration * 100)}%`;
-    bar.style.width = `${Math.max(1.2, (operationStart - changeoverStart) / duration * 100)}%`;
+    bar.style.left = `${(visibleStart - start) / duration * 100}%`;
+    bar.style.width = `${Math.max(1.2, (visibleEnd - visibleStart) / duration * 100)}%`;
     bar.title = `${task.orderNumber} / Changeover\n${formatDateTime(task.changeoverStartAt)} → ${formatDateTime(task.startAt)}\n준비작업 ${task.changeoverMinutes}분`;
     bar.innerHTML = `<strong>CHANGEOVER</strong><span>${task.changeoverMinutes}m</span>`;
     timeline.append(bar);

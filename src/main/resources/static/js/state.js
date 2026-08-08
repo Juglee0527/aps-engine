@@ -10,6 +10,7 @@ export const state = {
     latestSchedule: null,
     scheduleTaskPage: {page: 0, size: 100, totalElements: 0, totalPages: 0, first: true, last: true},
     scheduleTaskFilters: {page: 0, size: 100, machineId: "", from: "", to: "", query: ""},
+    ganttView: {mode: "fit", offset: 0},
     capacity: new Map(),
     bottleneckAnalysis: null,
     sampleCalendars: new Map(),

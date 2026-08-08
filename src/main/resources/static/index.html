@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="APS Engine 생산계획 스케줄 보드">
     <title>APS Engine · Schedule Control Tower</title>
-    <link rel="stylesheet" href="/styles.css?v=ui-r2-070">
-    <script src="/app.js?v=ui-r2-070" type="module"></script>
+    <link rel="stylesheet" href="/styles.css?v=ui-r2-071">
+    <script src="/app.js?v=ui-r2-071" type="module"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -65,7 +65,7 @@
             <span>JAVA 21</span>
             <span>SPRING BOOT</span>
             <span>POSTGRESQL</span>
-            <span id="ui-version">UI R2.070</span>
+            <span id="ui-version">UI R2.071</span>
         </footer>
     </aside>
 
@@ -191,7 +191,15 @@
                         <span class="section-label">FINITE CAPACITY SCHEDULE</span>
                         <h2>설비별 작업 간트</h2>
                     </div>
-                    <div class="legend" id="gantt-legend"></div>
+                    <div class="gantt-header-tools">
+                        <div class="timeline-range" role="group" aria-label="간트 표시 범위">
+                            <button class="is-active" type="button" data-gantt-range="fit">작업 맞춤</button>
+                            <button type="button" data-gantt-range="full">전체 계획</button>
+                            <button type="button" data-gantt-range="8h">8시간</button>
+                            <button type="button" data-gantt-range="24h">24시간</button>
+                        </div>
+                        <div class="legend" id="gantt-legend"></div>
+                    </div>
                 </header>
                 <form id="gantt-filter-form" class="explorer-toolbar">
                     <select id="gantt-machine-filter" name="machineId" aria-label="간트 설비 필터">
@@ -204,6 +212,9 @@
                     <button id="gantt-reset-button" class="text-button" type="button">초기화</button>
                 </form>
                 <div class="explorer-pager">
+                    <button id="gantt-shift-prev" class="text-button" type="button" aria-label="이전 시간 범위">← 이전 시간</button>
+                    <strong id="gantt-window-label">표시 범위 계산 중</strong>
+                    <button id="gantt-shift-next" class="text-button" type="button" aria-label="다음 시간 범위">다음 시간 →</button>
                     <span id="gantt-page-status">0건 표시</span>
                     <button id="gantt-prev-page" class="text-button" type="button">← 이전</button>
                     <button id="gantt-next-page" class="text-button" type="button">다음 →</button>
