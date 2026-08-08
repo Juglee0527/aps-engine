@@ -165,7 +165,7 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js?v=ui-r2-072\" "
+                                "<script src=\"/app.js?v=ui-r2-073\" "
                                         + "type=\"module\">"
                         )
                 ));
@@ -296,6 +296,11 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "--focus-ring:"
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "--control-height: 40px"
                         )
                 ))
                 .andExpect(content().string(
