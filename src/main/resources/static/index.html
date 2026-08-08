@@ -188,6 +188,7 @@
                     <input name="from" type="datetime-local" aria-label="간트 시작 범위">
                     <input name="to" type="datetime-local" aria-label="간트 종료 범위">
                     <button class="ghost-button" type="submit">범위 조회</button>
+                    <button id="gantt-reset-button" class="text-button" type="button">초기화</button>
                 </form>
                 <div class="explorer-pager">
                     <span id="gantt-page-status">0건 표시</span>
@@ -195,6 +196,23 @@
                     <button id="gantt-next-page" class="text-button" type="button">다음 →</button>
                 </div>
                 <div id="gantt" class="gantt" aria-live="polite"></div>
+                <aside id="gantt-task-detail" class="task-detail" hidden aria-live="polite">
+                    <header>
+                        <div>
+                            <span class="section-label">SELECTED OPERATION</span>
+                            <h3 id="task-detail-title">작업 상세</h3>
+                        </div>
+                        <button id="task-detail-close" class="task-detail-close" type="button" aria-label="작업 상세 닫기">×</button>
+                    </header>
+                    <dl>
+                        <div><dt>품목</dt><dd id="task-detail-product">-</dd></div>
+                        <div><dt>설비</dt><dd id="task-detail-machine">-</dd></div>
+                        <div><dt>시작</dt><dd id="task-detail-start">-</dd></div>
+                        <div><dt>종료</dt><dd id="task-detail-end">-</dd></div>
+                        <div><dt>가공시간</dt><dd id="task-detail-duration">-</dd></div>
+                        <div><dt>납기 판단</dt><dd id="task-detail-delay">-</dd></div>
+                    </dl>
+                </aside>
             </section>
 
             <div class="insight-grid">

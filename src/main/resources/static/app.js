@@ -394,6 +394,20 @@ function bindExplorationControls() {
     });
     document.querySelector("#gantt-prev-page")?.addEventListener("click", () => changeTaskPage(-1));
     document.querySelector("#gantt-next-page")?.addEventListener("click", () => changeTaskPage(1));
+    document.querySelector("#gantt-reset-button")?.addEventListener("click", async () => {
+        state.scheduleTaskFilters = {
+            ...state.scheduleTaskFilters,
+            page: 0,
+            machineId: "",
+            query: "",
+            from: "",
+            to: ""
+        };
+        document.querySelector("#gantt-filter-form")?.reset();
+        await loadScheduleTasks();
+        renderScheduleBoard();
+        renderExplorationControls();
+    });
 }
 
 async function changeOrderPage(delta) {

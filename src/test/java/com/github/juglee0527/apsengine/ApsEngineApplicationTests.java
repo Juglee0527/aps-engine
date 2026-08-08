@@ -223,6 +223,16 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "class=\"plan-overview\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"gantt-reset-button\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"gantt-task-detail\""
+                        )
                 ));
 
         mockMvc.perform(get("/styles.css"))

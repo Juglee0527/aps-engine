@@ -10,6 +10,7 @@ import {
 } from "./ui.js";
 
 const COLORS = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"];
+let selectedTaskId = null;
 
 export function renderScheduleBoard() {
     renderRunSummary();
@@ -90,6 +91,7 @@ function renderGantt() {
     legend.replaceChildren();
     const schedule = state.latestSchedule;
     if (!schedule || schedule.tasks.length === 0) {
+        closeTaskDetail();
         container.innerHTML = `
             <div class="gantt-empty">
                 <div><strong>표시할 스케줄이 없습니다</strong>
@@ -123,16 +125,24 @@ function renderGantt() {
         timeline.className = "timeline";
         for (const task of tasks) {
             appendChangeover(timeline, task, start, duration);
-            const bar = document.createElement("div");
+            const bar = document.createElement("button");
             const taskStart = new Date(task.startAt).getTime();
             const taskEnd = new Date(task.endAt).getTime();
             bar.className = `gantt-bar${task.delayed ? " is-delayed" : ""}`;
+            bar.type = "button";
+            bar.dataset.taskId = task.id;
+            bar.setAttribute(
+                "aria-label",
+                `${task.orderNumber} ${task.operationName} 작업 상세 보기`
+            );
             bar.style.left = `${Math.max(0, (taskStart - start) / duration * 100)}%`;
             bar.style.width = `${Math.max(1.2, (taskEnd - taskStart) / duration * 100)}%`;
             bar.style.background = colorFor(task.productionOrderId);
             bar.title = `${task.orderNumber} / ${task.operationName}\n${formatDateTime(task.startAt)} → ${formatDateTime(task.endAt)}\n작업 ${task.workingMinutes}분`;
             bar.innerHTML = `<strong>${escapeHtml(task.orderNumber)} · ${escapeHtml(task.operationCode)}</strong>
                 <span>${formatTime(task.startAt)}–${formatTime(task.endAt)} · ${task.workingMinutes}m</span>`;
+            bar.classList.toggle("is-selected", task.id === selectedTaskId);
+            bar.addEventListener("click", () => showTaskDetail(task, bar));
             timeline.append(bar);
         }
         row.append(label, timeline);
@@ -154,6 +164,36 @@ function renderGantt() {
     changeoverLegend.className = "legend-item";
     changeoverLegend.innerHTML = '<i class="legend-color changeover-color"></i>Changeover';
     legend.append(changeoverLegend);
+    document.querySelector("#task-detail-close").onclick = closeTaskDetail;
+}
+
+function showTaskDetail(task, bar) {
+    selectedTaskId = task.id;
+    document.querySelectorAll(".gantt-bar[data-task-id]").forEach((item) => {
+        item.classList.toggle("is-selected", item === bar);
+    });
+    text("#task-detail-title", `${task.orderNumber} · ${task.operationCode}`);
+    text("#task-detail-product", `${task.productCode} · ${task.productName}`);
+    text("#task-detail-machine", `${task.machineCode} · ${task.machineName}`);
+    text("#task-detail-start", formatDateTime(task.startAt));
+    text("#task-detail-end", formatDateTime(task.endAt));
+    text("#task-detail-duration", `${number(task.workingMinutes)}분${task.changeoverMinutes > 0 ? ` · Changeover ${number(task.changeoverMinutes)}분` : ""}`);
+    text("#task-detail-delay", task.delayed
+        ? `납기 ${formatDateTime(task.dueAt)} 초과`
+        : `납기 ${formatDateTime(task.dueAt)} 이내`);
+    document.querySelector("#task-detail-delay").classList.toggle(
+        "is-delayed",
+        task.delayed
+    );
+    document.querySelector("#gantt-task-detail").hidden = false;
+}
+
+function closeTaskDetail() {
+    selectedTaskId = null;
+    document.querySelector("#gantt-task-detail").hidden = true;
+    document.querySelectorAll(".gantt-bar.is-selected").forEach((item) => {
+        item.classList.remove("is-selected");
+    });
 }
 
 function appendChangeover(timeline, task, start, duration) {
