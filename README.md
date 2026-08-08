@@ -75,7 +75,9 @@ docker compose ps
 
 # Current Implementation
 
-2026년 7월 30일 기준으로 Factory부터 스케줄 실행 관측성까지 핵심 로드맵 `001~047`을 완료했습니다.
+2026년 8월 8일 기준으로 Factory부터 스케줄 실행 관측성까지 핵심 로드맵 `001~047`과
+보조 MVP 단위 `011-A`, `011-B`를 완료했습니다. 표준 Gradle 테스트에서 258개가 통과했고,
+환경 조건부 테스트 19개는 스킵되었습니다.
 
 ```text
 Factory → ProductionLine → Machine → WorkingCalendar
@@ -132,7 +134,7 @@ QueryDSL은 아직 적용하지 않았습니다. Redis는 측정 근거가 없�
 
 # Roadmap
 
-개발은 `001~047`의 핵심 단위와 `011-A`, `011-B` 보조 MVP 단위로 진행합니다.
+`001~047`의 핵심 단위와 `011-A`, `011-B` 보조 MVP 단위는 모두 완료했습니다.
 
 - Phase 0: 프로젝트 기반
 - Phase 1: 공장과 생산 자원
@@ -145,7 +147,8 @@ QueryDSL은 아직 적용하지 않았습니다. Redis는 측정 근거가 없�
 - Phase 8: APS 엔진 고도화
 - Phase 9: 데이터 처리와 실행 운영
 
-상세 범위와 현재 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)에서 관리합니다.
+상세 범위와 완료 이력은 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)에서 관리합니다.
+새 기능은 실제 사용·측정 결과와 명시적인 요구사항을 근거로 별도 커밋 단위를 정의한 뒤 진행합니다.
 
 ---
 
@@ -203,7 +206,7 @@ aps-engine
 
 # Current Status
 
-🚧 In Progress
+✅ Core Roadmap Complete
 
 - [x] 001. 프로젝트 요구사항과 범위 문서화
 - [x] 002. Spring Boot 프로젝트 초기화
@@ -255,7 +258,9 @@ aps-engine
 - [x] 046. 비동기 스케줄 실행과 이력 조회
 - [x] 047. 스케줄 실행 관측성
 
-상세 진행 상태는 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
+2026년 8월 8일 표준 Gradle 테스트를 다시 실행해 258개 통과, 실패 0개를 확인했습니다.
+Docker 또는 별도 환경이 필요한 조건부 테스트 19개는 스킵되었습니다.
+상세 완료 이력은 [커밋 단위 개발 로드맵](docs/01-commit-roadmap.md)을 참고해 주세요.
 
 ---
 
