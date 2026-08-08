@@ -32,6 +32,9 @@ class ScheduleExecutionPostgreSqlIntegrationTest
     private ScheduleRunRepository scheduleRunRepository;
 
     @Autowired
+    private ScheduleRunService scheduleRunService;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
@@ -158,5 +161,43 @@ class ScheduleExecutionPostgreSqlIntegrationTest
         assertThat(response.frozenAt()).isEqualTo(frozenAt);
         assertThat(response.dispatchingRule())
                 .isEqualTo(DispatchingRule.EDD);
+    }
+
+    @Test
+    void loadsSourceRunBeforeReturningDetachedRescheduleSummaries() {
+        ScheduleRun source = scheduleRunRepository.saveAndFlush(
+                ScheduleRun.create(
+                        UUID.randomUUID(),
+                        emptyPlan(),
+                        PLANNING_START
+                )
+        );
+        ScheduleRun rescheduled = scheduleRunRepository.saveAndFlush(
+                ScheduleRun.createRescheduled(
+                        UUID.randomUUID(),
+                        emptyPlan(),
+                        PLANNING_START.plusMinutes(1),
+                        DispatchingRule.EDD,
+                        ScheduleKpis.empty(),
+                        source,
+                        PLANNING_START
+                )
+        );
+
+        ScheduleRun latest = scheduleRunService.getLatestSummary();
+        ScheduleRun byId = scheduleRunService.getSummaryById(
+                rescheduled.id()
+        );
+
+        assertThat(latest.sourceScheduleRunId()).isEqualTo(source.id());
+        assertThat(byId.sourceScheduleRunId()).isEqualTo(source.id());
+    }
+
+    private SchedulingPlan emptyPlan() {
+        return new SchedulingPlan(
+                PLANNING_START,
+                PLANNING_START,
+                List.of()
+        );
     }
 }

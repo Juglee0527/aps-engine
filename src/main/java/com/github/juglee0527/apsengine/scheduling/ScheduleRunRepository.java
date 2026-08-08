@@ -14,6 +14,7 @@ public interface ScheduleRunRepository
         extends JpaRepository<ScheduleRun, Long> {
 
     @EntityGraph(attributePaths = {
+            "sourceScheduleRun",
             "scheduledOperations",
             "scheduledOperations.productionOrder",
             "scheduledOperations.productionOrder.routing",
@@ -25,6 +26,7 @@ public interface ScheduleRunRepository
 
     @Override
     @EntityGraph(attributePaths = {
+            "sourceScheduleRun",
             "scheduledOperations",
             "scheduledOperations.productionOrder",
             "scheduledOperations.productionOrder.routing",
@@ -35,6 +37,7 @@ public interface ScheduleRunRepository
     Optional<ScheduleRun> findById(Long scheduleRunId);
 
     @EntityGraph(attributePaths = {
+            "sourceScheduleRun",
             "scheduledOperations",
             "scheduledOperations.productionOrder",
             "scheduledOperations.productionOrder.routing",
@@ -47,11 +50,17 @@ public interface ScheduleRunRepository
     @Query("""
             SELECT run
             FROM ScheduleRun run
+            LEFT JOIN FETCH run.sourceScheduleRun
             ORDER BY run.createdAt DESC, run.id DESC
             """)
     List<ScheduleRun> findLatestSummary(Pageable pageable);
 
-    @Query("SELECT run FROM ScheduleRun run WHERE run.id = :scheduleRunId")
+    @Query("""
+            SELECT run
+            FROM ScheduleRun run
+            LEFT JOIN FETCH run.sourceScheduleRun
+            WHERE run.id = :scheduleRunId
+            """)
     Optional<ScheduleRun> findSummaryById(
             @Param("scheduleRunId") Long scheduleRunId
     );
