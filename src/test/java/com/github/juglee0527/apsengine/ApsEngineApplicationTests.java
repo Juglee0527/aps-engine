@@ -165,7 +165,7 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js?v=ui-r2-073\" "
+                                "<script src=\"/app.js?v=ui-r2-074\" "
                                         + "type=\"module\">"
                         )
                 ));
@@ -318,6 +318,14 @@ class ApsEngineApplicationTests {
                                 org.hamcrest.Matchers.containsString(
                                         "min-width: 1180px"
                                 )
+                        )
+                ));
+
+        mockMvc.perform(get("/js/schedule-board.js"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "mobile-task-list"
                         )
                 ));
     }

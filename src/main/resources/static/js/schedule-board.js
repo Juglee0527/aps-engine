@@ -112,6 +112,10 @@ function renderGantt() {
             </div>`;
         return;
     }
+    if (window.matchMedia("(max-width: 680px)").matches) {
+        renderMobileSchedule(container, legend, schedule.tasks);
+        return;
+    }
 
     const {start, end} = resolveTimelineWindow(schedule, schedule.tasks);
     const duration = end - start;
@@ -176,6 +180,27 @@ function renderGantt() {
     changeoverLegend.className = "legend-item";
     changeoverLegend.innerHTML = '<i class="legend-color changeover-color"></i>Changeover';
     legend.append(changeoverLegend);
+    document.querySelector("#task-detail-close").onclick = closeTaskDetail;
+}
+
+function renderMobileSchedule(container, legend, tasks) {
+    legend.replaceChildren();
+    const list = document.createElement("div");
+    list.className = "mobile-task-list";
+    for (const task of tasks) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = `mobile-task-card${task.delayed ? " is-delayed" : ""}`;
+        card.dataset.taskId = task.id;
+        card.innerHTML = `
+            <span class="mobile-task-status">${task.delayed ? "납기 지연" : "납기 내"}</span>
+            <strong>${escapeHtml(task.orderNumber)} · ${escapeHtml(task.operationCode)}</strong>
+            <span>${escapeHtml(task.machineCode)} · ${escapeHtml(task.machineName)}</span>
+            <time>${formatTime(task.startAt)} — ${formatTime(task.endAt)} · ${number(task.workingMinutes)}분</time>`;
+        card.addEventListener("click", () => showTaskDetail(task, card));
+        list.append(card);
+    }
+    container.append(list);
     document.querySelector("#task-detail-close").onclick = closeTaskDetail;
 }
 
@@ -249,7 +274,7 @@ function appendPlanningStartLine(timeline, schedule, start, end) {
 
 function showTaskDetail(task, bar) {
     selectedTaskId = task.id;
-    document.querySelectorAll(".gantt-bar[data-task-id]").forEach((item) => {
+    document.querySelectorAll("[data-task-id]").forEach((item) => {
         item.classList.toggle("is-selected", item === bar);
     });
     text("#task-detail-title", `${task.orderNumber} · ${task.operationCode}`);
@@ -280,7 +305,7 @@ function showTaskDetail(task, bar) {
 function closeTaskDetail() {
     selectedTaskId = null;
     document.querySelector("#gantt-task-detail").hidden = true;
-    document.querySelectorAll(".gantt-bar.is-selected").forEach((item) => {
+    document.querySelectorAll("[data-task-id].is-selected").forEach((item) => {
         item.classList.remove("is-selected");
     });
 }
