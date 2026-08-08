@@ -18,7 +18,7 @@ public record ScheduleTaskSearchParameters(
         page = page == null ? 0 : page;
         size = size == null ? 100 : size;
         query = query == null || query.isBlank()
-                ? null
+                ? ""
                 : query.trim().toLowerCase();
         if (from != null && to != null && !to.isAfter(from)) {
             throw new IllegalArgumentException(

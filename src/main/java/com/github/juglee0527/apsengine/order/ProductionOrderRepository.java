@@ -28,7 +28,7 @@ public interface ProductionOrderRepository
             FROM ProductionOrder productionOrder
             JOIN productionOrder.routing routing
             JOIN routing.product product
-            WHERE (:query IS NULL
+            WHERE (:query = ''
                    OR LOWER(productionOrder.orderNumber) LIKE CONCAT('%', :query, '%')
                    OR LOWER(product.code) LIKE CONCAT('%', :query, '%')
                    OR LOWER(product.name) LIKE CONCAT('%', :query, '%'))

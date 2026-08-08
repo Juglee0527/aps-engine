@@ -14,7 +14,7 @@ public record ProductionOrderSearchParameters(
         page = page == null ? 0 : page;
         size = size == null ? 20 : size;
         query = query == null || query.isBlank()
-                ? null
+                ? ""
                 : query.trim().toLowerCase();
     }
 }

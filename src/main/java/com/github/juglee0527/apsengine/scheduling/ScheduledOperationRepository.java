@@ -23,7 +23,7 @@ public interface ScheduledOperationRepository
               AND (:machineId IS NULL OR task.machine.id = :machineId)
               AND (:fromAt IS NULL OR task.endAt > :fromAt)
               AND (:toAt IS NULL OR task.startAt < :toAt)
-              AND (:query IS NULL
+              AND (:query = ''
                    OR LOWER(task.productionOrder.orderNumber) LIKE CONCAT('%', :query, '%')
                    OR LOWER(task.operation.code) LIKE CONCAT('%', :query, '%'))
             ORDER BY task.startAt ASC, task.id ASC

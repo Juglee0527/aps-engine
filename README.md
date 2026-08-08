@@ -18,7 +18,7 @@ Java 21과 Docker Desktop만 준비하고 Docker Desktop을 실행해 주세요.
 아래 블록을 한 번에 복사해 PowerShell에 붙여넣습니다.
 
 ```powershell
-Set-Location C:\Users\user\IdeaProjects\aps-engine
+Set-Location C:\Users\jason\IdeaProjects\aps-engine
 .\scripts\run-local.ps1
 ```
 
@@ -76,7 +76,7 @@ docker compose ps
 # Current Implementation
 
 2026년 8월 8일 기준으로 핵심 APS 엔진 `001~047`, 학습 경험 `048~059`와
-보조 MVP 단위 `011-A`, `011-B`를 완료했습니다. 표준 Gradle 테스트는 302개 중 283개 통과,
+보조 MVP 단위 `011-A`, `011-B`를 완료했습니다. 표준 Gradle 테스트는 303개 중 284개 통과,
 환경 조건부 19개 스킵, 별도 성능 테스트 2개 통과입니다.
 
 ```text
@@ -278,7 +278,7 @@ aps-engine
 - [x] 058. 학습 진도와 결과 코치
 - [x] 059. APS 학습 경험 통합 검증
 
-2026년 8월 8일 `cleanTest test`를 실행해 표준 테스트 302개 중 283개 통과, 실패 0개,
+2026년 8월 8일 `cleanTest test`를 실행해 표준 테스트 303개 중 284개 통과, 실패 0개,
 Docker 또는 별도 환경이 필요한 조건부 테스트 19개 스킵을 확인했습니다. 별도
 `performanceTest` 2개도 실패 없이 통과했으며 600오더 학습 기준과 100~5,000오더 엔진 기준을
 분리해 검증합니다.
