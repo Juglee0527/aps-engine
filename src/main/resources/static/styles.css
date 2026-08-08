@@ -27,6 +27,7 @@
     --shadow-sm: 0 1px 2px rgba(12, 27, 48, .04), 0 4px 12px rgba(12, 27, 48, .04);
     --shadow: 0 12px 32px rgba(12, 27, 48, 0.07);
     --focus-ring: 0 0 0 3px rgba(77, 124, 255, .22);
+    --sidebar-width: 216px;
     font-family: "Aptos", "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
     color: var(--ink);
     background: var(--canvas);
@@ -42,21 +43,21 @@ button, input, select, textarea { transition: border-color .16s ease, background
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 0; box-shadow: var(--focus-ring); }
 ::selection { color: var(--navy-950); background: var(--lime); }
 
-.app-shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); min-height: 100vh; }
+.app-shell { display: grid; grid-template-columns: var(--sidebar-width) minmax(0, 1fr); min-height: 100vh; }
 .sidebar {
     position: fixed; inset: 0 auto 0 0; z-index: 10;
-    display: flex; flex-direction: column; width: 248px; padding: 26px 20px 20px;
+    display: flex; flex-direction: column; width: var(--sidebar-width); padding: 22px 14px 16px;
     color: #e9f0f8; background: var(--navy-950);
     border-right: 1px solid rgba(255,255,255,.08);
 }
-.brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; color: inherit; text-decoration: none; }
-.brand-mark { display: grid; place-items: center; width: 40px; height: 40px; color: var(--navy-950); background: var(--lime); border-radius: 11px; font-weight: 900; box-shadow: 0 8px 22px rgba(183,242,63,.2); }
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 9px; color: inherit; text-decoration: none; }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; color: var(--navy-950); background: var(--lime); border-radius: 9px; font-weight: 900; box-shadow: 0 8px 22px rgba(183,242,63,.2); }
 .brand strong, .brand small { display: block; }
 .brand strong { font-size: 14px; letter-spacing: .08em; }
 .brand small { margin-top: 3px; color: #7f92a8; font-size: 9px; letter-spacing: .19em; }
-.primary-nav { display: grid; gap: 6px; margin-top: 48px; }
+.primary-nav { display: grid; gap: 5px; margin-top: 32px; }
 .nav-item {
-    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 13px;
+    display: flex; align-items: center; gap: 11px; width: 100%; min-height: 44px; padding: 10px 12px;
     color: #9aabbe; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
     text-align: left; font-size: 13px; font-weight: 700;
 }
@@ -68,24 +69,24 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .nav-icon svg, .button-icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .nav-icon circle { fill: currentColor; stroke: none; }
 .button-icon { flex: 0 0 auto; width: 16px; height: 16px; }
-.system-card { margin-top: auto; padding: 16px; background: var(--navy-900); border: 1px solid #1b2b40; border-radius: var(--radius-md); }
+.system-card { margin-top: auto; padding: 13px 14px; background: rgba(20,36,58,.72); border: 1px solid #1b2b40; border-radius: 10px; }
 .section-label { color: #7f8fa1; font-size: 9px; font-weight: 800; letter-spacing: .18em; }
-.connection-status { display: flex; align-items: center; gap: 8px; margin-top: 13px; }
+.connection-status { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
 .connection-status strong { font-size: 12px; }
 .status-dot { width: 8px; height: 8px; background: var(--lime); box-shadow: 0 0 12px rgba(183,242,63,.7); }
 .connection-status.is-offline .status-dot { background: var(--red); box-shadow: none; }
 .connection-status.is-checking .status-dot { background: var(--orange); box-shadow: none; }
-.system-card p { margin: 12px 0 0; color: #6f8297; font: 10px/1.6 Consolas, monospace; }
-.sidebar-footer { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 14px; color: #455a70; font: 8px Consolas, monospace; }
+.system-card p { margin: 8px 0 0; color: #6f8297; font: 9px/1.5 Consolas, monospace; }
+.sidebar-footer { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 11px; padding-inline: 2px; color: #52677d; font: 8px Consolas, monospace; }
 .sidebar-footer span + span::before { content: "·"; margin-right: 5px; }
 
-.main-content { grid-column: 2; min-width: 0; width: min(100%, 1640px); padding: 0 clamp(20px, 3vw, 48px) 52px; }
-.topbar { display: flex; align-items: center; justify-content: space-between; gap: 28px; min-height: 124px; border-bottom: 1px solid var(--line-strong); }
+.main-content { grid-column: 2; min-width: 0; width: 100%; padding: 0 clamp(24px, 2.6vw, 44px) 48px; }
+.topbar { position: sticky; top: 0; z-index: 8; display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 96px; background: rgba(244,246,249,.94); border-bottom: 1px solid var(--line-strong); backdrop-filter: blur(12px); }
 .topbar-copy { min-width: 0; }
-.eyebrow { margin: 0 0 7px; color: #7a8899; font-size: 9px; font-weight: 800; letter-spacing: .19em; }
-h1 { margin: 0; font-size: clamp(25px, 2.2vw, 32px); letter-spacing: -.04em; }
+.eyebrow { margin: 0 0 5px; color: #7a8899; font-size: 9px; font-weight: 800; letter-spacing: .17em; }
+h1 { margin: 0; font-size: clamp(24px, 1.8vw, 30px); letter-spacing: -.04em; }
 h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.025em; }
-.view-description { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+.view-description { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
 .top-actions, .master-actions { display: flex; gap: 9px; }
 .master-actions { align-items: flex-end; gap: 12px; }
 .master-action-group { display: flex; flex-wrap: wrap; gap: 7px; padding-left: 12px; border-left: 1px solid var(--line-strong); }
@@ -104,6 +105,7 @@ h2 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.025em; }
     min-height: 42px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 10px;
     font-size: 13px; font-weight: 800; letter-spacing: -.01em;
 }
+.top-actions .primary-button, .top-actions .ghost-button { min-height: 38px; padding-inline: 14px; font-size: 12px; }
 .primary-button { color: var(--navy-950); background: var(--lime); border-color: #9ed22f; box-shadow: 0 7px 18px rgba(92,135,19,.14); }
 .primary-button:hover { background: #c6ff59; transform: translateY(-1px); }
 .ghost-button { color: #3f5067; background: var(--surface); box-shadow: var(--shadow-sm); }

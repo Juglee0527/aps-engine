@@ -165,7 +165,7 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js?v=ui-r2-068\" "
+                                "<script src=\"/app.js?v=ui-r2-069\" "
                                         + "type=\"module\">"
                         )
                 ));
