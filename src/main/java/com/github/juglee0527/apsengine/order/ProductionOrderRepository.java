@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface ProductionOrderRepository
         extends JpaRepository<ProductionOrder, Long> {
@@ -39,5 +40,27 @@ public interface ProductionOrderRepository
             """)
     List<ProductionOrder> findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
             ProductionOrderStatus status
+    );
+
+    @EntityGraph(attributePaths = {
+            "routing",
+            "routing.product",
+            "routing.operations",
+            "routing.operations.machine",
+            "routing.operations.machineCandidates",
+            "routing.operations.machineCandidates.machine"
+    })
+    @Query("""
+            SELECT DISTINCT productionOrder
+            FROM ProductionOrder productionOrder
+            WHERE productionOrder.id IN :ids
+              AND productionOrder.status = :status
+            ORDER BY productionOrder.priority DESC,
+                     productionOrder.dueAt ASC,
+                     productionOrder.id ASC
+            """)
+    List<ProductionOrder> findAllInScope(
+            @Param("ids") List<Long> ids,
+            @Param("status") ProductionOrderStatus status
     );
 }

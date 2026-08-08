@@ -2,6 +2,7 @@ package com.github.juglee0527.apsengine.scheduling;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -53,7 +54,8 @@ class ScheduleRunControllerTest {
         when(executionService.submit(
                 eq(executionKey),
                 any(OffsetDateTime.class),
-                eq(DispatchingRule.EDD)
+                eq(DispatchingRule.EDD),
+                isNull()
         )).thenReturn(execution);
 
         mockMvc.perform(post("/api/v1/schedules")
@@ -80,7 +82,8 @@ class ScheduleRunControllerTest {
         verify(executionService).submit(
                 executionKey,
                 OffsetDateTime.parse("2026-07-27T08:00:00+09:00"),
-                DispatchingRule.EDD
+                DispatchingRule.EDD,
+                null
         );
     }
 
@@ -91,7 +94,8 @@ class ScheduleRunControllerTest {
         when(executionService.submit(
                 eq(executionKey),
                 any(OffsetDateTime.class),
-                eq(DispatchingRule.EXPLICIT_PRIORITY)
+                eq(DispatchingRule.EXPLICIT_PRIORITY),
+                isNull()
         )).thenReturn(queuedExecution(executionKey));
 
         mockMvc.perform(post("/api/v1/schedules")
@@ -110,7 +114,39 @@ class ScheduleRunControllerTest {
         verify(executionService).submit(
                 executionKey,
                 OffsetDateTime.parse("2026-07-27T08:00:00+09:00"),
-                DispatchingRule.EXPLICIT_PRIORITY
+                DispatchingRule.EXPLICIT_PRIORITY,
+                null
+        );
+    }
+
+    @Test
+    void acceptsExplicitProductionOrderScope() throws Exception {
+        UUID executionKey =
+                UUID.fromString("e64a3935-28a0-45db-8214-a31cbf846bc1");
+        ScheduleExecutionResponse execution = queuedExecution(executionKey);
+        when(executionService.submit(
+                eq(executionKey),
+                any(OffsetDateTime.class),
+                eq(DispatchingRule.EXPLICIT_PRIORITY),
+                eq(List.of(12L, 7L, 12L))
+        )).thenReturn(execution);
+
+        mockMvc.perform(post("/api/v1/schedules")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "executionKey": "e64a3935-28a0-45db-8214-a31cbf846bc1",
+                                  "planningStart": "2026-07-27T08:00:00+09:00",
+                                  "productionOrderIds": [12, 7, 12]
+                                }
+                                """))
+                .andExpect(status().isAccepted());
+
+        verify(executionService).submit(
+                executionKey,
+                OffsetDateTime.parse("2026-07-27T08:00:00+09:00"),
+                DispatchingRule.EXPLICIT_PRIORITY,
+                List.of(12L, 7L, 12L)
         );
     }
 

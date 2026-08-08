@@ -437,18 +437,21 @@ Content-Type: application/json
 {
   "executionKey": "3cb6bb7e-6d18-4d9b-b314-54812025c401",
   "planningStart": "2026-07-27T08:00:00+09:00",
-  "dispatchingRule": "EDD"
+  "dispatchingRule": "EDD",
+  "productionOrderIds": [17, 18, 19]
 }
 ```
 
-- `CONFIRMED` 생산오더만 실행 대상입니다.
+- `productionOrderIds`를 생략하면 기존과 같이 전체 `CONFIRMED` 생산오더가 실행 대상입니다.
+- ID 목록을 지정하면 그 오더만 실행합니다. 빈 목록과 존재하지 않거나 `CONFIRMED`가 아닌 오더는
+  거부하고, 중복 ID는 한 번만 계산합니다.
 - 공정 설비는 `AVAILABLE` 상태이며 근무 캘린더가 있어야 합니다.
 - `dispatchingRule`은 `EXPLICIT_PRIORITY`, `EDD`, `SPT` 중 하나이며 생략하면
   `EXPLICIT_PRIORITY`를 적용합니다.
 - 각 규칙은 명시적 우선순위, 납기, 총 가공시간을 각각 첫 정렬 기준으로 사용합니다.
   서버가 규칙을 자동 추천하거나 입력을 보고 임의로 바꾸지는 않습니다.
 - 요청은 `ScheduleExecution`을 먼저 커밋하고 `202 Accepted`와 실행 ID를 반환합니다.
-- 같은 `executionKey`와 같은 계획 시작·규칙은 기존 실행을 반환하고 다시 배차하지 않습니다.
+- 같은 `executionKey`와 같은 계획 시작·규칙·오더 범위는 기존 실행을 반환하고 다시 배차하지 않습니다.
 - 같은 키에 다른 파라미터를 보내면 `409 SCHEDULE_EXECUTION_REQUEST_CONFLICT`입니다.
 - 단일 내부 작업자가 FIFO로 계산하며 성공하면 대상 오더 상태와 ScheduleRun을 한 트랜잭션에 저장합니다.
 - 응답 `Location`은 `/api/v1/schedules/executions/{executionId}`입니다.
@@ -461,6 +464,7 @@ Content-Type: application/json
   "planningStart": "2026-07-27T08:00:00+09:00",
   "planningOffsetSeconds": 32400,
   "dispatchingRule": "EDD",
+  "productionOrderIds": [17, 18, 19],
   "sourceScheduleRunId": null,
   "frozenAt": null,
   "resultScheduleRunId": null,
@@ -868,3 +872,20 @@ DELETE /api/v1/learning/instances/{instanceId}
 `DELETE`는 인스턴스가 추적한 데이터만 외래 키 안전 순서로 제거하고 상태를 `RESET`으로 바꿉니다.
 이미 초기화한 인스턴스에 다시 요청해도 같은 결과를 반환합니다. 051은 인스턴스·추적·초기화
 경계를 마련한 단계이며, 실제 기준정보와 생산오더 생성은 053부터 연결합니다.
+
+### 20.4 학습 인스턴스 범위로 스케줄 실행
+
+```http
+POST /api/v1/learning/instances/{instanceId}/schedules
+Content-Type: application/json
+
+{
+  "executionKey": "aec9dfeb-65ad-41f7-aa19-eef36ddcfb35",
+  "dispatchingRule": "EDD"
+}
+```
+
+서버가 해당 인스턴스에서 추적 중인 `PRODUCTION_ORDER` ID와 인스턴스의 `planningStart`를 사용해
+스케줄 실행을 생성합니다. 따라서 다른 학습 인스턴스나 사용자가 직접 등록한 오더가 섞이지 않습니다.
+생성된 `SCHEDULE_EXECUTION`도 인스턴스 초기화 대상으로 추적합니다. 생산오더가 아직 없거나 이미
+초기화한 인스턴스는 `400 INVALID_REQUEST`이며, 응답과 조회 방식은 일반 스케줄 실행 API와 같습니다.

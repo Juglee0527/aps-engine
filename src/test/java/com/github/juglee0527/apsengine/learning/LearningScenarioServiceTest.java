@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -114,5 +115,70 @@ class LearningScenarioServiceTest {
 
         verify(resetter).reset(instance);
         assertThat(response.status()).isEqualTo(LearningScenarioStatus.RESET);
+    }
+
+    @Test
+    void buildsPlanScopeOnlyFromTrackedProductionOrders() {
+        LearningScenarioInstance instance = LearningScenarioInstance.create(
+                UUID.randomUUID(),
+                "FIRST_PLAN",
+                java.time.OffsetDateTime.now(),
+                java.time.OffsetDateTime.now()
+        );
+        ReflectionTestUtils.setField(instance, "id", 12L);
+        when(instanceRepository.findById(12L))
+                .thenReturn(Optional.of(instance));
+        when(entityRepository
+                .findAllByScenarioInstance_IdAndEntityTypeOrderByEntityIdAsc(
+                        12L,
+                        LearningScenarioEntityType.PRODUCTION_ORDER
+                )).thenReturn(List.of(
+                        LearningScenarioEntity.create(
+                                instance,
+                                LearningScenarioEntityType.PRODUCTION_ORDER,
+                                21L
+                        ),
+                        LearningScenarioEntity.create(
+                                instance,
+                                LearningScenarioEntityType.PRODUCTION_ORDER,
+                                21L
+                        ),
+                        LearningScenarioEntity.create(
+                                instance,
+                                LearningScenarioEntityType.PRODUCTION_ORDER,
+                                22L
+                        )
+                ));
+
+        LearningScenarioPlanScope scope = service.planScope(12L);
+
+        assertThat(scope.productionOrderIds()).containsExactly(21L, 22L);
+        assertThat(scope.planningStart())
+                .isEqualTo(instance.planningStart());
+    }
+
+    @Test
+    void rejectsPlanScopeWithoutTrackedOrders() {
+        LearningScenarioInstance instance = LearningScenarioInstance.create(
+                UUID.randomUUID(),
+                "FIRST_PLAN",
+                java.time.OffsetDateTime.now(),
+                java.time.OffsetDateTime.now()
+        );
+        ReflectionTestUtils.setField(instance, "id", 13L);
+        when(instanceRepository.findById(13L))
+                .thenReturn(Optional.of(instance));
+        when(entityRepository
+                .findAllByScenarioInstance_IdAndEntityTypeOrderByEntityIdAsc(
+                        13L,
+                        LearningScenarioEntityType.PRODUCTION_ORDER
+                )).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.planScope(13L))
+                .isInstanceOfSatisfying(
+                        ApplicationException.class,
+                        exception -> assertThat(exception.errorCode())
+                                .isEqualTo(ErrorCode.INVALID_REQUEST)
+                );
     }
 }

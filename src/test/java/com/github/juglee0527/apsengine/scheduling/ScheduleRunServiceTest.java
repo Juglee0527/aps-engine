@@ -137,6 +137,73 @@ class ScheduleRunServiceTest {
     }
 
     @Test
+    void rejectsEmptyPlanningScope() {
+        assertThatThrownBy(() -> scheduleRunService.execute(
+                UUID.randomUUID(),
+                PLANNING_START,
+                DispatchingRule.EDD,
+                List.of()
+        )).isInstanceOfSatisfying(
+                ApplicationException.class,
+                exception -> assertThat(exception.errorCode()).isEqualTo(
+                        ErrorCode.INVALID_REQUEST
+                )
+        );
+    }
+
+    @Test
+    void rejectsScopeContainingMissingOrNonConfirmedOrder() {
+        UUID executionKey = UUID.randomUUID();
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(productionOrderRepository.findAllInScope(
+                List.of(9L, 10L),
+                ProductionOrderStatus.CONFIRMED
+        )).thenReturn(List.of());
+
+        assertThatThrownBy(() -> scheduleRunService.execute(
+                executionKey,
+                PLANNING_START,
+                DispatchingRule.EDD,
+                List.of(9L, 10L)
+        )).isInstanceOfSatisfying(
+                ApplicationException.class,
+                exception -> assertThat(exception.getMessage())
+                        .contains("CONFIRMED")
+        );
+    }
+
+    @Test
+    void schedulesDuplicateScopeIdOnlyOnce() {
+        TestData data = testData();
+        UUID executionKey = UUID.randomUUID();
+        when(scheduleRunRepository.findByExecutionKey(executionKey))
+                .thenReturn(Optional.empty());
+        when(productionOrderRepository.findAllInScope(
+                List.of(9L),
+                ProductionOrderStatus.CONFIRMED
+        )).thenReturn(List.of(data.order()));
+        when(workingCalendarRepository
+                .findAllByMachine_IdInAndActiveTrue(anyCollection()))
+                .thenReturn(data.calendars());
+        when(scheduleRunRepository.saveAndFlush(any(ScheduleRun.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ScheduleRun result = scheduleRunService.execute(
+                executionKey,
+                PLANNING_START,
+                DispatchingRule.EDD,
+                List.of(9L, 9L)
+        );
+
+        assertThat(result.scheduledOperations()).hasSize(2);
+        verify(productionOrderRepository).findAllInScope(
+                List.of(9L),
+                ProductionOrderStatus.CONFIRMED
+        );
+    }
+
+    @Test
     void reschedulesOnlyFutureTasksAndIncludesNewConfirmedOrder() {
         TestData data = testData();
         ScheduleRun source = sourceScheduleRun(data);

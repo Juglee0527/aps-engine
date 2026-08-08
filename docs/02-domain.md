@@ -366,6 +366,7 @@ ScheduleExecution은 계산 요청의 수명주기를, ScheduleRun은 성공한 
 | `executionKey` | 클라이언트가 재요청에도 유지하는 고유 UUID |
 | `planningStart`, `planningOffsetSeconds` | 계획 시작시각과 요청 당시 UTC offset |
 | `dispatchingRule` | `EXPLICIT_PRIORITY`, `EDD`, `SPT` |
+| `productionOrderIds` | 비어 있으면 전체 CONFIRMED, 값이 있으면 명시적 계획 범위 |
 | `sourceScheduleRun`, `frozenAt` | 재스케줄링 요청일 때만 함께 존재 |
 | `resultScheduleRun` | 성공 후 연결되는 단 하나의 결과 |
 | `status` | `QUEUED`, `RUNNING`, `COMPLETED`, `FAILED` |
@@ -379,7 +380,8 @@ QUEUED ──────────────────────→ FAI
 ```
 
 동일 `executionKey`와 동일 파라미터의 재요청은 기존 실행을 반환합니다. 계획 시작, 규칙,
-원본 실행 또는 동결 기준이 다르면 요청 충돌입니다. PostgreSQL이 offset을 UTC로 읽는 특성을
+생산오더 범위, 원본 실행 또는 동결 기준이 다르면 요청 충돌입니다. 명시적 범위는 중복 ID를
+제거하고 범위 안의 모든 오더가 `CONFIRMED`일 때만 계산합니다. PostgreSQL이 offset을 UTC로 읽는 특성을
 보완하기 위해 계획 offset 초를 함께 저장하고 작업자 입력을 원래 offset으로 복원합니다.
 
 ## 17. LearningScenarioInstance

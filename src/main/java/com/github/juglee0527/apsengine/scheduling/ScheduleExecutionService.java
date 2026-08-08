@@ -46,6 +46,34 @@ public class ScheduleExecutionService {
         return transactionService.find(queued.executionId());
     }
 
+    public ScheduleExecutionResponse submit(
+            UUID executionKey,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            List<Long> productionOrderIds
+    ) {
+        ScheduleExecutionQueueResult queued;
+        try {
+            queued = transactionService.queue(
+                    executionKey,
+                    planningStart,
+                    dispatchingRule,
+                    productionOrderIds
+            );
+        } catch (DataIntegrityViolationException exception) {
+            return transactionService.findMatching(
+                    executionKey,
+                    planningStart,
+                    dispatchingRule,
+                    productionOrderIds
+            );
+        }
+        if (queued.shouldDispatch()) {
+            dispatcher.dispatch(queued.executionId());
+        }
+        return transactionService.find(queued.executionId());
+    }
+
     public ScheduleExecutionResponse submitReschedule(
             long sourceScheduleRunId,
             UUID executionKey,

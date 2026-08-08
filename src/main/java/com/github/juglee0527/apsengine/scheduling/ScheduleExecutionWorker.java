@@ -117,10 +117,18 @@ class ScheduleExecutionWorker {
 
     private ScheduleRun calculate(ScheduleExecutionSnapshot execution) {
         if (execution.sourceScheduleRunId() == null) {
+            if (execution.productionOrderIds() == null) {
+                return scheduleRunService.execute(
+                        execution.executionKey(),
+                        execution.planningStart(),
+                        execution.dispatchingRule()
+                );
+            }
             return scheduleRunService.execute(
                     execution.executionKey(),
                     execution.planningStart(),
-                    execution.dispatchingRule()
+                    execution.dispatchingRule(),
+                    execution.productionOrderIds()
             );
         }
         return scheduleRunService.reschedule(

@@ -91,6 +91,55 @@ public class LearningScenarioService {
         return response(instance);
     }
 
+    @Transactional(readOnly = true)
+    LearningScenarioPlanScope planScope(long instanceId) {
+        LearningScenarioInstance instance = required(instanceId);
+        if (instance.status() != LearningScenarioStatus.READY) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "초기화한 학습 시나리오는 계획할 수 없습니다."
+            );
+        }
+        List<Long> orderIds = entityRepository
+                .findAllByScenarioInstance_IdAndEntityTypeOrderByEntityIdAsc(
+                        instanceId,
+                        LearningScenarioEntityType.PRODUCTION_ORDER
+                )
+                .stream()
+                .map(LearningScenarioEntity::entityId)
+                .distinct()
+                .toList();
+        if (orderIds.isEmpty()) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "학습 시나리오에 계획할 생산오더가 없습니다."
+            );
+        }
+        return new LearningScenarioPlanScope(
+                instance,
+                instance.planningStart(),
+                orderIds
+        );
+    }
+
+    @Transactional
+    void trackScheduleExecution(long instanceId, long executionId) {
+        LearningScenarioInstance instance = required(instanceId);
+        if (entityRepository
+                .existsByScenarioInstance_IdAndEntityTypeAndEntityId(
+                        instanceId,
+                        LearningScenarioEntityType.SCHEDULE_EXECUTION,
+                        executionId
+                )) {
+            return;
+        }
+        entityRepository.save(LearningScenarioEntity.create(
+                instance,
+                LearningScenarioEntityType.SCHEDULE_EXECUTION,
+                executionId
+        ));
+    }
+
     private LearningScenarioInstanceResponse matching(
             LearningScenarioInstance instance,
             String scenarioKey

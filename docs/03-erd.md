@@ -332,6 +332,18 @@ erDiagram
 `V18`은 요청 이력을 성공 결과와 분리합니다. `RUNNING`은 결과 ScheduleRun 존재 여부로
 재시작 복구하고, `QUEUED`는 생성 순서로 다시 배차합니다.
 
+`V20`의 `schedule_execution_order_scope`는 비동기 실행이 선택한 생산오더 ID를 실행 이력과 함께
+보존합니다. 행이 없으면 기존 계약인 전체 `CONFIRMED` 범위이고, 한 행 이상이면 그 오더만
+계산합니다. 실행·오더 복합 기본 키가 중복 범위를 제거하며 오더 삭제는 실행 이력이 남아 있는 동안
+제한됩니다.
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `pk_schedule_execution_order_scope` | 실행·생산오더 | 같은 오더의 범위 중복 방지 |
+| `fk_schedule_execution_order_scope_execution` | `schedule_execution` | 실행 삭제 시 범위 함께 삭제 |
+| `fk_schedule_execution_order_scope_order` | `production_order` | 실행 이력의 범위 참조 보존 |
+| `ix_schedule_execution_order_scope_order` | `production_order_id` | 오더가 포함된 실행 조회 지원 |
+
 ### LearningScenario 제약조건
 
 | 이름 | 대상 | 설명 |

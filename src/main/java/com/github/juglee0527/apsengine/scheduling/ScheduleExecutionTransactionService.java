@@ -32,10 +32,21 @@ class ScheduleExecutionTransactionService {
             OffsetDateTime planningStart,
             DispatchingRule dispatchingRule
     ) {
+        return queue(executionKey, planningStart, dispatchingRule, null);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public ScheduleExecutionQueueResult queue(
+            UUID executionKey,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            List<Long> productionOrderIds
+    ) {
         validateNormalRequest(
                 executionKey,
                 planningStart,
-                dispatchingRule
+                dispatchingRule,
+                productionOrderIds
         );
         ScheduleExecution existing = executionRepository
                 .findByExecutionKey(executionKey)
@@ -46,7 +57,8 @@ class ScheduleExecutionTransactionService {
                     planningStart,
                     dispatchingRule,
                     null,
-                    null
+                    null,
+                    productionOrderIds
             );
             return existingResult(existing);
         }
@@ -54,6 +66,7 @@ class ScheduleExecutionTransactionService {
                 executionKey,
                 planningStart,
                 dispatchingRule,
+                productionOrderIds,
                 OffsetDateTime.now()
         );
         executionRepository.saveAndFlush(queued);
@@ -117,6 +130,21 @@ class ScheduleExecutionTransactionService {
             OffsetDateTime planningStart,
             DispatchingRule dispatchingRule
     ) {
+        return findMatching(
+                executionKey,
+                planningStart,
+                dispatchingRule,
+                null
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ScheduleExecutionResponse findMatching(
+            UUID executionKey,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            List<Long> productionOrderIds
+    ) {
         ScheduleExecution existing =
                 requireByExecutionKey(executionKey);
         requireMatching(
@@ -124,7 +152,8 @@ class ScheduleExecutionTransactionService {
                 planningStart,
                 dispatchingRule,
                 null,
-                null
+                null,
+                productionOrderIds
         );
         return ScheduleExecutionResponse.from(existing);
     }
@@ -249,12 +278,23 @@ class ScheduleExecutionTransactionService {
     private void validateNormalRequest(
             UUID executionKey,
             OffsetDateTime planningStart,
-            DispatchingRule dispatchingRule
+            DispatchingRule dispatchingRule,
+            List<Long> productionOrderIds
     ) {
         if (executionKey == null
                 || planningStart == null
                 || dispatchingRule == null) {
             throw new ApplicationException(ErrorCode.INVALID_REQUEST);
+        }
+        if (productionOrderIds != null
+                && (productionOrderIds.isEmpty()
+                || productionOrderIds.stream().anyMatch(
+                        id -> id == null || id < 1
+                ))) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "계획 범위에는 1개 이상의 올바른 생산오더 ID가 필요합니다."
+            );
         }
     }
 
@@ -279,11 +319,30 @@ class ScheduleExecutionTransactionService {
             Long sourceScheduleRunId,
             OffsetDateTime frozenAt
     ) {
+        requireMatching(
+                existing,
+                planningStart,
+                dispatchingRule,
+                sourceScheduleRunId,
+                frozenAt,
+                null
+        );
+    }
+
+    private void requireMatching(
+            ScheduleExecution existing,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            Long sourceScheduleRunId,
+            OffsetDateTime frozenAt,
+            List<Long> productionOrderIds
+    ) {
         if (!existing.matches(
                 planningStart,
                 dispatchingRule,
                 sourceScheduleRunId,
-                frozenAt
+                frozenAt,
+                productionOrderIds
         )) {
             throw new ApplicationException(
                     ErrorCode.SCHEDULE_EXECUTION_REQUEST_CONFLICT
@@ -305,6 +364,9 @@ class ScheduleExecutionTransactionService {
                 execution.executionKey(),
                 execution.planningStart(),
                 execution.dispatchingRule(),
+                execution.productionOrderIds().isEmpty()
+                        ? null
+                        : execution.productionOrderIds(),
                 execution.sourceScheduleRunId(),
                 execution.frozenAt()
         );

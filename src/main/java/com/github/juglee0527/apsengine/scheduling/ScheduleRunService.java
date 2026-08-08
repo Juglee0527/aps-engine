@@ -75,6 +75,21 @@ public class ScheduleRunService {
             OffsetDateTime planningStart,
             DispatchingRule dispatchingRule
     ) {
+        return execute(
+                executionKey,
+                planningStart,
+                dispatchingRule,
+                null
+        );
+    }
+
+    @Transactional
+    public ScheduleRun execute(
+            UUID executionKey,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            List<Long> productionOrderIds
+    ) {
         if (executionKey == null
                 || planningStart == null
                 || dispatchingRule == null) {
@@ -87,11 +102,8 @@ public class ScheduleRunService {
             return existing;
         }
 
-        List<ProductionOrder> orders = distinctOrders(
-                productionOrderRepository
-                        .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
-                                ProductionOrderStatus.CONFIRMED
-                        )
+        List<ProductionOrder> orders = findPlanningOrders(
+                productionOrderIds
         );
         if (orders.isEmpty()) {
             throw new ApplicationException(
@@ -125,6 +137,45 @@ public class ScheduleRunService {
             order.markScheduled();
         }
         return saveScheduleRun(scheduleRun);
+    }
+
+    private List<ProductionOrder> findPlanningOrders(
+            List<Long> productionOrderIds
+    ) {
+        if (productionOrderIds == null) {
+            return distinctOrders(
+                    productionOrderRepository
+                            .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
+                                    ProductionOrderStatus.CONFIRMED
+                            )
+            );
+        }
+        if (productionOrderIds.isEmpty()
+                || productionOrderIds.stream().anyMatch(
+                        id -> id == null || id < 1
+                )) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "계획 범위에는 1개 이상의 올바른 생산오더 ID가 필요합니다."
+            );
+        }
+        List<Long> scope = productionOrderIds.stream()
+                .distinct()
+                .sorted()
+                .toList();
+        List<ProductionOrder> orders = distinctOrders(
+                productionOrderRepository.findAllInScope(
+                        scope,
+                        ProductionOrderStatus.CONFIRMED
+                )
+        );
+        if (orders.size() != scope.size()) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "계획 범위의 생산오더가 없거나 CONFIRMED 상태가 아닙니다."
+            );
+        }
+        return orders;
     }
 
     @Transactional

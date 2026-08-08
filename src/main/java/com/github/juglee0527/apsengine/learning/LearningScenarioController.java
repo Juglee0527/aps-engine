@@ -3,6 +3,9 @@ package com.github.juglee0527.apsengine.learning;
 import java.net.URI;
 import java.util.List;
 
+import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionResponse;
+import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionService;
+
 import jakarta.validation.Valid;
 
 import org.springframework.http.ResponseEntity;
@@ -19,9 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class LearningScenarioController {
 
     private final LearningScenarioService service;
+    private final ScheduleExecutionService executionService;
 
-    public LearningScenarioController(LearningScenarioService service) {
+    public LearningScenarioController(
+            LearningScenarioService service,
+            ScheduleExecutionService executionService
+    ) {
         this.service = service;
+        this.executionService = executionService;
     }
 
     @GetMapping("/scenarios")
@@ -55,5 +63,25 @@ public class LearningScenarioController {
             @PathVariable long instanceId
     ) {
         return service.reset(instanceId);
+    }
+
+    @PostMapping("/instances/{instanceId}/schedules")
+    public ResponseEntity<ScheduleExecutionResponse> schedule(
+            @PathVariable long instanceId,
+            @Valid @RequestBody LearningScheduleRequest request
+    ) {
+        LearningScenarioPlanScope scope = service.planScope(instanceId);
+        ScheduleExecutionResponse execution = executionService.submit(
+                request.executionKey(),
+                scope.planningStart(),
+                request.dispatchingRule(),
+                scope.productionOrderIds()
+        );
+        service.trackScheduleExecution(instanceId, execution.id());
+        return ResponseEntity.accepted()
+                .location(URI.create(
+                        "/api/v1/schedules/executions/" + execution.id()
+                ))
+                .body(execution);
     }
 }

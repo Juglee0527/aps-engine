@@ -36,7 +36,8 @@ public class ScheduleRunController {
         ScheduleExecutionResponse execution = executionService.submit(
                 request.executionKey(),
                 request.planningStart(),
-                request.dispatchingRule()
+                request.dispatchingRule(),
+                request.productionOrderIds()
         );
         return accepted(execution);
     }

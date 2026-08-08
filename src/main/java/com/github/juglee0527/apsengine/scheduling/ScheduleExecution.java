@@ -2,10 +2,16 @@ package com.github.juglee0527.apsengine.scheduling;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -62,6 +68,14 @@ public class ScheduleExecution {
     )
     private DispatchingRule dispatchingRule;
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "schedule_execution_order_scope",
+            joinColumns = @JoinColumn(name = "schedule_execution_id")
+    )
+    @Column(name = "production_order_id", nullable = false)
+    private Set<Long> productionOrderIds = new LinkedHashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_schedule_run_id", updatable = false)
     private ScheduleRun sourceScheduleRun;
@@ -96,6 +110,7 @@ public class ScheduleExecution {
             UUID executionKey,
             OffsetDateTime planningStart,
             DispatchingRule dispatchingRule,
+            Collection<Long> productionOrderIds,
             ScheduleRun sourceScheduleRun,
             OffsetDateTime frozenAt,
             OffsetDateTime createdAt
@@ -114,6 +129,7 @@ public class ScheduleExecution {
                 dispatchingRule,
                 "dispatchingRule must not be null"
         );
+        this.productionOrderIds.addAll(normalizeScope(productionOrderIds));
         if ((sourceScheduleRun == null) != (frozenAt == null)) {
             throw new IllegalArgumentException(
                     "원본 실행과 동결 기준시각은 함께 지정해야 합니다."
@@ -145,6 +161,25 @@ public class ScheduleExecution {
                 dispatchingRule,
                 null,
                 null,
+                null,
+                createdAt
+        );
+    }
+
+    public static ScheduleExecution queue(
+            UUID executionKey,
+            OffsetDateTime planningStart,
+            DispatchingRule dispatchingRule,
+            Collection<Long> productionOrderIds,
+            OffsetDateTime createdAt
+    ) {
+        return new ScheduleExecution(
+                executionKey,
+                planningStart,
+                dispatchingRule,
+                productionOrderIds,
+                null,
+                null,
                 createdAt
         );
     }
@@ -164,6 +199,7 @@ public class ScheduleExecution {
                 executionKey,
                 sourceScheduleRun.planningStart(),
                 dispatchingRule,
+                null,
                 sourceScheduleRun,
                 frozenAt,
                 createdAt
@@ -215,13 +251,32 @@ public class ScheduleExecution {
             Long requestedSourceScheduleRunId,
             OffsetDateTime requestedFrozenAt
     ) {
+        return matches(
+                requestedPlanningStart,
+                requestedRule,
+                requestedSourceScheduleRunId,
+                requestedFrozenAt,
+                null
+        );
+    }
+
+    public boolean matches(
+            OffsetDateTime requestedPlanningStart,
+            DispatchingRule requestedRule,
+            Long requestedSourceScheduleRunId,
+            OffsetDateTime requestedFrozenAt,
+            Collection<Long> requestedProductionOrderIds
+    ) {
         return planningStart().equals(requestedPlanningStart)
                 && dispatchingRule == requestedRule
                 && Objects.equals(
                         sourceScheduleRunId(),
                         requestedSourceScheduleRunId
                 )
-                && sameInstant(frozenAt, requestedFrozenAt);
+                && sameInstant(frozenAt, requestedFrozenAt)
+                && productionOrderIds.equals(
+                        normalizeScope(requestedProductionOrderIds)
+                );
     }
 
     public Long id() {
@@ -244,6 +299,10 @@ public class ScheduleExecution {
 
     public DispatchingRule dispatchingRule() {
         return dispatchingRule;
+    }
+
+    public List<Long> productionOrderIds() {
+        return productionOrderIds.stream().sorted().toList();
     }
 
     public Long sourceScheduleRunId() {
@@ -308,5 +367,12 @@ public class ScheduleExecution {
             return left == right;
         }
         return left.isEqual(right);
+    }
+
+    private static Set<Long> normalizeScope(Collection<Long> ids) {
+        if (ids == null) {
+            return Set.of();
+        }
+        return new LinkedHashSet<>(ids);
     }
 }
