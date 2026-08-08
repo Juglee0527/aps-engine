@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="APS Engine 생산계획 스케줄 보드">
     <title>APS Engine · Schedule Control Tower</title>
-    <link rel="stylesheet" href="/styles.css?v=ui-r2-069">
-    <script src="/app.js?v=ui-r2-069" type="module"></script>
+    <link rel="stylesheet" href="/styles.css?v=ui-r2-070">
+    <script src="/app.js?v=ui-r2-070" type="module"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -65,7 +65,7 @@
             <span>JAVA 21</span>
             <span>SPRING BOOT</span>
             <span>POSTGRESQL</span>
-            <span id="ui-version">UI R2.069</span>
+            <span id="ui-version">UI R2.070</span>
         </footer>
     </aside>
 
@@ -111,18 +111,18 @@
         <section id="schedule-view" class="view is-active">
             <section id="run-banner" class="plan-overview">
                 <div class="plan-overview-main">
-                    <span class="section-label">LATEST SCHEDULE RUN</span>
+                    <div class="run-heading">
+                        <span class="section-label">LATEST SCHEDULE RUN</span>
+                        <span id="run-status" class="status-pill neutral">READY</span>
+                    </div>
                     <strong id="run-title">아직 실행된 스케줄이 없습니다</strong>
                     <p id="run-description">계획을 실행하면 선택 규칙과 핵심 성과를 이곳에서 비교할 수 있습니다.</p>
-                    <span id="run-status" class="status-pill neutral">READY</span>
                 </div>
                 <div class="run-meta">
                     <span><small>계획 시작</small><strong id="planning-start">-</strong></span>
                     <span><small>완료 시각</small><strong id="schedule-end">-</strong></span>
                     <span><small>적용 규칙</small><strong id="dispatching-rule">-</strong></span>
-                    <span><small>총 지연</small><strong id="total-tardiness">-</strong></span>
                     <span><small>Makespan</small><strong id="makespan">-</strong></span>
-                    <span><small>전체 가동률</small><strong id="plan-utilization">-</strong></span>
                     <span><small>원본 실행</small><strong id="source-run">-</strong></span>
                     <span><small>동결 기준</small><strong id="frozen-at">-</strong></span>
                 </div>
@@ -153,11 +153,11 @@
             <section class="kpi-grid" aria-label="계획 지표">
                 <article class="kpi-card">
                     <div class="kpi-top">
-                        <span>확정 오더</span>
+                        <span>계획 오더</span>
                         <span class="kpi-index">01</span>
                     </div>
                     <strong id="confirmed-count">0</strong>
-                    <small>계획 대상으로 확정된 오더</small>
+                    <small>이번 실행에 포함된 생산오더</small>
                 </article>
                 <article class="kpi-card">
                     <div class="kpi-top">
@@ -173,15 +173,15 @@
                         <span class="kpi-index">03</span>
                     </div>
                     <strong id="delayed-count">0</strong>
-                    <small>납기를 초과한 생산오더</small>
+                    <small>총 지연 <b id="total-tardiness">-</b></small>
                 </article>
-                <article class="kpi-card accent">
+                <article id="bottleneck-kpi" class="kpi-card accent">
                     <div class="kpi-top">
                         <span>최우선 병목 후보</span>
                         <span class="kpi-index">04</span>
                     </div>
                     <strong id="peak-load">0%</strong>
-                    <small id="peak-machine">계산 대기</small>
+                    <small><span id="peak-machine">계산 대기</span><br>전체 가동률 <b id="plan-utilization">-</b></small>
                 </article>
             </section>
 

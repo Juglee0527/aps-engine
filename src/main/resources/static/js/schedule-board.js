@@ -26,7 +26,9 @@ function renderRunSummary() {
         ? `RUN #${schedule.id} · ${schedule.orderCount}개 오더 계획 완료`
         : "아직 실행된 스케줄이 없습니다");
     text("#run-description", schedule
-        ? "계획 결과의 규칙, 기간, 지연과 가동률을 기준으로 다음 의사결정을 검토하세요."
+        ? (schedule.delayedOrderCount > 0
+            ? `${schedule.delayedOrderCount}개 오더가 납기를 초과했습니다. 병목 설비와 작업 순서를 먼저 검토하세요.`
+            : "모든 계획 오더가 납기 안에 배정되었습니다. 병목 여유와 설비 부하를 검토하세요.")
         : "계획을 실행하면 선택 규칙과 핵심 성과를 이곳에서 비교할 수 있습니다.");
     text("#planning-start", schedule ? formatDateTime(schedule.planningStart) : "-");
     text("#schedule-end", schedule ? formatDateTime(schedule.schedulingEnd) : "-");
@@ -65,8 +67,9 @@ function setReadinessStep(selector, ready, message) {
 }
 
 function renderMetrics() {
-    const confirmed = state.orders.filter((order) => order.status === "CONFIRMED").length;
-    text("#confirmed-count", confirmed);
+    const planOrders = state.latestSchedule?.orderCount
+        ?? state.orders.filter((order) => order.status === "CONFIRMED").length;
+    text("#confirmed-count", planOrders);
     text("#task-count", state.latestSchedule?.taskCount || 0);
     const delayed = state.latestSchedule?.delayedOrderCount || 0;
     text("#delayed-count", delayed);
@@ -82,6 +85,11 @@ function renderMetrics() {
     text("#peak-machine", candidate
         ? `${candidate.machineCode} · 병목 후보 #${candidate.rank}`
         : (state.latestSchedule ? "진단 후보 없음" : "계산 대기"));
+    document.querySelector("#bottleneck-kpi").classList.toggle(
+        "is-alert",
+        candidate?.utilizationPercent != null
+            && candidate.utilizationPercent >= 100
+    );
 }
 
 function renderGantt() {

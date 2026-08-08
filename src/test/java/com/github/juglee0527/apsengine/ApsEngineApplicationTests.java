@@ -165,7 +165,7 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js?v=ui-r2-069\" "
+                                "<script src=\"/app.js?v=ui-r2-070\" "
                                         + "type=\"module\">"
                         )
                 ));
@@ -228,6 +228,11 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "id=\"schedule-readiness\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"bottleneck-kpi\""
                         )
                 ))
                 .andExpect(content().string(
