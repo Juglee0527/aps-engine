@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="APS Engine 생산계획 스케줄 보드">
     <title>APS Engine · Schedule Control Tower</title>
-    <link rel="stylesheet" href="/styles.css">
-    <script src="/app.js" type="module"></script>
+    <link rel="stylesheet" href="/styles.css?v=ui-r2-068">
+    <script src="/app.js?v=ui-r2-068" type="module"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -22,31 +22,31 @@
         <button id="mobile-nav-toggle" class="mobile-nav-toggle" type="button"
                 aria-controls="primary-navigation" aria-expanded="false"
                 aria-label="주 메뉴 열기">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
 
         <nav id="primary-navigation" class="primary-nav" aria-label="주 메뉴">
             <button class="nav-item is-active" data-view="schedule" aria-current="page">
                 <span class="nav-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg>
                 </span>
                 <span>스케줄 보드</span>
             </button>
             <button class="nav-item" data-view="orders">
                 <span class="nav-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M7 6h13M7 12h13M7 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M7 6h13M7 12h13M7 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>
                 </span>
                 <span>생산오더</span>
             </button>
             <button class="nav-item" data-view="master">
                 <span class="nav-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 16l9 5 9-5"/></svg>
                 </span>
                 <span>마스터 데이터</span>
             </button>
             <button class="nav-item" data-view="guide">
                 <span class="nav-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 016.5 3H11a3 3 0 013 3v15a3 3 0 00-3-3H6.5A2.5 2.5 0 004 20.5v-15zM20 5.5A2.5 2.5 0 0017.5 3H14v18a3 3 0 013-3h.5a2.5 2.5 0 012.5 2.5v-15z"/></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 016.5 3H11a3 3 0 013 3v15a3 3 0 00-3-3H6.5A2.5 2.5 0 004 20.5v-15zM20 5.5A2.5 2.5 0 0017.5 3H14v18a3 3 0 013-3h.5a2.5 2.5 0 012.5 2.5v-15z"/></svg>
                 </span>
                 <span>사용자 가이드</span>
             </button>
@@ -65,6 +65,7 @@
             <span>JAVA 21</span>
             <span>SPRING BOOT</span>
             <span>POSTGRESQL</span>
+            <span id="ui-version">UI R2.068</span>
         </footer>
     </aside>
 
@@ -79,7 +80,7 @@
             </div>
             <div class="top-actions" data-view-actions="schedule">
                 <button id="refresh-button" class="ghost-button" type="button">
-                    <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 006 6.5L4 11M5.5 15A7 7 0 0018 17.5l2-4.5"/></svg>
+                    <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 006 6.5L4 11M5.5 15A7 7 0 0018 17.5l2-4.5"/></svg>
                     데이터 새로고침
                 </button>
                 <button id="reschedule-button" class="ghost-button"
@@ -89,7 +90,7 @@
                 </button>
                 <button class="primary-button" type="button"
                         data-open-dialog="schedule-dialog">
-                    <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7V5z"/></svg>
+                    <svg class="button-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7V5z"/></svg>
                     스케줄 실행
                 </button>
             </div>

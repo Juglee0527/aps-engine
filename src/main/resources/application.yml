@@ -1,6 +1,12 @@
 spring:
   application:
     name: aps-engine
+  web:
+    resources:
+      cache:
+        period: 0
+        cachecontrol:
+          no-store: true
   jackson:
     deserialization:
       adjust-dates-to-context-time-zone: false

@@ -165,7 +165,8 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js\" type=\"module\">"
+                                "<script src=\"/app.js?v=ui-r2-068\" "
+                                        + "type=\"module\">"
                         )
                 ));
 
@@ -202,6 +203,16 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "class=\"button-icon\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "width=\"16\" height=\"16\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"ui-version\""
                         )
                 ))
                 .andExpect(content().string(
