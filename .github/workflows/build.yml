@@ -29,6 +29,9 @@ jobs:
       - name: Run tests
         run: ./gradlew test --no-daemon
 
+      - name: Run scheduling performance baselines
+        run: ./gradlew performanceTest --no-daemon
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -37,5 +40,7 @@ jobs:
           path: |
             build/test-results/test
             build/reports/tests/test
+            build/test-results/performanceTest
+            build/reports/tests/performanceTest
           if-no-files-found: warn
           retention-days: 7

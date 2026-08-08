@@ -26,6 +26,7 @@ import com.github.juglee0527.apsengine.scheduling.SchedulingPlan;
 import com.github.juglee0527.apsengine.scheduling.ShortestProcessingTimeRule;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 class LearningScenarioSchedulingTest {
@@ -195,6 +196,7 @@ class LearningScenarioSchedulingTest {
     }
 
     @Test
+    @Tag("performance")
     void performanceScenarioSchedulesSixHundredTasksWithinBaseline() {
         ScenarioInput input = input("PERFORMANCE");
 

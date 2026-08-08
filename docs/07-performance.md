@@ -164,3 +164,14 @@ large에서는 오히려 증가했으므로 메모리 개선을 주장하지 않
 2. Gradle Test worker에 Java Flight Recorder를 연결해 allocation과 hot method 확인
 3. 대량 시나리오의 task 수와 결과 동일성 확인
 4. 확인된 단일 병목만 다음 성능 개선 단위에서 변경
+
+## 9. APS 학습 데이터 성능 기준
+
+`LearningScenarioSchedulingTest`의 `PERFORMANCE` 시나리오는 20설비·600오더·600작업을
+결정론적으로 계산하고 5초 안에 끝나는지 확인합니다. 이 테스트도 `performance` 태그를 사용하므로
+일반 `test`에는 포함되지 않고 `performanceTest`에서 기존 small·medium·large 기준과 함께 실행됩니다.
+
+2026년 8월 8일 Windows/JDK 21 실행 결과는 성능 테스트 2개 실패 0개입니다. 기존 엔진 기준의
+측정 출력은 small 1.377ms, medium 15.067ms, large 54.606ms였습니다. 학습 시나리오의 5초 제한은
+카탈로그 생성과 순수 스케줄 계산 회귀를 빠르게 감지하기 위한 넉넉한 상한이며 DB 저장·HTTP·DOM
+렌더링 시간을 포함하지 않고 운영 SLA로 사용하지 않습니다.

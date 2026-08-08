@@ -100,7 +100,7 @@ public class LearningScenarioCatalog {
     private LearningScenarioBlueprint finiteCapacity() {
         return new LearningScenarioBlueprint(
                 "FINITE_CAPACITY",
-                "A",
+                "B",
                 "유한 CAPA와 대기",
                 "하나의 병목 설비에 여러 오더를 투입해 무한능력 계획과 차이를 봅니다.",
                 "설비는 동시에 하나의 작업만 수행한다는 유한능력 제약을 이해합니다.",
@@ -128,7 +128,7 @@ public class LearningScenarioCatalog {
     private LearningScenarioBlueprint precedence() {
         return new LearningScenarioBlueprint(
                 "PRECEDENCE",
-                "A",
+                "B",
                 "공정 선후관계",
                 "가공·검사·포장의 세 공정이 반드시 순서대로 이어지는 흐름을 관찰합니다.",
                 "후속 공정은 선행 공정 완료 전 시작할 수 없음을 이해합니다.",
@@ -160,7 +160,7 @@ public class LearningScenarioCatalog {
     private LearningScenarioBlueprint tardiness() {
         return new LearningScenarioBlueprint(
                 "TARDINESS",
-                "A",
+                "B",
                 "납기 지연 읽기",
                 "의도적으로 빡빡한 납기를 둬 지연 오더와 총 지연시간 KPI를 만듭니다.",
                 "CAPA보다 많은 부하가 납기 성과에 미치는 영향을 이해합니다.",

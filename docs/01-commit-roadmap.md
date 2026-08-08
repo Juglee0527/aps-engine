@@ -649,7 +649,7 @@ Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 
 권장 커밋 메시지: feat: add learning progress and result coach
 ```
 
-### [ ] 059. APS 학습 경험 통합 검증
+### [x] 059. APS 학습 경험 통합 검증
 
 ```text
 학습 시나리오 생성, 계획 범위, 규칙 비교, 제약 실습, 대량 탐색과 진도 복원을 통합 검증해 주세요.
