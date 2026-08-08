@@ -24,6 +24,7 @@ public class LearningScenarioService {
     private final LearningScenarioInstanceRepository instanceRepository;
     private final LearningScenarioEntityRepository entityRepository;
     private final LearningScenarioResetter resetter;
+    private final LearningScenarioProvisioner provisioner;
     private final Clock clock;
 
     public LearningScenarioService(
@@ -31,12 +32,14 @@ public class LearningScenarioService {
             LearningScenarioInstanceRepository instanceRepository,
             LearningScenarioEntityRepository entityRepository,
             LearningScenarioResetter resetter,
+            LearningScenarioProvisioner provisioner,
             Clock clock
     ) {
         this.catalog = catalog;
         this.instanceRepository = instanceRepository;
         this.entityRepository = entityRepository;
         this.resetter = resetter;
+        this.provisioner = provisioner;
         this.clock = clock;
     }
 
@@ -72,6 +75,10 @@ public class LearningScenarioService {
                     .orElseThrow(() -> exception);
             return matching(concurrent, definition.key());
         }
+        provisioner.provision(
+                instance,
+                catalog.blueprint(definition.key())
+        );
         return response(instance);
     }
 

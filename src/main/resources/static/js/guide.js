@@ -1,6 +1,6 @@
 import {SAMPLE_STEP_KEYS} from "./guide-data.js";
 import {state} from "./state.js";
-import {text} from "./ui.js";
+import {escapeHtml, text} from "./ui.js";
 
 export function renderGuideStatus() {
     const availableMachines = state.machines.filter(
@@ -25,6 +25,36 @@ export function renderGuideStatus() {
             ? `RUN #${state.latestSchedule.id} · 작업 ${state.latestSchedule.taskCount}건`
             : "실행 결과 없음"
     );
+}
+
+export function renderLearningScenarios() {
+    const container = document.querySelector("#guide-scenario-grid");
+    if (!container) return;
+    container.innerHTML = state.learningScenarios.map((scenario, index) => {
+        const running = state.runningLearningScenario === scenario.key;
+        const observations = scenario.observationPoints
+            .map((point) => `<li>${escapeHtml(point)}</li>`)
+            .join("");
+        return `
+            <article class="guide-scenario-card">
+                <span class="guide-course-index">LAB ${String(index + 1).padStart(2, "0")} · ${escapeHtml(scenario.key)}</span>
+                <strong>${escapeHtml(scenario.title)}</strong>
+                <p>${escapeHtml(scenario.objective)}</p>
+                <div class="guide-scenario-predict">
+                    <b>실행 전 질문</b>
+                    <span>${escapeHtml(scenario.predictionPrompt)}</span>
+                </div>
+                <ul>${observations}</ul>
+                <small>${scenario.expectedMachineCount}대 설비 · ${scenario.expectedProductCount}개 품목 · ${scenario.expectedOrderCount}개 오더</small>
+                <button
+                    class="guide-step-action"
+                    type="button"
+                    data-learning-scenario="${escapeHtml(scenario.key)}"
+                    ${state.runningLearningScenario ? "disabled" : ""}
+                >${running ? "데이터 생성 및 계산 중…" : "이 실습 생성하고 실행"}</button>
+            </article>
+        `;
+    }).join("");
 }
 
 export function renderSampleOnboarding({

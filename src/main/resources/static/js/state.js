@@ -8,5 +8,7 @@ export const state = {
     latestSchedule: null,
     capacity: new Map(),
     bottleneckAnalysis: null,
-    sampleCalendars: new Map()
+    sampleCalendars: new Map(),
+    learningScenarios: [],
+    runningLearningScenario: null
 };

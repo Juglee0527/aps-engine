@@ -1,6 +1,10 @@
 import {API, request} from "./js/api.js";
 import {SAMPLE_DATA, SAMPLE_STEP_KEYS} from "./js/guide-data.js";
-import {renderGuideStatus, renderSampleOnboarding as renderGuideOnboarding} from "./js/guide.js";
+import {
+    renderGuideStatus,
+    renderLearningScenarios,
+    renderSampleOnboarding as renderGuideOnboarding
+} from "./js/guide.js";
 import {renderMasterData, populateSelects} from "./js/master-data.js";
 import {renderOrders} from "./js/orders.js";
 import {renderScheduleBoard} from "./js/schedule-board.js";
@@ -36,17 +40,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function loadAll() {
     setConnection("checking");
     try {
-        const [factoryPage, productPage, orderPage, latestSchedule] =
+        const [factoryPage, productPage, orderPage, latestSchedule, learningScenarios] =
             await Promise.all([
                 request(`${API.factories}?page=0&size=100`),
                 request(`${API.products}?page=0&size=100`),
                 request(`${API.orders}?page=0&size=100`),
-                request(API.latestSchedule, {allowNotFound: true})
+                request(API.latestSchedule, {allowNotFound: true}),
+                request(API.learningScenarios)
             ]);
         state.factories = factoryPage.content;
         state.products = productPage.content;
         state.orders = orderPage.content;
         state.latestSchedule = latestSchedule;
+        state.learningScenarios = learningScenarios;
 
         const linePages = await Promise.all(
             state.factories.map((factory) =>
@@ -147,6 +153,7 @@ function render() {
     renderOrders(confirmOrder);
     renderMasterData();
     renderGuideStatus();
+    renderLearningScenarios();
     renderSampleOnboarding();
     populateSelects();
 }
@@ -221,7 +228,7 @@ function bindActions() {
     document.querySelector("#refresh-button").addEventListener("click", loadAll);
     document.querySelector("#add-operation-button").addEventListener("click", addOperationRow);
     document.querySelector("[data-guide-start]").addEventListener("click", () => {
-        document.querySelector("#guide-onboarding").scrollIntoView({
+        document.querySelector("#guide-scenario-labs").scrollIntoView({
             behavior: "smooth",
             block: "start"
         });
@@ -237,7 +244,44 @@ function bindActions() {
     document.querySelectorAll("[data-sample-step]").forEach((button) => {
         button.addEventListener("click", () => runSampleStep(button.dataset.sampleStep));
     });
+    document.querySelector("#guide-scenario-grid").addEventListener(
+        "click",
+        (event) => {
+            const button = event.target.closest("[data-learning-scenario]");
+            if (button) runLearningScenario(button.dataset.learningScenario);
+        }
+    );
     bindCsvPreview();
+}
+
+async function runLearningScenario(scenarioKey) {
+    if (state.runningLearningScenario) return;
+    state.runningLearningScenario = scenarioKey;
+    renderLearningScenarios();
+    try {
+        const instance = await request(
+            API.learningScenarioInstances(scenarioKey),
+            {
+                method: "POST",
+                body: JSON.stringify({requestKey: crypto.randomUUID()})
+            }
+        );
+        await submitScheduleExecution(
+            API.learningInstanceSchedules(instance.id),
+            {
+                executionKey: crypto.randomUUID(),
+                dispatchingRule: "EXPLICIT_PRIORITY"
+            }
+        );
+        showToast(`${scenarioKey} 실습 계획을 만들었습니다.`);
+        await loadAll();
+        showView("schedule");
+    } catch (error) {
+        showToast(error.message, true);
+    } finally {
+        state.runningLearningScenario = null;
+        renderLearningScenarios();
+    }
 }
 
 function bindCsvPreview() {

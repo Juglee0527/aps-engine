@@ -287,7 +287,7 @@
             <nav class="guide-local-nav" aria-label="APS 학습 가이드 목차">
                 <a href="#guide-aps-map">APS 한눈에 보기</a>
                 <a href="#guide-curriculum">학습 과정</a>
-                <a href="#guide-onboarding">첫 계획 실습</a>
+                <a href="#guide-scenario-labs">기초 시나리오 실습</a>
                 <a href="#guide-result-reading">결과 읽기</a>
                 <a href="#guide-glossary">용어 사전</a>
             </nav>
@@ -345,7 +345,7 @@
                         <span class="section-label">LEARNING PATH</span>
                         <h2>기초부터 계획 변경까지 여섯 과정으로 학습합니다</h2>
                     </div>
-                    <p>현재 첫 계획 실습을 사용할 수 있으며 심화 시나리오는 순서대로 추가됩니다.</p>
+                    <p>첫 계획, 유한 CAPA, 공정 선후관계와 납기 지연 실습을 바로 실행할 수 있습니다.</p>
                 </header>
                 <div class="guide-course-grid">
                     <article class="guide-course-card is-available" data-learning-course="A">
@@ -353,14 +353,14 @@
                         <strong>APS 시작하기</strong>
                         <p>기준정보와 생산오더를 만들고 첫 유한능력 계획을 실행합니다.</p>
                         <ul><li>공장·설비</li><li>Routing·Operation</li><li>간트 읽기</li></ul>
-                        <button type="button" class="text-button" data-guide-target="guide-onboarding">첫 실습으로 이동 →</button>
+                        <button type="button" class="text-button" data-guide-target="guide-scenario-labs">첫 실습으로 이동 →</button>
                     </article>
-                    <article class="guide-course-card" data-learning-course="B">
+                    <article class="guide-course-card is-available" data-learning-course="B">
                         <span class="guide-course-index">COURSE B · CAPACITY</span>
                         <strong>유한 CAPA 이해하기</strong>
                         <p>근무시간, 공정 선후관계와 대기가 일정에 미치는 영향을 봅니다.</p>
                         <ul><li>가용시간</li><li>작업·공정 대기</li><li>Lead Time</li></ul>
-                        <small>053에서 실습 시나리오 제공</small>
+                        <button type="button" class="text-button" data-guide-target="guide-scenario-labs">CAPA 실습으로 이동 →</button>
                     </article>
                     <article class="guide-course-card" data-learning-course="C">
                         <span class="guide-course-index">COURSE C · RULES</span>
@@ -479,6 +479,17 @@
                         <p>최근 실행 결과가 스케줄 보드의 간트와 부하 기준입니다.</p>
                     </article>
                 </div>
+            </section>
+
+            <section id="guide-scenario-labs" class="guide-section">
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">FOUNDATIONAL LABS</span>
+                        <h2>예상하고 실행하는 APS 기초 실습</h2>
+                    </div>
+                    <p>카드를 읽고 결과를 먼저 예상한 다음, 격리된 샘플 데이터와 계획을 한 번에 만드세요.</p>
+                </header>
+                <div id="guide-scenario-grid" class="guide-scenario-grid" aria-live="polite"></div>
             </section>
 
             <section id="guide-onboarding" class="panel guide-section guide-onboarding">

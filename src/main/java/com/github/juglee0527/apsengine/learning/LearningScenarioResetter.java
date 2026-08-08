@@ -77,7 +77,7 @@ public class LearningScenarioResetter {
 
     private void delete(LearningScenarioEntityType type, long id) {
         switch (type) {
-            case SCHEDULE_EXECUTION -> executionRepository.deleteById(id);
+            case SCHEDULE_EXECUTION -> deleteExecutionAndResult(id);
             case SCHEDULE_RUN -> scheduleRunRepository.deleteById(id);
             case PRODUCTION_ORDER -> orderRepository.deleteById(id);
             case MAINTENANCE -> maintenanceRepository.deleteById(id);
@@ -88,6 +88,17 @@ public class LearningScenarioResetter {
             case MACHINE -> machineRepository.deleteById(id);
             case PRODUCTION_LINE -> lineRepository.deleteById(id);
             case FACTORY -> factoryRepository.deleteById(id);
+        }
+    }
+
+    private void deleteExecutionAndResult(long executionId) {
+        Long resultScheduleRunId = executionRepository.findById(executionId)
+                .map(execution -> execution.resultScheduleRunId())
+                .orElse(null);
+        executionRepository.deleteById(executionId);
+        executionRepository.flush();
+        if (resultScheduleRunId != null) {
+            scheduleRunRepository.deleteById(resultScheduleRunId);
         }
     }
 

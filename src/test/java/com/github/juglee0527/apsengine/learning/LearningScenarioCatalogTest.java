@@ -19,7 +19,60 @@ class LearningScenarioCatalogTest {
 
         assertThat(definition.key()).isEqualTo("FIRST_PLAN");
         assertThat(definition.course()).isEqualTo("A");
-        assertThat(definition.expectedOrderCount()).isEqualTo(8);
+        assertThat(definition.expectedOrderCount()).isEqualTo(4);
+        assertThat(definition.observationPoints()).contains(
+                "오더별 공정 순서",
+                "설비별 작업 배치"
+        );
+    }
+
+    @Test
+    void exposesFourFoundationalScenarioLessons() {
+        assertThat(catalog.findAll())
+                .extracting(LearningScenarioDefinition::key)
+                .containsExactly(
+                        "FIRST_PLAN",
+                        "FINITE_CAPACITY",
+                        "PRECEDENCE",
+                        "TARDINESS"
+                );
+        assertThat(catalog.findAll())
+                .allSatisfy(definition -> {
+                    assertThat(definition.objective()).isNotBlank();
+                    assertThat(definition.predictionPrompt()).isNotBlank();
+                    assertThat(definition.observationPoints()).isNotEmpty();
+                    assertThat(definition.resultExplanation()).isNotBlank();
+                    assertThat(definition.nextExperiment()).isNotBlank();
+                });
+    }
+
+    @Test
+    void blueprintsFixCapacityPrecedenceAndTardinessPredictions() {
+        LearningScenarioBlueprint finite = catalog.blueprint(
+                "FINITE_CAPACITY"
+        );
+        long finiteMinutes = finite.orders().stream()
+                .mapToLong(order -> order.quantity() * 180)
+                .sum();
+        assertThat(finiteMinutes).isGreaterThan(9 * 60);
+
+        LearningScenarioBlueprint precedence = catalog.blueprint(
+                "PRECEDENCE"
+        );
+        assertThat(precedence.products().getFirst().operations())
+                .extracting(
+                        LearningScenarioBlueprint.OperationSpec::sequence
+                )
+                .containsExactly(1, 2, 3);
+        assertThat(precedence.products().getFirst().operations())
+                .extracting(
+                        LearningScenarioBlueprint.OperationSpec::machineCode
+                )
+                .containsExactly("MAKE", "TEST", "PACK");
+
+        LearningScenarioBlueprint tardiness = catalog.blueprint("TARDINESS");
+        assertThat(tardiness.orders().getFirst().dueOffsetMinutes())
+                .isLessThan(2 * 180);
     }
 
     @Test

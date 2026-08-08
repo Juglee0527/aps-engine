@@ -20,7 +20,12 @@ export const API = {
     planningDataImports: "/api/v1/planning-data/imports",
     latestSchedule: "/api/v1/schedules/latest",
     bottlenecks: (scheduleRunId) =>
-        `/api/v1/schedules/${scheduleRunId}/bottlenecks`
+        `/api/v1/schedules/${scheduleRunId}/bottlenecks`,
+    learningScenarios: "/api/v1/learning/scenarios",
+    learningScenarioInstances: (scenarioKey) =>
+        `/api/v1/learning/scenarios/${scenarioKey}/instances`,
+    learningInstanceSchedules: (instanceId) =>
+        `/api/v1/learning/instances/${instanceId}/schedules`
 };
 
 export async function request(url, options = {}) {

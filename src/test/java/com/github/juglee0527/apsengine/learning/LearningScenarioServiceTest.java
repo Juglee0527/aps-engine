@@ -34,6 +34,9 @@ class LearningScenarioServiceTest {
     @Mock
     private LearningScenarioResetter resetter;
 
+    @Mock
+    private LearningScenarioProvisioner provisioner;
+
     private LearningScenarioService service;
 
     @BeforeEach
@@ -47,6 +50,7 @@ class LearningScenarioServiceTest {
                 instanceRepository,
                 entityRepository,
                 resetter,
+                provisioner,
                 clock
         );
     }
@@ -74,6 +78,10 @@ class LearningScenarioServiceTest {
         assertThat(created.planningStart().getDayOfWeek().getValue())
                 .isEqualTo(1);
         assertThat(created.planningStart().getHour()).isEqualTo(8);
+        verify(provisioner).provision(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any()
+        );
     }
 
     @Test

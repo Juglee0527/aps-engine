@@ -112,6 +112,11 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "class=\"guide-local-nav\" aria-label="
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"guide-scenario-grid\""
+                        )
                 ));
     }
 

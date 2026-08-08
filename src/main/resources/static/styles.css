@@ -256,6 +256,15 @@ td small { display: block; margin-top: 3px; color: #8b97a5; font-size: 8px; }
 .guide-section-heading h2 { margin-top: 6px; font-size: 21px; }
 .guide-section-heading > p, .guide-panel-header > p { margin: 0; color: var(--muted); font-size: 10px; }
 .guide-status-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.guide-scenario-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.guide-scenario-card { display: flex; flex-direction: column; min-height: 300px; padding: 22px; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--lime-dark); }
+.guide-scenario-card > strong { margin-top: 10px; color: #26374a; font-size: 15px; }
+.guide-scenario-card > p { min-height: 38px; margin: 9px 0; color: #6f7f92; font-size: 9px; line-height: 1.65; }
+.guide-scenario-card ul { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; padding: 0; list-style: none; }
+.guide-scenario-card li { padding: 4px 7px; color: #596b80; background: #eef2f5; font-size: 8px; }
+.guide-scenario-card small { margin: auto 0 12px; color: #8290a1; font-size: 8px; }
+.guide-scenario-predict { padding: 11px; color: #41566e; background: #f6f9ee; border-left: 3px solid var(--lime); font-size: 9px; line-height: 1.55; }
+.guide-scenario-predict b, .guide-scenario-predict span { display: block; }
 .guide-status-card { min-height: 144px; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-top: 3px solid var(--cyan); }
 .guide-status-card:nth-child(2) { border-top-color: var(--blue); }
 .guide-status-card:nth-child(3) { border-top-color: var(--orange); }
@@ -389,6 +398,6 @@ td small { display: block; margin-top: 3px; color: #8b97a5; font-size: 8px; }
     .guide-local-nav { position: static; }
     .guide-question-grid { grid-template-columns: 1fr; }
     .guide-question-grid article { border-right: 0; border-bottom: 1px solid #26374d; }
-    .guide-course-grid, .guide-system-boundaries, .guide-flow, .guide-reading-grid, .guide-reference-grid { grid-template-columns: 1fr; }
+    .guide-course-grid, .guide-system-boundaries, .guide-flow, .guide-reading-grid, .guide-reference-grid, .guide-scenario-grid { grid-template-columns: 1fr; }
     .guide-step { border-right: 0; }
 }

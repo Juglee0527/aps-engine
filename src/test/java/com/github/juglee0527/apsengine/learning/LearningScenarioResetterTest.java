@@ -5,6 +5,7 @@ import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
@@ -17,6 +18,7 @@ import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.product.ProductRepository;
 import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionRepository;
+import com.github.juglee0527.apsengine.scheduling.ScheduleExecution;
 import com.github.juglee0527.apsengine.scheduling.ScheduleRunRepository;
 
 import org.junit.jupiter.api.Test;
@@ -96,5 +98,61 @@ class LearningScenarioResetterTest {
         order.verify(orderRepository).deleteById(22L);
         order.verify(factoryRepository).deleteById(11L);
         order.verify(entityRepository).deleteAllByScenarioInstance_Id(4L);
+    }
+
+    @Test
+    void deletesCompletedExecutionResultBeforeScenarioOrders() {
+        LearningScenarioInstance instance = LearningScenarioInstance.create(
+                UUID.randomUUID(),
+                "FIRST_PLAN",
+                OffsetDateTime.now(),
+                OffsetDateTime.now()
+        );
+        ReflectionTestUtils.setField(instance, "id", 5L);
+        ScheduleExecution execution = org.mockito.Mockito.mock(
+                ScheduleExecution.class
+        );
+        when(execution.resultScheduleRunId()).thenReturn(44L);
+        when(executionRepository.findById(33L))
+                .thenReturn(Optional.of(execution));
+        when(entityRepository.findAllByScenarioInstance_IdOrderByIdDesc(5L))
+                .thenReturn(List.of(
+                        LearningScenarioEntity.create(
+                                instance,
+                                LearningScenarioEntityType.PRODUCTION_ORDER,
+                                22L
+                        ),
+                        LearningScenarioEntity.create(
+                                instance,
+                                LearningScenarioEntityType.SCHEDULE_EXECUTION,
+                                33L
+                        )
+                ));
+        LearningScenarioResetter resetter = new LearningScenarioResetter(
+                entityRepository,
+                executionRepository,
+                scheduleRunRepository,
+                orderRepository,
+                maintenanceRepository,
+                changeoverRepository,
+                routingRepository,
+                productRepository,
+                calendarRepository,
+                machineRepository,
+                lineRepository,
+                factoryRepository
+        );
+
+        resetter.reset(instance);
+
+        InOrder order = inOrder(
+                executionRepository,
+                scheduleRunRepository,
+                orderRepository
+        );
+        order.verify(executionRepository).deleteById(33L);
+        order.verify(executionRepository).flush();
+        order.verify(scheduleRunRepository).deleteById(44L);
+        order.verify(orderRepository).deleteById(22L);
     }
 }
