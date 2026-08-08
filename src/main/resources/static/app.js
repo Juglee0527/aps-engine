@@ -3,6 +3,8 @@ import {SAMPLE_DATA, SAMPLE_STEP_KEYS} from "./js/guide-data.js";
 import {
     renderGuideStatus,
     renderLearningScenarios,
+    renderLearningProgress,
+    renderLearningCoach,
     renderConstraintImpact,
     renderFrozenHorizonLab,
     renderRuleComparison,
@@ -11,6 +13,11 @@ import {
 import {renderMasterData, populateSelects} from "./js/master-data.js";
 import {renderOrders} from "./js/orders.js";
 import {renderScheduleBoard} from "./js/schedule-board.js";
+import {
+    loadLearningProgress,
+    markLearningProgress,
+    reconcileLearningProgress
+} from "./js/learning-progress.js";
 import {state} from "./js/state.js";
 import {
     escapeHtml,
@@ -32,6 +39,7 @@ let csvImportRequestKey = crypto.randomUUID();
 let csvPreviewReady = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
+    state.learningProgress = loadLearningProgress();
     bindNavigation();
     bindDialogs();
     bindForms();
@@ -61,6 +69,13 @@ async function loadAll() {
         state.orderPage = orderPage;
         state.latestSchedule = latestSchedule;
         state.learningScenarios = learningScenarios;
+        state.learningProgress = await reconcileLearningProgress(
+            state.learningProgress,
+            (instanceId) => request(
+                API.learningInstance(instanceId),
+                {allowNotFound: true}
+            )
+        );
 
         const linePages = await Promise.all(
             state.factories.map((factory) =>
@@ -163,6 +178,8 @@ function render() {
     renderMasterData();
     renderGuideStatus();
     renderLearningScenarios();
+    renderLearningProgress();
+    renderLearningCoach();
     renderRuleComparison();
     renderConstraintImpact();
     renderFrozenHorizonLab();
@@ -373,6 +390,23 @@ async function runLearningScenario(scenarioKey) {
                 body: JSON.stringify({requestKey: crypto.randomUUID()})
             }
         );
+        state.learningInstance = instance;
+        state.selectedLearningScenario = state.learningScenarios.find(
+            (scenario) => scenario.key === scenarioKey
+        ) || null;
+        state.learningProgress = markLearningProgress(
+            state.learningProgress,
+            scenarioKey,
+            "STARTED",
+            instance.id
+        );
+        try {
+            state.learningCoach = await request(
+                API.learningScenarioCoach(scenarioKey)
+            );
+        } catch {
+            state.learningCoach = null;
+        }
         if (scenarioKey === "FROZEN_HORIZON") {
             const lab = await request(API.learningFrozenHorizon(instance.id), {
                 method: "POST",
@@ -386,6 +420,12 @@ async function runLearningScenario(scenarioKey) {
             state.learningComparison = null;
             state.constraintImpact = null;
             state.frozenHorizonLab = lab;
+            state.learningProgress = markLearningProgress(
+                state.learningProgress,
+                scenarioKey,
+                "COMPLETED",
+                instance.id
+            );
             await loadAll();
             document.querySelector("#guide-frozen-horizon").scrollIntoView({
                 behavior: "smooth",
@@ -406,6 +446,12 @@ async function runLearningScenario(scenarioKey) {
             state.learningComparison = null;
             state.constraintImpact = null;
             state.frozenHorizonLab = null;
+            state.learningProgress = markLearningProgress(
+                state.learningProgress,
+                scenarioKey,
+                "COMPLETED",
+                instance.id
+            );
             state.scheduleTaskFilters = {
                 page: 0, size: 100, machineId: "", from: "", to: "", query: ""
             };
@@ -422,8 +468,16 @@ async function runLearningScenario(scenarioKey) {
         state.learningComparison = comparison;
         state.constraintImpact = constraintImpact;
         state.frozenHorizonLab = null;
+        state.learningProgress = markLearningProgress(
+            state.learningProgress,
+            scenarioKey,
+            "ANALYZED",
+            instance.id
+        );
         renderRuleComparison();
         renderConstraintImpact();
+        renderLearningCoach();
+        renderLearningProgress();
         document.querySelector("#guide-rule-comparison").scrollIntoView({
             behavior: "smooth",
             block: "start"
@@ -448,6 +502,12 @@ async function confirmLearningRule(dispatchingRule) {
                 executionKey: crypto.randomUUID(),
                 dispatchingRule
             }
+        );
+        state.learningProgress = markLearningProgress(
+            state.learningProgress,
+            state.learningInstance.scenarioKey,
+            "COMPLETED",
+            state.learningInstance.id
         );
         showToast(`${dispatchingRule} 규칙으로 실습 계획을 확정했습니다.`);
         await loadAll();

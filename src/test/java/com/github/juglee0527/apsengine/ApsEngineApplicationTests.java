@@ -146,6 +146,16 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "id=\"order-filter-form\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"guide-learning-progress\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"guide-result-coach\""
+                        )
                 ));
     }
 
@@ -169,7 +179,8 @@ class ApsEngineApplicationTests {
 
         for (String module : new String[]{
                 "api", "state", "ui", "schedule-board",
-                "orders", "master-data", "guide", "guide-data"
+                "orders", "master-data", "guide", "guide-data",
+                "learning-progress"
         }) {
             mockMvc.perform(get("/js/" + module + ".js"))
                     .andExpect(status().isOk())

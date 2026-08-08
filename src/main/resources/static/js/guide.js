@@ -32,12 +32,20 @@ export function renderLearningScenarios() {
     if (!container) return;
     container.innerHTML = state.learningScenarios.map((scenario, index) => {
         const running = state.runningLearningScenario === scenario.key;
+        const progress = state.learningProgress.scenarios[scenario.key];
+        const progressLabel = {
+            STARTED: "준비됨",
+            ANALYZED: "결과 확인",
+            COMPLETED: "완료",
+            NEEDS_REVIEW: "데이터 재확인"
+        }[progress?.status] || "시작 전";
         const observations = scenario.observationPoints
             .map((point) => `<li>${escapeHtml(point)}</li>`)
             .join("");
         return `
             <article class="guide-scenario-card">
                 <span class="guide-course-index">LAB ${String(index + 1).padStart(2, "0")} · ${escapeHtml(scenario.key)}</span>
+                <em class="guide-scenario-progress is-${escapeHtml((progress?.status || "NEW").toLowerCase())}">${escapeHtml(progressLabel)}</em>
                 <strong>${escapeHtml(scenario.title)}</strong>
                 <p>${escapeHtml(scenario.objective)}</p>
                 <div class="guide-scenario-predict">
@@ -55,6 +63,76 @@ export function renderLearningScenarios() {
             </article>
         `;
     }).join("");
+}
+
+export function renderLearningProgress() {
+    const container = document.querySelector("#guide-course-progress-grid");
+    if (!container) return;
+    const courses = ["A", "B", "C", "D", "E", "F"];
+    let completed = 0;
+    container.innerHTML = courses.map((course) => {
+        const scenarios = state.learningScenarios.filter(
+            (scenario) => scenario.course === course
+        );
+        const courseCompleted = scenarios.filter((scenario) =>
+            state.learningProgress.scenarios[scenario.key]?.status === "COMPLETED"
+        ).length;
+        completed += courseCompleted;
+        const percent = scenarios.length === 0
+            ? 0
+            : Math.round(courseCompleted / scenarios.length * 100);
+        return `
+            <article>
+                <span>COURSE ${course}</span>
+                <strong>${courseCompleted} / ${scenarios.length}</strong>
+                <div><i style="width:${percent}%"></i></div>
+            </article>
+        `;
+    }).join("");
+    text(
+        "#guide-overall-progress",
+        `${completed} / ${state.learningScenarios.length}개 실습 완료`
+    );
+}
+
+export function renderLearningCoach() {
+    const section = document.querySelector("#guide-result-coach");
+    const coach = state.learningCoach;
+    section.hidden = !coach;
+    if (!coach) return;
+    text("#guide-coach-concept", coach.concept);
+    text("#guide-coach-explanation", actualResultExplanation(coach));
+    text("#guide-coach-next", coach.nextExperiment);
+    document.querySelector("#guide-coach-questions").innerHTML =
+        coach.observationQuestions.map((question) =>
+            `<li>${escapeHtml(question)}</li>`
+        ).join("");
+    document.querySelector("#guide-coach-kpis").innerHTML =
+        Object.entries(coach.kpiMeanings).map(([key, meaning]) => `
+            <div><dt>${escapeHtml(key)}</dt><dd>${escapeHtml(meaning)}</dd></div>
+        `).join("");
+}
+
+function actualResultExplanation(coach) {
+    if (state.frozenHorizonLab) {
+        const counts = state.frozenHorizonLab.changes.reduce((result, change) => {
+            result[change.classification] = (result[change.classification] || 0) + 1;
+            return result;
+        }, {});
+        return `${coach.resultExplanation} 실제 결과는 고정 ${counts.FIXED || 0}건, 이동 ${counts.MOVED || 0}건, 제외 ${counts.EXCLUDED || 0}건, 신규 ${counts.NEW || 0}건입니다.`;
+    }
+    if (state.constraintImpact) {
+        const before = state.constraintImpact.withoutConstraint.makespanMinutes;
+        const after = state.constraintImpact.withConstraint.makespanMinutes;
+        return `${coach.resultExplanation} 제약 적용으로 Makespan이 ${after - before >= 0 ? "+" : ""}${after - before}분 변했습니다.`;
+    }
+    if (state.learningComparison) {
+        return `${coach.resultExplanation} 현재 KPI 기준 추천 규칙은 ${state.learningComparison.recommendedRule}입니다.`;
+    }
+    if (state.latestSchedule) {
+        return `${coach.resultExplanation} RUN #${state.latestSchedule.id}에는 ${state.latestSchedule.orderCount}개 오더와 ${state.latestSchedule.taskCount}개 작업이 있습니다.`;
+    }
+    return coach.resultExplanation;
 }
 
 export function renderRuleComparison() {

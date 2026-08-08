@@ -987,3 +987,14 @@ GET /api/v1/production-orders?page=0&size=20&query=ITEM-03&status=CONFIRMED
 
 `query`는 오더번호, 품목 코드와 품목명을 대소문자 구분 없이 검색하고, `status`는 선택 조건입니다.
 기존 페이지 메타데이터(`totalElements`, `totalPages`, `first`, `last`)는 그대로 유지됩니다.
+
+### 20.9 시나리오 결과 코치
+
+```http
+GET /api/v1/learning/scenarios/{scenarioKey}/coach
+```
+
+응답은 `concept`, `observationQuestions`, 이번 실습에서 읽을 `kpiMeanings`, 정적
+`resultExplanation`, `nextExperiment`를 반환합니다. 실제 KPI 차이와 선택 결과는 브라우저가
+규칙 비교·제약 비교·Frozen Horizon·ScheduleRun 응답과 합쳐 설명합니다. 해설 API 실패나 브라우저
+진도 저장 실패는 시나리오 생성과 스케줄 실행을 중단시키지 않습니다.

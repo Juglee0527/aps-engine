@@ -27,6 +27,10 @@ export const API = {
     learningScenarios: "/api/v1/learning/scenarios",
     learningScenarioInstances: (scenarioKey) =>
         `/api/v1/learning/scenarios/${scenarioKey}/instances`,
+    learningScenarioCoach: (scenarioKey) =>
+        `/api/v1/learning/scenarios/${scenarioKey}/coach`,
+    learningInstance: (instanceId) =>
+        `/api/v1/learning/instances/${instanceId}`,
     learningInstanceSchedules: (instanceId) =>
         `/api/v1/learning/instances/${instanceId}/schedules`,
     learningRuleComparison: (instanceId) =>

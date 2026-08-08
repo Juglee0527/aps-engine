@@ -640,7 +640,7 @@ Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 
 권장 커밋 메시지: feat: add scalable learning datasets
 ```
 
-### [ ] 058. 학습 진도와 결과 코치
+### [x] 058. 학습 진도와 결과 코치
 
 ```text
 학습 과정과 시나리오별 완료 상태를 표시하고 결과 화면에서 관찰 질문, KPI 의미, 결과 이유와 후속 실험을 안내해 주세요.

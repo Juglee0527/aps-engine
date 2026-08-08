@@ -18,5 +18,8 @@ export const state = {
     learningInstance: null,
     learningComparison: null,
     constraintImpact: null,
-    frozenHorizonLab: null
+    frozenHorizonLab: null,
+    learningProgress: {version: 1, scenarios: {}},
+    learningCoach: null,
+    selectedLearningScenario: null
 };

@@ -28,22 +28,32 @@ public class LearningScenarioController {
     private final ScheduleExecutionService executionService;
     private final ScheduleRunService scheduleRunService;
     private final FrozenHorizonLabService frozenHorizonLabService;
+    private final LearningResultCoach resultCoach;
 
     public LearningScenarioController(
             LearningScenarioService service,
             ScheduleExecutionService executionService,
             ScheduleRunService scheduleRunService,
-            FrozenHorizonLabService frozenHorizonLabService
+            FrozenHorizonLabService frozenHorizonLabService,
+            LearningResultCoach resultCoach
     ) {
         this.service = service;
         this.executionService = executionService;
         this.scheduleRunService = scheduleRunService;
         this.frozenHorizonLabService = frozenHorizonLabService;
+        this.resultCoach = resultCoach;
     }
 
     @GetMapping("/scenarios")
     public List<LearningScenarioDefinition> findScenarios() {
         return service.findScenarios();
+    }
+
+    @GetMapping("/scenarios/{scenarioKey}/coach")
+    public LearningResultCoachResponse getCoach(
+            @PathVariable String scenarioKey
+    ) {
+        return resultCoach.get(scenarioKey);
     }
 
     @PostMapping("/scenarios/{scenarioKey}/instances")
