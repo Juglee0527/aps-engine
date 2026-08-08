@@ -820,3 +820,51 @@ GET /api/v1/planning-data/imports/{importRunId}
 애플리케이션 시작 시 남아 있는 `RUNNING`은 `INTERRUPTED`로 바꿉니다. 사용자가 같은 요청 키와
 같은 파일을 다시 전송하면 실행 ID를 유지한 채 `retryCount`를 올리고 처음부터 원자적으로
 재시도합니다. `COMPLETED`와 `FAILED`는 재실행하지 않습니다.
+
+## 20. APS 학습 시나리오 API
+
+### 20.1 시나리오 카탈로그 조회
+
+```http
+GET /api/v1/learning/scenarios
+```
+
+서버가 지원하는 실습의 키, 과정, 설명과 예상 설비·품목·오더 수를 반환합니다. 051에서는
+`FIRST_PLAN` 정의를 제공하며 후속 실습 데이터 팩은 053~057에서 순차 추가합니다.
+
+### 20.2 실습 인스턴스 생성
+
+```http
+POST /api/v1/learning/scenarios/FIRST_PLAN/instances
+Content-Type: application/json
+
+{"requestKey":"ad31b6e5-2621-4b90-a8f4-22430a640d96"}
+```
+
+```json
+{
+  "id": 7,
+  "requestKey": "ad31b6e5-2621-4b90-a8f4-22430a640d96",
+  "scenarioKey": "FIRST_PLAN",
+  "namespace": "LS-7C6E6EAE",
+  "status": "READY",
+  "planningStart": "2026-08-10T08:00:00+09:00",
+  "createdAt": "2026-08-08T14:00:00+09:00",
+  "trackedEntityCount": 0
+}
+```
+
+계획 시작은 서버 시간대의 다음 평일 08:00입니다. 같은 `requestKey`와 같은 시나리오는 기존
+인스턴스를 반환하고, 다른 시나리오에 같은 키를 사용하면
+`409 LEARNING_SCENARIO_REQUEST_CONFLICT`입니다.
+
+### 20.3 인스턴스 조회와 초기화
+
+```http
+GET /api/v1/learning/instances/{instanceId}
+DELETE /api/v1/learning/instances/{instanceId}
+```
+
+`DELETE`는 인스턴스가 추적한 데이터만 외래 키 안전 순서로 제거하고 상태를 `RESET`으로 바꿉니다.
+이미 초기화한 인스턴스에 다시 요청해도 같은 결과를 반환합니다. 051은 인스턴스·추적·초기화
+경계를 마련한 단계이며, 실제 기준정보와 생산오더 생성은 053부터 연결합니다.

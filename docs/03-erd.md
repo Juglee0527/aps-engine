@@ -332,6 +332,21 @@ erDiagram
 `V18`은 요청 이력을 성공 결과와 분리합니다. `RUNNING`은 결과 ScheduleRun 존재 여부로
 재시작 복구하고, `QUEUED`는 생성 순서로 다시 배차합니다.
 
+### LearningScenario 제약조건
+
+| 이름 | 대상 | 설명 |
+| --- | --- | --- |
+| `uk_learning_scenario_request_key` | `request_key` | 동일 생성 요청의 중복 인스턴스 방지 |
+| `uk_learning_scenario_namespace` | `namespace` | 인스턴스별 업무 코드 격리 |
+| `ck_learning_scenario_status` | `status` | `READY`, `RESET`만 허용 |
+| `fk_learning_scenario_entity_instance` | 추적 엔티티·인스턴스 | 인스턴스 삭제 시 추적 정보 함께 삭제 |
+| `uk_learning_scenario_entity` | 인스턴스·종류·업무 ID | 같은 엔티티의 중복 추적 방지 |
+| `idx_learning_scenario_entity_instance` | `scenario_instance_id` | 인스턴스 초기화 대상 조회 지원 |
+
+`V19`는 실습 인스턴스와 이 인스턴스가 생성한 업무 엔티티 목록을 분리합니다. 추적 테이블은
+다형 업무 테이블을 직접 외래 키로 묶지 않고 종류와 ID를 저장하며, 애플리케이션이 의존성 역순으로
+삭제해 다른 인스턴스와 사용자 데이터를 건드리지 않습니다.
+
 ### ChangeoverTime 제약조건
 
 | 이름 | 대상 | 설명 |

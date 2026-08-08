@@ -113,6 +113,18 @@ public enum ErrorCode {
             HttpStatus.CONFLICT,
             "같은 요청 키에 다른 CSV 파일을 사용할 수 없습니다."
     ),
+    LEARNING_SCENARIO_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "학습 시나리오를 찾을 수 없습니다."
+    ),
+    LEARNING_SCENARIO_INSTANCE_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "학습 시나리오 인스턴스를 찾을 수 없습니다."
+    ),
+    LEARNING_SCENARIO_REQUEST_CONFLICT(
+            HttpStatus.CONFLICT,
+            "같은 요청 키에 다른 학습 시나리오를 사용할 수 없습니다."
+    ),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.");
 
     private final HttpStatus httpStatus;

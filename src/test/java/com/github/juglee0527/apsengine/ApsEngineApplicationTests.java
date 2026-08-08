@@ -13,6 +13,8 @@ import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepos
 import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLineRepository;
 import com.github.juglee0527.apsengine.machine.MachineRepository;
+import com.github.juglee0527.apsengine.learning.LearningScenarioEntityRepository;
+import com.github.juglee0527.apsengine.learning.LearningScenarioInstanceRepository;
 import com.github.juglee0527.apsengine.order.ProductionOrderRepository;
 import com.github.juglee0527.apsengine.product.ProductRepository;
 import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
@@ -71,6 +73,12 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private PlanningDataImportRunRepository planningDataImportRunRepository;
+
+    @MockitoBean
+    private LearningScenarioInstanceRepository learningScenarioInstanceRepository;
+
+    @MockitoBean
+    private LearningScenarioEntityRepository learningScenarioEntityRepository;
 
     @Test
     void contextLoads() {
