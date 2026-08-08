@@ -1,4 +1,5 @@
 import {state} from "./state.js";
+import {resolveTimelineWindow} from "./gantt-timeline.js";
 import {
     escapeHtml,
     formatAxisTime,
@@ -10,7 +11,6 @@ import {
 } from "./ui.js";
 
 const COLORS = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"];
-const HOUR = 3_600_000;
 let selectedTaskId = null;
 
 document.addEventListener("keydown", (event) => {
@@ -117,7 +117,12 @@ function renderGantt() {
         return;
     }
 
-    const {start, end} = resolveTimelineWindow(schedule, schedule.tasks);
+    const {start, end} = resolveTimelineWindow(
+        schedule,
+        schedule.tasks,
+        state.scheduleTaskFilters,
+        state.ganttView
+    );
     const duration = end - start;
     updateTimelineControls(start, end);
     const chart = document.createElement("div");
@@ -202,48 +207,6 @@ function renderMobileSchedule(container, legend, tasks) {
     }
     container.append(list);
     document.querySelector("#task-detail-close").onclick = closeTaskDetail;
-}
-
-export function resolveTimelineWindow(schedule, tasks) {
-    const explicitStart = state.scheduleTaskFilters.from
-        ? new Date(state.scheduleTaskFilters.from).getTime() : null;
-    const explicitEnd = state.scheduleTaskFilters.to
-        ? new Date(state.scheduleTaskFilters.to).getTime() : null;
-    if (explicitStart != null || explicitEnd != null) {
-        const start = explicitStart
-            ?? new Date(schedule.planningStart).getTime();
-        return {
-            start,
-            end: Math.max(explicitEnd ?? start + HOUR, start + HOUR)
-        };
-    }
-
-    const starts = tasks.map((task) => new Date(
-        task.changeoverStartAt || task.startAt
-    ).getTime());
-    const ends = tasks.map((task) => new Date(task.endAt).getTime());
-    const firstTask = Math.min(...starts);
-    const lastTask = Math.max(...ends);
-    const mode = state.ganttView.mode;
-    if (mode === "full") {
-        const start = new Date(schedule.planningStart).getTime();
-        return {
-            start,
-            end: Math.max(
-                new Date(schedule.schedulingEnd).getTime(),
-                start + HOUR
-            )
-        };
-    }
-    if (mode === "8h" || mode === "24h") {
-        const windowSize = (mode === "8h" ? 8 : 24) * HOUR;
-        const base = Math.floor(firstTask / HOUR) * HOUR;
-        const start = base + state.ganttView.offset * windowSize;
-        return {start, end: start + windowSize};
-    }
-    const taskSpan = Math.max(HOUR, lastTask - firstTask);
-    const padding = Math.max(HOUR / 2, taskSpan * .06);
-    return {start: firstTask - padding, end: lastTask + padding};
 }
 
 function updateTimelineControls(start, end) {

@@ -3,6 +3,7 @@ package com.github.juglee0527.apsengine;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.hamcrest.Matchers.hasItem;
@@ -165,7 +166,7 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js?v=ui-r2-074\" "
+                                "<script src=\"/app.js?v=ui-r2-075\" "
                                         + "type=\"module\">"
                         )
                 ));
@@ -179,7 +180,7 @@ class ApsEngineApplicationTests {
                 ));
 
         for (String module : new String[]{
-                "api", "state", "ui", "schedule-board",
+                "api", "state", "ui", "schedule-board", "gantt-timeline",
                 "orders", "master-data", "guide", "guide-data",
                 "learning-progress"
         }) {
@@ -286,8 +287,12 @@ class ApsEngineApplicationTests {
                         )
                 ));
 
-        mockMvc.perform(get("/styles.css"))
+        mockMvc.perform(get("/styles/tokens.css"))
                 .andExpect(status().isOk())
+                .andExpect(header().string(
+                        "Cache-Control",
+                        org.hamcrest.Matchers.containsString("no-store")
+                ))
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "--radius-lg: 16px"
@@ -302,12 +307,18 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "--control-height: 40px"
                         )
-                ))
+                ));
+
+        mockMvc.perform(get("/styles.css"))
+                .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 ".nav-icon svg, .button-icon"
                         )
-                ))
+                ));
+
+        mockMvc.perform(get("/styles/responsive.css"))
+                .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "prefers-reduced-motion"
