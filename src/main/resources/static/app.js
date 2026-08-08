@@ -49,6 +49,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function loadAll() {
+    setAppLoading(true);
+    clearAppFeedback();
     setConnection("checking");
     try {
         const orderQuery = new URLSearchParams();
@@ -102,9 +104,31 @@ async function loadAll() {
         render();
     } catch (error) {
         setConnection("offline");
-        showToast(error.message, true);
+        showAppFeedback(error.message);
         render();
+    } finally {
+        setAppLoading(false);
     }
+}
+
+function setAppLoading(loading) {
+    const main = document.querySelector(".main-content");
+    const progress = document.querySelector("#app-progress");
+    const refresh = document.querySelector("#refresh-button");
+    main.setAttribute("aria-busy", String(loading));
+    progress.hidden = !loading;
+    refresh.disabled = loading;
+    refresh.classList.toggle("is-loading", loading);
+}
+
+function showAppFeedback(message) {
+    const feedback = document.querySelector("#app-feedback");
+    text("#app-feedback-message", message);
+    feedback.hidden = false;
+}
+
+function clearAppFeedback() {
+    document.querySelector("#app-feedback").hidden = true;
 }
 
 async function loadSampleCalendars() {
@@ -329,8 +353,12 @@ function bindDialogs() {
         });
     });
     document.querySelectorAll(".modal").forEach((dialog) => {
+        const heading = dialog.querySelector("header h2");
+        if (heading && !heading.id) heading.id = `${dialog.id}-title`;
+        if (heading) dialog.setAttribute("aria-labelledby", heading.id);
         dialog.querySelectorAll(".modal-close, .modal-cancel").forEach((button) =>
             button.addEventListener("click", () => dialog.close()));
+        dialog.querySelector(".modal-close")?.setAttribute("aria-label", "창 닫기");
         dialog.addEventListener("click", (event) => {
             if (event.target === dialog) dialog.close();
         });
@@ -339,6 +367,7 @@ function bindDialogs() {
 
 function bindActions() {
     document.querySelector("#refresh-button").addEventListener("click", loadAll);
+    document.querySelector("#app-feedback-retry").addEventListener("click", loadAll);
     document.querySelector("#add-operation-button").addEventListener("click", addOperationRow);
     document.querySelector("[data-guide-start]").addEventListener("click", () => {
         document.querySelector("#guide-scenario-labs").scrollIntoView({
@@ -850,7 +879,11 @@ function bindForm(selector, action) {
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
         const submit = form.querySelector("[type='submit']");
+        const originalLabel = submit.textContent;
+        form.querySelector(".form-error")?.remove();
+        form.setAttribute("aria-busy", "true");
         submit.disabled = true;
+        submit.textContent = "처리 중…";
         try {
             const message = await action(form);
             form.reset();
@@ -858,9 +891,16 @@ function bindForm(selector, action) {
             setDefaultDates();
             showToast(message);
         } catch (error) {
+            const errorMessage = document.createElement("p");
+            errorMessage.className = "form-error";
+            errorMessage.setAttribute("role", "alert");
+            errorMessage.textContent = error.message;
+            form.querySelector(".modal-actions")?.before(errorMessage);
             showToast(error.message, true);
         } finally {
+            form.setAttribute("aria-busy", "false");
             submit.disabled = false;
+            submit.textContent = originalLabel;
         }
     });
 }

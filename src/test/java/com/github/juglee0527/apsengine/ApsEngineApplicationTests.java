@@ -248,6 +248,16 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "class=\"guide-hero-meta\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"app-feedback-retry\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"app-progress\""
+                        )
                 ));
 
         mockMvc.perform(get("/styles.css"))
@@ -265,6 +275,11 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 ".nav-icon svg, .button-icon"
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "prefers-reduced-motion"
                         )
                 ))
                 .andExpect(content().string(

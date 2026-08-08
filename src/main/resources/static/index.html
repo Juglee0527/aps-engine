@@ -95,6 +95,18 @@
             </div>
         </header>
 
+        <section id="app-feedback" class="app-feedback" role="alert" hidden>
+            <div class="feedback-icon" aria-hidden="true">!</div>
+            <div>
+                <strong id="app-feedback-title">데이터를 불러오지 못했습니다</strong>
+                <p id="app-feedback-message">서버 연결을 확인한 뒤 다시 시도해 주세요.</p>
+            </div>
+            <button id="app-feedback-retry" class="ghost-button" type="button">다시 시도</button>
+        </section>
+        <div id="app-progress" class="app-progress" role="status" aria-live="polite" hidden>
+            <span aria-hidden="true"></span><strong>최신 계획 데이터를 불러오는 중입니다.</strong>
+        </div>
+
         <section id="schedule-view" class="view is-active">
             <section id="run-banner" class="plan-overview">
                 <div class="plan-overview-main">
