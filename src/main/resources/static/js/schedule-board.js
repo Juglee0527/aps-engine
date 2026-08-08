@@ -13,6 +13,7 @@ const COLORS = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"
 
 export function renderScheduleBoard() {
     renderRunSummary();
+    renderReadiness();
     renderMetrics();
     renderGantt();
     renderLoadRanking();
@@ -23,6 +24,9 @@ function renderRunSummary() {
     text("#run-title", schedule
         ? `RUN #${schedule.id} · ${schedule.orderCount}개 오더 계획 완료`
         : "아직 실행된 스케줄이 없습니다");
+    text("#run-description", schedule
+        ? "계획 결과의 규칙, 기간, 지연과 가동률을 기준으로 다음 의사결정을 검토하세요."
+        : "계획을 실행하면 선택 규칙과 핵심 성과를 이곳에서 비교할 수 있습니다.");
     text("#planning-start", schedule ? formatDateTime(schedule.planningStart) : "-");
     text("#schedule-end", schedule ? formatDateTime(schedule.schedulingEnd) : "-");
     text("#source-run", schedule?.sourceScheduleRunId
@@ -38,11 +42,37 @@ function renderRunSummary() {
     document.querySelector("#reschedule-button").disabled = !schedule;
 }
 
+function renderReadiness() {
+    const readiness = document.querySelector("#schedule-readiness");
+    const masterReady = state.factories.length > 0
+        && state.machines.length > 0
+        && state.routings.length > 0;
+    const confirmed = state.orders.filter(
+        (order) => order.status === "CONFIRMED"
+    ).length;
+    readiness.hidden = Boolean(state.latestSchedule);
+    setReadinessStep("#readiness-master", masterReady, masterReady
+        ? "기준정보 준비 완료" : "공장·설비·품목·Routing 필요");
+    setReadinessStep("#readiness-orders", confirmed > 0, confirmed > 0
+        ? `${confirmed}개 확정 오더 준비` : "확정 생산오더 필요");
+}
+
+function setReadinessStep(selector, ready, message) {
+    const step = document.querySelector(selector);
+    step.classList.toggle("is-ready", ready);
+    step.querySelector("small").textContent = message;
+}
+
 function renderMetrics() {
     const confirmed = state.orders.filter((order) => order.status === "CONFIRMED").length;
     text("#confirmed-count", confirmed);
     text("#task-count", state.latestSchedule?.taskCount || 0);
-    text("#delayed-count", state.latestSchedule?.delayedOrderCount || 0);
+    const delayed = state.latestSchedule?.delayedOrderCount || 0;
+    text("#delayed-count", delayed);
+    document.querySelector("#delayed-kpi").classList.toggle(
+        "is-alert",
+        delayed > 0
+    );
     const candidate = state.bottleneckAnalysis?.candidates?.[0];
     const utilization = candidate?.utilizationPercent == null
         ? (candidate ? "CAPA 없음" : "0%")

@@ -668,7 +668,7 @@ Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 
 
 ### [x] 061. 앱 셸과 반응형 내비게이션
 
-### [ ] 062. 스케줄 Control Tower 재설계
+### [x] 062. 스케줄 Control Tower 재설계
 
 ### [ ] 063. 간트와 계획 탐색 경험
 

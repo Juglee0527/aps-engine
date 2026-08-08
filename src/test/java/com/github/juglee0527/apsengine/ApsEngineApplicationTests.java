@@ -213,6 +213,16 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "id=\"view-description\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"schedule-readiness\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "class=\"plan-overview\""
+                        )
                 ));
 
         mockMvc.perform(get("/styles.css"))

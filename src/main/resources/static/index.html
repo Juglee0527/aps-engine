@@ -96,23 +96,46 @@
         </header>
 
         <section id="schedule-view" class="view is-active">
-            <div id="run-banner" class="run-banner">
-                <div>
+            <section id="run-banner" class="plan-overview">
+                <div class="plan-overview-main">
                     <span class="section-label">LATEST SCHEDULE RUN</span>
                     <strong id="run-title">아직 실행된 스케줄이 없습니다</strong>
-                </div>
-                <div class="run-meta">
-                    <span>계획 시작 <strong id="planning-start">-</strong></span>
-                    <span>완료 시각 <strong id="schedule-end">-</strong></span>
-                    <span>원본 실행 <strong id="source-run">-</strong></span>
-                    <span>동결 기준 <strong id="frozen-at">-</strong></span>
-                    <span>규칙 <strong id="dispatching-rule">-</strong></span>
-                    <span>총 지연 <strong id="total-tardiness">-</strong></span>
-                    <span>Makespan <strong id="makespan">-</strong></span>
-                    <span>전체 가동률 <strong id="plan-utilization">-</strong></span>
+                    <p id="run-description">계획을 실행하면 선택 규칙과 핵심 성과를 이곳에서 비교할 수 있습니다.</p>
                     <span id="run-status" class="status-pill neutral">READY</span>
                 </div>
-            </div>
+                <div class="run-meta">
+                    <span><small>계획 시작</small><strong id="planning-start">-</strong></span>
+                    <span><small>완료 시각</small><strong id="schedule-end">-</strong></span>
+                    <span><small>적용 규칙</small><strong id="dispatching-rule">-</strong></span>
+                    <span><small>총 지연</small><strong id="total-tardiness">-</strong></span>
+                    <span><small>Makespan</small><strong id="makespan">-</strong></span>
+                    <span><small>전체 가동률</small><strong id="plan-utilization">-</strong></span>
+                    <span><small>원본 실행</small><strong id="source-run">-</strong></span>
+                    <span><small>동결 기준</small><strong id="frozen-at">-</strong></span>
+                </div>
+            </section>
+
+            <section id="schedule-readiness" class="readiness-card" aria-labelledby="readiness-title">
+                <div class="readiness-copy">
+                    <span class="section-label">FIRST PLAN CHECKLIST</span>
+                    <h2 id="readiness-title">첫 생산계획을 실행할 준비를 확인하세요</h2>
+                    <p>기준정보와 확정 오더가 준비되면 유한 CAPA 스케줄을 계산할 수 있습니다.</p>
+                </div>
+                <ol class="readiness-steps">
+                    <li id="readiness-master">
+                        <span>01</span><div><strong>생산 기준정보</strong><small>공장·설비·품목·Routing</small></div>
+                        <button class="text-button" type="button" data-view-jump="master">확인</button>
+                    </li>
+                    <li id="readiness-orders">
+                        <span>02</span><div><strong>확정 생산오더</strong><small>계획할 수요와 납기</small></div>
+                        <button class="text-button" type="button" data-view-jump="orders">확인</button>
+                    </li>
+                    <li id="readiness-learn">
+                        <span>03</span><div><strong>처음이라면 실습</strong><small>샘플 데이터로 빠르게 시작</small></div>
+                        <button class="text-button" type="button" data-view-jump="guide">가이드</button>
+                    </li>
+                </ol>
+            </section>
 
             <section class="kpi-grid" aria-label="계획 지표">
                 <article class="kpi-card">
@@ -121,7 +144,7 @@
                         <span class="kpi-index">01</span>
                     </div>
                     <strong id="confirmed-count">0</strong>
-                    <small>스케줄링 대기</small>
+                    <small>계획 대상으로 확정된 오더</small>
                 </article>
                 <article class="kpi-card">
                     <div class="kpi-top">
@@ -129,15 +152,15 @@
                         <span class="kpi-index">02</span>
                     </div>
                     <strong id="task-count">0</strong>
-                    <small>Operation tasks</small>
+                    <small>이번 실행에 배정된 공정</small>
                 </article>
-                <article class="kpi-card">
+                <article id="delayed-kpi" class="kpi-card">
                     <div class="kpi-top">
                         <span>납기 지연</span>
                         <span class="kpi-index">03</span>
                     </div>
                     <strong id="delayed-count">0</strong>
-                    <small>Delayed orders</small>
+                    <small>납기를 초과한 생산오더</small>
                 </article>
                 <article class="kpi-card accent">
                     <div class="kpi-top">
