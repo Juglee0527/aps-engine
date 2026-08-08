@@ -3,6 +3,7 @@ package com.github.juglee0527.apsengine.learning;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -25,6 +26,7 @@ import com.github.juglee0527.apsengine.scheduling.SchedulingPlan;
 import com.github.juglee0527.apsengine.scheduling.ShortestProcessingTimeRule;
 
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 class LearningScenarioSchedulingTest {
 
@@ -190,6 +192,21 @@ class LearningScenarioSchedulingTest {
                 .isGreaterThan(loadByMachine.get(
                         input.machineIds().get("FINISH")
                 ));
+    }
+
+    @Test
+    void performanceScenarioSchedulesSixHundredTasksWithinBaseline() {
+        ScenarioInput input = input("PERFORMANCE");
+
+        SchedulingPlan plan = assertTimeout(
+                Duration.ofSeconds(5),
+                () -> scheduler.schedule(START, input.orders())
+        );
+
+        assertThat(plan.tasks()).hasSize(600);
+        assertThat(plan.tasks())
+                .extracting(task -> task.orderNumber())
+                .doesNotHaveDuplicates();
     }
 
     private ScenarioInput input(String scenarioKey) {

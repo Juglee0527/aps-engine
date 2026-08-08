@@ -30,6 +30,7 @@ import com.github.juglee0527.apsengine.product.routing.Operation;
 import com.github.juglee0527.apsengine.product.routing.OperationMachineCandidate;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -579,6 +580,24 @@ public class ScheduleRunService {
                 .filter(order -> allowedIds == null
                         || allowedIds.contains(order.id()))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public ScheduleRun getLatestSummary() {
+        return scheduleRunRepository.findLatestSummary(PageRequest.of(0, 1))
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new ApplicationException(
+                        ErrorCode.SCHEDULE_RUN_NOT_FOUND
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public ScheduleRun getSummaryById(long scheduleRunId) {
+        return scheduleRunRepository.findSummaryById(scheduleRunId)
+                .orElseThrow(() -> new ApplicationException(
+                        ErrorCode.SCHEDULE_RUN_NOT_FOUND
+                ));
     }
 
     private Set<Long> normalizeOptionalScope(List<Long> productionOrderIds) {

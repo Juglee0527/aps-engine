@@ -21,6 +21,7 @@ import com.github.juglee0527.apsengine.product.routing.RoutingRepository;
 import com.github.juglee0527.apsengine.planningdata.PlanningDataImportRunRepository;
 import com.github.juglee0527.apsengine.scheduling.ScheduleRunRepository;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionRepository;
+import com.github.juglee0527.apsengine.scheduling.ScheduledOperationRepository;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +71,9 @@ class ApsEngineApplicationTests {
 
     @MockitoBean
     private ScheduleExecutionRepository scheduleExecutionRepository;
+
+    @MockitoBean
+    private ScheduledOperationRepository scheduledOperationRepository;
 
     @MockitoBean
     private PlanningDataImportRunRepository planningDataImportRunRepository;
@@ -131,6 +135,16 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "id=\"guide-frozen-horizon\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"gantt-filter-form\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"order-filter-form\""
                         )
                 ));
     }

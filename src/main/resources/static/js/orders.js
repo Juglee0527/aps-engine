@@ -6,6 +6,14 @@ export function renderOrders(confirmOrder) {
     const full = document.querySelector("#order-table-body");
     summary.replaceChildren();
     full.replaceChildren();
+    const pageStatus = document.querySelector("#order-page-status");
+    if (pageStatus) {
+        pageStatus.textContent = `${number(state.orderPage.totalElements || 0)}건 · ${state.orderPage.page + 1}/${Math.max(1, state.orderPage.totalPages)} 페이지`;
+    }
+    const previous = document.querySelector("#order-prev-page");
+    const next = document.querySelector("#order-next-page");
+    if (previous) previous.disabled = state.orderPage.first;
+    if (next) next.disabled = state.orderPage.last;
     if (state.orders.length === 0) {
         summary.innerHTML = `<tr><td colspan="5"><div class="table-empty">등록된 생산오더가 없습니다.</div></td></tr>`;
         full.innerHTML = `<tr><td colspan="8"><div class="table-empty">마스터 데이터를 구성한 뒤 첫 생산오더를 등록해 주세요.</div></td></tr>`;

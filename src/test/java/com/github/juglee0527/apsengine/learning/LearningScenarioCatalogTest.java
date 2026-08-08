@@ -40,7 +40,9 @@ class LearningScenarioCatalogTest {
                         "MAINTENANCE",
                         "ALTERNATIVE_MACHINE",
                         "BOTTLENECK",
-                        "FROZEN_HORIZON"
+                        "FROZEN_HORIZON",
+                        "MEDIUM_FACTORY",
+                        "PERFORMANCE"
                 );
         assertThat(catalog.findAll())
                 .allSatisfy(definition -> {
@@ -79,6 +81,20 @@ class LearningScenarioCatalogTest {
         LearningScenarioBlueprint tardiness = catalog.blueprint("TARDINESS");
         assertThat(tardiness.orders().getFirst().dueOffsetMinutes())
                 .isLessThan(2 * 180);
+    }
+
+    @Test
+    void exposesDeterministicMediumAndPerformanceDatasetSizes() {
+        LearningScenarioBlueprint medium = catalog.blueprint("MEDIUM_FACTORY");
+        LearningScenarioBlueprint performance = catalog.blueprint("PERFORMANCE");
+
+        assertThat(medium.machines()).hasSize(12);
+        assertThat(medium.orders()).hasSize(150);
+        assertThat(performance.machines()).hasSize(20);
+        assertThat(performance.orders()).hasSize(600);
+        assertThat(performance.orders())
+                .extracting(LearningScenarioBlueprint.OrderSpec::orderNumber)
+                .doesNotHaveDuplicates();
     }
 
     @Test

@@ -2,6 +2,8 @@ package com.github.juglee0527.apsengine.learning;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -272,6 +274,9 @@ class LearningScenarioProvisioner {
             LearningScenarioBlueprint blueprint,
             Map<String, Routing> routings
     ) {
+        List<ProductionOrder> pending = new ArrayList<>(
+                blueprint.orders().size()
+        );
         for (OrderSpec spec : blueprint.orders()) {
             ProductionOrder order = ProductionOrder.create(
                     requiredRouting(routings, spec.productCode()),
@@ -286,7 +291,11 @@ class LearningScenarioProvisioner {
                     spec.priority()
             );
             order.confirm();
-            order = orderRepository.saveAndFlush(order);
+            pending.add(order);
+        }
+        for (ProductionOrder order : orderRepository.saveAllAndFlush(
+                pending
+        )) {
             track(
                     instance,
                     LearningScenarioEntityType.PRODUCTION_ORDER,

@@ -966,3 +966,24 @@ ScheduleRun을 만듭니다. 재계획의 신규 확정 오더는 해당 인스�
 경계 전에 시작한 `FIXED`, 경계 이후 다시 배치한 `MOVED`, 취소로 빠진 `EXCLUDED`, 재계획에
 처음 들어온 `NEW`이며, 각 항목에 전후 시각과 이유가 포함됩니다. 요청한 Dispatching Rule은
 재계획에만 적용되고 기준 계획은 비교 기준을 고정하기 위해 명시적 우선순위를 사용합니다.
+
+### 20.8 대량 계획 요약과 범위 탐색
+
+```http
+GET /api/v1/schedules/latest/summary
+GET /api/v1/schedules/{scheduleRunId}/tasks?page=0&size=100&machineId=12&from=...&to=...&query=SCALE-01
+```
+
+요약 응답은 실행 KPI와 전체 `orderCount`, `taskCount`만 반환하고 `tasks` 배열을 포함하지 않습니다.
+작업 API는 최대 100건씩 반환하며 `machineId`, 오더번호·공정코드 `query`, 작업 구간과 겹치는
+`from`·`to` 조건을 조합할 수 있습니다. 기간 조건은 작업이 범위에 일부라도 걸치면 포함합니다.
+브라우저는 이 응답의 현재 페이지만 간트 DOM으로 렌더링합니다.
+
+생산오더 목록도 다음 서버 조건을 지원합니다.
+
+```http
+GET /api/v1/production-orders?page=0&size=20&query=ITEM-03&status=CONFIRMED
+```
+
+`query`는 오더번호, 품목 코드와 품목명을 대소문자 구분 없이 검색하고, `status`는 선택 조건입니다.
+기존 페이지 메타데이터(`totalElements`, `totalPages`, `first`, `last`)는 그대로 유지됩니다.

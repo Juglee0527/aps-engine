@@ -43,6 +43,9 @@ class ScheduleRunControllerTest {
     @MockitoBean
     private ScheduleExecutionService executionService;
 
+    @MockitoBean
+    private ScheduledOperationRepository scheduledOperationRepository;
+
     @Test
     void executesSchedule() throws Exception {
         UUID executionKey =
@@ -211,6 +214,22 @@ class ScheduleRunControllerTest {
         mockMvc.perform(get("/api/v1/schedules/latest"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(10));
+    }
+
+    @Test
+    void getsLatestSummaryWithoutEmbeddingAllTasks() throws Exception {
+        ScheduleRun run = scheduleRun(UUID.randomUUID());
+        when(scheduleRunService.getLatestSummary()).thenReturn(run);
+        when(scheduledOperationRepository.countOrders(10L)).thenReturn(150L);
+        when(scheduledOperationRepository.countByScheduleRun_Id(10L))
+                .thenReturn(600L);
+
+        mockMvc.perform(get("/api/v1/schedules/latest/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(10))
+                .andExpect(jsonPath("$.orderCount").value(150))
+                .andExpect(jsonPath("$.taskCount").value(600))
+                .andExpect(jsonPath("$.tasks").doesNotExist());
     }
 
     private ScheduleRun scheduleRun(UUID executionKey) {

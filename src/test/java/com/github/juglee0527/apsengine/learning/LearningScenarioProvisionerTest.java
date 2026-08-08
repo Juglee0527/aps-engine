@@ -65,7 +65,15 @@ class LearningScenarioProvisionerTest {
         stubIdentity(calendarRepository, WorkingCalendar.class);
         stubIdentity(productRepository, Product.class);
         stubIdentity(routingRepository, Routing.class);
-        stubIdentity(orderRepository, ProductionOrder.class);
+        when(orderRepository.saveAllAndFlush(any())).thenAnswer(invocation -> {
+            List<ProductionOrder> orders = invocation.getArgument(0);
+            orders.forEach(order -> ReflectionTestUtils.setField(
+                    order,
+                    "id",
+                    ids.getAndIncrement()
+            ));
+            return orders;
+        });
         provisioner = new LearningScenarioProvisioner(
                 factoryRepository,
                 lineRepository,
@@ -96,7 +104,7 @@ class LearningScenarioProvisionerTest {
         verify(calendarRepository, times(10)).saveAndFlush(any());
         verify(productRepository, times(2)).saveAndFlush(any());
         verify(routingRepository, times(2)).saveAndFlush(any());
-        verify(orderRepository, times(4)).saveAndFlush(any());
+        verify(orderRepository).saveAllAndFlush(any());
         verify(tracker, times(22)).track(
                 any(),
                 any(),
@@ -104,10 +112,11 @@ class LearningScenarioProvisionerTest {
         );
         verifyNoInteractions(changeoverRepository, maintenanceRepository);
 
-        ArgumentCaptor<ProductionOrder> orders =
-                ArgumentCaptor.forClass(ProductionOrder.class);
-        verify(orderRepository, times(4)).saveAndFlush(orders.capture());
-        assertThat(orders.getAllValues())
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ProductionOrder>> orders =
+                ArgumentCaptor.forClass(List.class);
+        verify(orderRepository).saveAllAndFlush(orders.capture());
+        assertThat(orders.getValue())
                 .allSatisfy(order -> {
                     assertThat(order.status())
                             .isEqualTo(ProductionOrderStatus.CONFIRMED);

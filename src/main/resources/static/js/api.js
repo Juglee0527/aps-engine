@@ -19,6 +19,9 @@ export const API = {
     planningDataPreview: "/api/v1/planning-data/imports/preview",
     planningDataImports: "/api/v1/planning-data/imports",
     latestSchedule: "/api/v1/schedules/latest",
+    latestScheduleSummary: "/api/v1/schedules/latest/summary",
+    scheduleTasks: (scheduleRunId) =>
+        `/api/v1/schedules/${scheduleRunId}/tasks`,
     bottlenecks: (scheduleRunId) =>
         `/api/v1/schedules/${scheduleRunId}/bottlenecks`,
     learningScenarios: "/api/v1/learning/scenarios",

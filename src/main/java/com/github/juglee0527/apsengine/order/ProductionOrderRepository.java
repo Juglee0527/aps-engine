@@ -22,6 +22,24 @@ public interface ProductionOrderRepository
     @EntityGraph(attributePaths = {"routing", "routing.product"})
     Page<ProductionOrder> findAllBy(Pageable pageable);
 
+    @EntityGraph(attributePaths = {"routing", "routing.product"})
+    @Query("""
+            SELECT productionOrder
+            FROM ProductionOrder productionOrder
+            JOIN productionOrder.routing routing
+            JOIN routing.product product
+            WHERE (:query IS NULL
+                   OR LOWER(productionOrder.orderNumber) LIKE CONCAT('%', :query, '%')
+                   OR LOWER(product.code) LIKE CONCAT('%', :query, '%')
+                   OR LOWER(product.name) LIKE CONCAT('%', :query, '%'))
+              AND (:status IS NULL OR productionOrder.status = :status)
+            """)
+    Page<ProductionOrder> search(
+            @Param("query") String query,
+            @Param("status") ProductionOrderStatus status,
+            Pageable pageable
+    );
+
     @EntityGraph(attributePaths = {
             "routing",
             "routing.product",

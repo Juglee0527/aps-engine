@@ -68,8 +68,13 @@ function renderGantt() {
         return;
     }
 
-    const start = new Date(schedule.planningStart).getTime();
-    const end = Math.max(new Date(schedule.schedulingEnd).getTime(), start + 3600000);
+    const start = state.scheduleTaskFilters.from
+        ? new Date(state.scheduleTaskFilters.from).getTime()
+        : new Date(schedule.planningStart).getTime();
+    const requestedEnd = state.scheduleTaskFilters.to
+        ? new Date(state.scheduleTaskFilters.to).getTime()
+        : new Date(schedule.schedulingEnd).getTime();
+    const end = Math.max(requestedEnd, start + 3600000);
     const duration = end - start;
     const chart = document.createElement("div");
     chart.className = "gantt-chart";

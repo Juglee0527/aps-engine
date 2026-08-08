@@ -43,17 +43,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function loadAll() {
     setConnection("checking");
     try {
+        const orderQuery = new URLSearchParams();
+        Object.entries(state.orderFilters).forEach(([key, value]) => {
+            if (value !== "") orderQuery.set(key, value);
+        });
         const [factoryPage, productPage, orderPage, latestSchedule, learningScenarios] =
             await Promise.all([
                 request(`${API.factories}?page=0&size=100`),
                 request(`${API.products}?page=0&size=100`),
-                request(`${API.orders}?page=0&size=100`),
-                request(API.latestSchedule, {allowNotFound: true}),
+                request(`${API.orders}?${orderQuery}`),
+                request(API.latestScheduleSummary, {allowNotFound: true}),
                 request(API.learningScenarios)
             ]);
         state.factories = factoryPage.content;
         state.products = productPage.content;
         state.orders = orderPage.content;
+        state.orderPage = orderPage;
         state.latestSchedule = latestSchedule;
         state.learningScenarios = learningScenarios;
 
@@ -75,6 +80,7 @@ async function loadAll() {
             state.products.map((product) => request(API.routings(product.id)))
         );
         state.routings = routingLists.flat();
+        await loadScheduleTasks();
         await loadSampleCalendars();
         await Promise.all([loadCapacity(), loadBottlenecks()]);
         setConnection("online");
@@ -161,7 +167,47 @@ function render() {
     renderConstraintImpact();
     renderFrozenHorizonLab();
     renderSampleOnboarding();
+    renderExplorationControls();
     populateSelects();
+}
+
+async function loadScheduleTasks() {
+    if (!state.latestSchedule) {
+        state.scheduleTaskPage = {
+            page: 0, size: 100, totalElements: 0,
+            totalPages: 0, first: true, last: true, content: []
+        };
+        return;
+    }
+    const query = new URLSearchParams();
+    Object.entries(state.scheduleTaskFilters).forEach(([key, value]) => {
+        if (value !== "") query.set(key, value);
+    });
+    const page = await request(
+        `${API.scheduleTasks(state.latestSchedule.id)}?${query}`
+    );
+    state.scheduleTaskPage = page;
+    state.latestSchedule = {...state.latestSchedule, tasks: page.content};
+}
+
+function renderExplorationControls() {
+    const machineSelect = document.querySelector("#gantt-machine-filter");
+    if (machineSelect) {
+        const selected = String(state.scheduleTaskFilters.machineId || "");
+        machineSelect.innerHTML = `<option value="">전체 설비</option>`
+            + state.machines.map((machine) => `
+                <option value="${machine.id}">${escapeHtml(machine.code)} · ${escapeHtml(machine.name)}</option>
+            `).join("");
+        machineSelect.value = selected;
+    }
+    text(
+        "#gantt-page-status",
+        `${number(state.scheduleTaskPage.totalElements || 0)}건 중 ${number(state.latestSchedule?.tasks?.length || 0)}건 표시 · ${state.scheduleTaskPage.page + 1}/${Math.max(1, state.scheduleTaskPage.totalPages)} 페이지`
+    );
+    const previous = document.querySelector("#gantt-prev-page");
+    const next = document.querySelector("#gantt-next-page");
+    if (previous) previous.disabled = state.scheduleTaskPage.first;
+    if (next) next.disabled = state.scheduleTaskPage.last;
 }
 function renderSampleOnboarding() {
     const completion = sampleCompletion();
@@ -266,7 +312,53 @@ function bindActions() {
             );
         }
     );
+    bindExplorationControls();
     bindCsvPreview();
+}
+
+function bindExplorationControls() {
+    document.querySelector("#order-filter-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        state.orderFilters = {
+            ...state.orderFilters,
+            page: 0,
+            query: String(data.get("query") || ""),
+            status: String(data.get("status") || "")
+        };
+        await loadAll();
+    });
+    document.querySelector("#order-prev-page")?.addEventListener("click", () => changeOrderPage(-1));
+    document.querySelector("#order-next-page")?.addEventListener("click", () => changeOrderPage(1));
+    document.querySelector("#gantt-filter-form")?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const data = new FormData(event.currentTarget);
+        state.scheduleTaskFilters = {
+            ...state.scheduleTaskFilters,
+            page: 0,
+            machineId: String(data.get("machineId") || ""),
+            query: String(data.get("query") || ""),
+            from: data.get("from") ? new Date(data.get("from")).toISOString() : "",
+            to: data.get("to") ? new Date(data.get("to")).toISOString() : ""
+        };
+        await loadScheduleTasks();
+        renderScheduleBoard();
+        renderExplorationControls();
+    });
+    document.querySelector("#gantt-prev-page")?.addEventListener("click", () => changeTaskPage(-1));
+    document.querySelector("#gantt-next-page")?.addEventListener("click", () => changeTaskPage(1));
+}
+
+async function changeOrderPage(delta) {
+    state.orderFilters.page = Math.max(0, state.orderFilters.page + delta);
+    await loadAll();
+}
+
+async function changeTaskPage(delta) {
+    state.scheduleTaskFilters.page = Math.max(0, state.scheduleTaskFilters.page + delta);
+    await loadScheduleTasks();
+    renderScheduleBoard();
+    renderExplorationControls();
 }
 
 async function runLearningScenario(scenarioKey) {
@@ -300,6 +392,26 @@ async function runLearningScenario(scenarioKey) {
                 block: "start"
             });
             showToast("Frozen Horizon 재계획 전후를 만들었습니다.");
+            return;
+        }
+        if (["MEDIUM_FACTORY", "PERFORMANCE"].includes(scenarioKey)) {
+            state.learningInstance = instance;
+            await submitScheduleExecution(
+                API.learningInstanceSchedules(instance.id),
+                {
+                    executionKey: crypto.randomUUID(),
+                    dispatchingRule: "EXPLICIT_PRIORITY"
+                }
+            );
+            state.learningComparison = null;
+            state.constraintImpact = null;
+            state.frozenHorizonLab = null;
+            state.scheduleTaskFilters = {
+                page: 0, size: 100, machineId: "", from: "", to: "", query: ""
+            };
+            await loadAll();
+            showView("schedule");
+            showToast(`${scenarioKey} 계획을 만들고 첫 100개 작업만 조회했습니다.`);
             return;
         }
         const [comparison, constraintImpact] = await Promise.all([

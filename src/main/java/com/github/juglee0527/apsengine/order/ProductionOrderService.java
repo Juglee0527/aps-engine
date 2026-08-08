@@ -103,6 +103,21 @@ public class ProductionOrderService {
         ));
     }
 
+    @Transactional(readOnly = true)
+    public Page<ProductionOrder> search(
+            ProductionOrderSearchParameters parameters
+    ) {
+        return productionOrderRepository.search(
+                parameters.query(),
+                parameters.status(),
+                PageRequest.of(
+                        parameters.page(),
+                        parameters.size(),
+                        Sort.by(Sort.Direction.ASC, "id")
+                )
+        );
+    }
+
     @Transactional
     public ProductionOrder confirm(long productionOrderId) {
         ProductionOrder order = getById(productionOrderId);

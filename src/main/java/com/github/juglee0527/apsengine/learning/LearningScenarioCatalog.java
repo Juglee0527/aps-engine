@@ -1,6 +1,7 @@
 package com.github.juglee0527.apsengine.learning;
 
 import java.util.Collections;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +33,8 @@ public class LearningScenarioCatalog {
         register(values, alternativeMachine());
         register(values, bottleneck());
         register(values, frozenHorizon());
+        register(values, scalableScenario("MEDIUM_FACTORY", 12, 150));
+        register(values, scalableScenario("PERFORMANCE", 20, 600));
         this.blueprints = Collections.unmodifiableMap(values);
     }
 
@@ -340,6 +343,57 @@ public class LearningScenarioCatalog {
                         order("MODULE", "FH-MOVE", 2, 0, 600, 80),
                         order("MODULE", "FH-CANCEL", 1, 0, 720, 60)
                 )
+        );
+    }
+
+    private LearningScenarioBlueprint scalableScenario(
+            String key,
+            int machineCount,
+            int orderCount
+    ) {
+        List<MachineSpec> machines = new ArrayList<>(machineCount);
+        List<ProductSpec> products = new ArrayList<>(machineCount);
+        for (int index = 1; index <= machineCount; index++) {
+            String machineCode = "M%02d".formatted(index);
+            machines.add(new MachineSpec(
+                    machineCode,
+                    "학습 설비 %02d".formatted(index)
+            ));
+            products.add(constraintProduct(
+                    "ITEM-%02d".formatted(index),
+                    "학습 품목 %02d".formatted(index),
+                    machineCode,
+                    15 + index % 6 * 10
+            ));
+        }
+        List<OrderSpec> orders = new ArrayList<>(orderCount);
+        for (int index = 1; index <= orderCount; index++) {
+            long releaseOffset = (long) (index % 10) * 30;
+            orders.add(order(
+                    "ITEM-%02d".formatted((index - 1) % machineCount + 1),
+                    "SCALE-%04d".formatted(index),
+                    1 + index % 5,
+                    releaseOffset,
+                    releaseOffset + 480L + (long) (index % 7) * 60,
+                    100 - (index - 1) % 100
+            ));
+        }
+        boolean performance = key.equals("PERFORMANCE");
+        return new LearningScenarioBlueprint(
+                key,
+                "F",
+                performance ? "600오더 성능 계획" : "150오더 계획 탐색",
+                performance
+                        ? "600개 결정론적 오더를 계산하고 요약·범위 조회 성능을 관찰합니다."
+                        : "12개 설비의 150개 오더를 검색·필터·페이지로 탐색합니다.",
+                "대량 계획은 전체 작업 렌더링보다 요약과 범위 선택이 먼저라는 원칙을 익힙니다.",
+                "전체 작업 수와 현재 화면에 조회될 작업 수의 차이를 예상해 보세요.",
+                List.of("서버 페이지", "설비·기간 필터", "조회된 작업만 간트 렌더링"),
+                "엔진은 전체 계획을 저장하지만 브라우저는 선택한 최대 100개 작업만 그립니다.",
+                "오더 검색어와 설비·기간을 바꿔 같은 실행을 여러 관점으로 탐색해 보세요.",
+                List.copyOf(machines),
+                List.copyOf(products),
+                List.copyOf(orders)
         );
     }
 

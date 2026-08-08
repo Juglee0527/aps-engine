@@ -2,7 +2,6 @@ package com.github.juglee0527.apsengine.order;
 
 import java.net.URI;
 
-import com.github.juglee0527.apsengine.common.web.PageRequestParameters;
 import com.github.juglee0527.apsengine.common.web.PageResponse;
 
 import jakarta.validation.Valid;
@@ -59,12 +58,9 @@ public class ProductionOrderController {
 
     @GetMapping
     public PageResponse<ProductionOrderResponse> getPage(
-            @Valid @ModelAttribute PageRequestParameters request
+            @Valid @ModelAttribute ProductionOrderSearchParameters request
     ) {
-        Page<ProductionOrder> page = productionOrderService.getPage(
-                request.page(),
-                request.size()
-        );
+        Page<ProductionOrder> page = productionOrderService.search(request);
         return PageResponse.from(page, ProductionOrderResponse::from);
     }
 

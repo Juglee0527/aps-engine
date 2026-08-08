@@ -87,7 +87,7 @@ class ProductionOrderControllerTest {
     @Test
     void getsProductionOrderPage() throws Exception {
         ProductionOrder order = persistedOrder();
-        when(productionOrderService.getPage(0, 20))
+        when(productionOrderService.search(any()))
                 .thenReturn(new PageImpl<>(
                         List.of(order),
                         PageRequest.of(0, 20),

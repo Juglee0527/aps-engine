@@ -138,6 +138,20 @@
                     </div>
                     <div class="legend" id="gantt-legend"></div>
                 </header>
+                <form id="gantt-filter-form" class="explorer-toolbar">
+                    <select id="gantt-machine-filter" name="machineId" aria-label="간트 설비 필터">
+                        <option value="">전체 설비</option>
+                    </select>
+                    <input name="query" type="search" placeholder="오더·공정 검색" aria-label="간트 작업 검색">
+                    <input name="from" type="datetime-local" aria-label="간트 시작 범위">
+                    <input name="to" type="datetime-local" aria-label="간트 종료 범위">
+                    <button class="ghost-button" type="submit">범위 조회</button>
+                </form>
+                <div class="explorer-pager">
+                    <span id="gantt-page-status">0건 표시</span>
+                    <button id="gantt-prev-page" class="text-button" type="button">← 이전</button>
+                    <button id="gantt-next-page" class="text-button" type="button">다음 →</button>
+                </div>
                 <div id="gantt" class="gantt" aria-live="polite"></div>
             </section>
 
@@ -191,6 +205,17 @@
                         + 생산오더 등록
                     </button>
                 </header>
+                <form id="order-filter-form" class="explorer-toolbar order-explorer-toolbar">
+                    <input name="query" type="search" placeholder="오더번호·품목 검색" aria-label="생산오더 검색">
+                    <select name="status" aria-label="생산오더 상태 필터">
+                        <option value="">전체 상태</option>
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="CONFIRMED">CONFIRMED</option>
+                        <option value="SCHEDULED">SCHEDULED</option>
+                        <option value="CANCELLED">CANCELLED</option>
+                    </select>
+                    <button class="ghost-button" type="submit">검색</button>
+                </form>
                 <div class="table-scroll">
                     <table class="wide-table">
                         <thead>
@@ -281,6 +306,11 @@
                         <strong>어디가 위험한가?</strong>
                         <p>납기 지연과 설비 부하를 보여줘 먼저 볼 문제를 좁힙니다.</p>
                     </article>
+                </div>
+                <div class="explorer-pager">
+                    <span id="order-page-status">0건</span>
+                    <button id="order-prev-page" class="text-button" type="button">← 이전</button>
+                    <button id="order-next-page" class="text-button" type="button">다음 →</button>
                 </div>
             </section>
 
@@ -383,12 +413,12 @@
                         <ul><li>Frozen Horizon</li><li>고정 작업</li><li>재스케줄링</li></ul>
                         <button type="button" class="text-button" data-guide-target="guide-scenario-labs">재계획 실습으로 이동 →</button>
                     </article>
-                    <article class="guide-course-card" data-learning-course="F">
+                    <article class="guide-course-card is-available" data-learning-course="F">
                         <span class="guide-course-index">COURSE F · SCALE</span>
                         <strong>운영과 성능 이해하기</strong>
                         <p>대량 데이터를 탐색하고 비동기 실행과 메트릭을 관찰합니다.</p>
                         <ul><li>CSV</li><li>실행 이력</li><li>성능 메트릭</li></ul>
-                        <small>057~058에서 운영 실습 제공</small>
+                        <button type="button" class="text-button" data-guide-target="guide-scenario-labs">대량 계획 실습으로 이동 →</button>
                     </article>
                 </div>
             </section>

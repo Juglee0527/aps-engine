@@ -631,7 +631,7 @@ Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 
 권장 커밋 메시지: feat: add frozen horizon learning lab
 ```
 
-### [ ] 057. 대량 시나리오와 계획 탐색
+### [x] 057. 대량 시나리오와 계획 탐색
 
 ```text
 중규모 150오더와 성능용 500~1,000오더의 결정론적 시나리오를 추가해 주세요.
