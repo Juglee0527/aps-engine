@@ -241,6 +241,36 @@ function renderExplorationControls() {
             `).join("");
         machineSelect.value = selected;
     }
+    const ganttForm = document.querySelector("#gantt-filter-form");
+    if (ganttForm) {
+        ganttForm.elements.query.value = state.scheduleTaskFilters.query;
+        ganttForm.elements.from.value = state.scheduleTaskFilters.from
+            ? toLocalInput(new Date(state.scheduleTaskFilters.from)) : "";
+        ganttForm.elements.to.value = state.scheduleTaskFilters.to
+            ? toLocalInput(new Date(state.scheduleTaskFilters.to)) : "";
+    }
+    const activeFilters = [];
+    if (state.scheduleTaskFilters.machineId) {
+        const machine = state.machines.find((item) =>
+            String(item.id) === String(state.scheduleTaskFilters.machineId));
+        activeFilters.push(`설비 · ${machine?.code || state.scheduleTaskFilters.machineId}`);
+    }
+    if (state.scheduleTaskFilters.query) {
+        activeFilters.push(`검색 · ${state.scheduleTaskFilters.query}`);
+    }
+    if (state.scheduleTaskFilters.from) {
+        activeFilters.push(`시작 · ${formatDateTime(state.scheduleTaskFilters.from)}`);
+    }
+    if (state.scheduleTaskFilters.to) {
+        activeFilters.push(`종료 · ${formatDateTime(state.scheduleTaskFilters.to)}`);
+    }
+    const filterSummary = document.querySelector("#gantt-filter-summary");
+    if (filterSummary) {
+        filterSummary.innerHTML = activeFilters.length === 0
+            ? '<span class="filter-summary-empty">전체 작업</span>'
+            : activeFilters.map((filter) =>
+                `<span>${escapeHtml(filter)}</span>`).join("");
+    }
     text(
         "#gantt-page-status",
         `${number(state.scheduleTaskPage.totalElements || 0)}건 중 ${number(state.latestSchedule?.tasks?.length || 0)}건 표시 · ${state.scheduleTaskPage.page + 1}/${Math.max(1, state.scheduleTaskPage.totalPages)} 페이지`
@@ -449,6 +479,10 @@ function bindExplorationControls() {
             query: String(data.get("query") || ""),
             from: data.get("from") ? new Date(data.get("from")).toISOString() : "",
             to: data.get("to") ? new Date(data.get("to")).toISOString() : ""
+        };
+        state.ganttView = {
+            mode: data.get("from") || data.get("to") ? "custom" : "fit",
+            offset: 0
         };
         await loadScheduleTasks();
         renderScheduleBoard();

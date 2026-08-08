@@ -13,6 +13,10 @@ const COLORS = ["#3f72d8", "#8b67e8", "#16a2b6", "#e37e35", "#397e69", "#c25477"
 const HOUR = 3_600_000;
 let selectedTaskId = null;
 
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeTaskDetail();
+});
+
 export function renderScheduleBoard() {
     renderRunSummary();
     renderReadiness();
@@ -249,14 +253,23 @@ function showTaskDetail(task, bar) {
         item.classList.toggle("is-selected", item === bar);
     });
     text("#task-detail-title", `${task.orderNumber} · ${task.operationCode}`);
+    text("#task-detail-order", task.orderNumber);
+    text(
+        "#task-detail-operation",
+        `${task.operationCode} · ${task.operationName}`
+    );
     text("#task-detail-product", `${task.productCode} · ${task.productName}`);
     text("#task-detail-machine", `${task.machineCode} · ${task.machineName}`);
     text("#task-detail-start", formatDateTime(task.startAt));
     text("#task-detail-end", formatDateTime(task.endAt));
     text("#task-detail-duration", `${number(task.workingMinutes)}분${task.changeoverMinutes > 0 ? ` · Changeover ${number(task.changeoverMinutes)}분` : ""}`);
+    const delayMinutes = Math.max(0, Math.ceil(
+        (new Date(task.endAt).getTime() - new Date(task.dueAt).getTime())
+        / 60_000
+    ));
     text("#task-detail-delay", task.delayed
-        ? `납기 ${formatDateTime(task.dueAt)} 초과`
-        : `납기 ${formatDateTime(task.dueAt)} 이내`);
+        ? `${number(delayMinutes)}분 지연 · 납기 ${formatDateTime(task.dueAt)}`
+        : `납기 내 완료 · ${formatDateTime(task.dueAt)}`);
     document.querySelector("#task-detail-delay").classList.toggle(
         "is-delayed",
         task.delayed

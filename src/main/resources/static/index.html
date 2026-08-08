@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="APS Engine 생산계획 스케줄 보드">
     <title>APS Engine · Schedule Control Tower</title>
-    <link rel="stylesheet" href="/styles.css?v=ui-r2-071">
-    <script src="/app.js?v=ui-r2-071" type="module"></script>
+    <link rel="stylesheet" href="/styles.css?v=ui-r2-072">
+    <script src="/app.js?v=ui-r2-072" type="module"></script>
 </head>
 <body>
 <div class="app-shell">
@@ -65,7 +65,7 @@
             <span>JAVA 21</span>
             <span>SPRING BOOT</span>
             <span>POSTGRESQL</span>
-            <span id="ui-version">UI R2.071</span>
+            <span id="ui-version">UI R2.072</span>
         </footer>
     </aside>
 
@@ -202,22 +202,35 @@
                     </div>
                 </header>
                 <form id="gantt-filter-form" class="explorer-toolbar">
-                    <select id="gantt-machine-filter" name="machineId" aria-label="간트 설비 필터">
-                        <option value="">전체 설비</option>
-                    </select>
-                    <input name="query" type="search" placeholder="오더·공정 검색" aria-label="간트 작업 검색">
-                    <input name="from" type="datetime-local" aria-label="간트 시작 범위">
-                    <input name="to" type="datetime-local" aria-label="간트 종료 범위">
-                    <button class="ghost-button" type="submit">범위 조회</button>
-                    <button id="gantt-reset-button" class="text-button" type="button">초기화</button>
+                    <label class="filter-field"><span>설비</span>
+                        <select id="gantt-machine-filter" name="machineId">
+                            <option value="">전체 설비</option>
+                        </select>
+                    </label>
+                    <label class="filter-field"><span>오더·공정</span>
+                        <input name="query" type="search" placeholder="검색어 입력">
+                    </label>
+                    <label class="filter-field"><span>시작 범위</span>
+                        <input name="from" type="datetime-local">
+                    </label>
+                    <label class="filter-field"><span>종료 범위</span>
+                        <input name="to" type="datetime-local">
+                    </label>
+                    <div class="filter-actions">
+                        <button class="ghost-button" type="submit">적용</button>
+                        <button id="gantt-reset-button" class="text-button" type="button">초기화</button>
+                    </div>
                 </form>
-                <div class="explorer-pager">
-                    <button id="gantt-shift-prev" class="text-button" type="button" aria-label="이전 시간 범위">← 이전 시간</button>
-                    <strong id="gantt-window-label">표시 범위 계산 중</strong>
-                    <button id="gantt-shift-next" class="text-button" type="button" aria-label="다음 시간 범위">다음 시간 →</button>
-                    <span id="gantt-page-status">0건 표시</span>
-                    <button id="gantt-prev-page" class="text-button" type="button">← 이전</button>
-                    <button id="gantt-next-page" class="text-button" type="button">다음 →</button>
+                <div class="gantt-control-status">
+                    <div id="gantt-filter-summary" class="filter-summary" aria-live="polite"></div>
+                    <div class="explorer-pager">
+                        <button id="gantt-shift-prev" class="text-button" type="button" aria-label="이전 시간 범위">← 이전 시간</button>
+                        <strong id="gantt-window-label">표시 범위 계산 중</strong>
+                        <button id="gantt-shift-next" class="text-button" type="button" aria-label="다음 시간 범위">다음 시간 →</button>
+                        <span id="gantt-page-status">0건 표시</span>
+                        <button id="gantt-prev-page" class="text-button" type="button">← 이전</button>
+                        <button id="gantt-next-page" class="text-button" type="button">다음 →</button>
+                    </div>
                 </div>
                 <div id="gantt" class="gantt" aria-live="polite"></div>
                 <aside id="gantt-task-detail" class="task-detail" hidden aria-live="polite">
@@ -229,6 +242,8 @@
                         <button id="task-detail-close" class="task-detail-close" type="button" aria-label="작업 상세 닫기">×</button>
                     </header>
                     <dl>
+                        <div><dt>생산오더</dt><dd id="task-detail-order">-</dd></div>
+                        <div><dt>공정</dt><dd id="task-detail-operation">-</dd></div>
                         <div><dt>품목</dt><dd id="task-detail-product">-</dd></div>
                         <div><dt>설비</dt><dd id="task-detail-machine">-</dd></div>
                         <div><dt>시작</dt><dd id="task-detail-start">-</dd></div>

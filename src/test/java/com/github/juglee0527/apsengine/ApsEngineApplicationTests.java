@@ -165,7 +165,7 @@ class ApsEngineApplicationTests {
                 .andExpect(status().isOk())
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
-                                "<script src=\"/app.js?v=ui-r2-071\" "
+                                "<script src=\"/app.js?v=ui-r2-072\" "
                                         + "type=\"module\">"
                         )
                 ));
@@ -253,6 +253,11 @@ class ApsEngineApplicationTests {
                 .andExpect(content().string(
                         org.hamcrest.Matchers.containsString(
                                 "id=\"gantt-task-detail\""
+                        )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"gantt-filter-summary\""
                         )
                 ))
                 .andExpect(content().string(
