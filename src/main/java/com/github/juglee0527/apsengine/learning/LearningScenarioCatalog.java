@@ -27,6 +27,10 @@ public class LearningScenarioCatalog {
         register(values, precedence());
         register(values, tardiness());
         register(values, ruleComparison());
+        register(values, changeover());
+        register(values, maintenance());
+        register(values, alternativeMachine());
+        register(values, bottleneck());
         this.blueprints = Collections.unmodifiableMap(values);
     }
 
@@ -202,6 +206,121 @@ public class LearningScenarioCatalog {
         );
     }
 
+    private LearningScenarioBlueprint changeover() {
+        return new LearningScenarioBlueprint(
+                "CHANGEOVER",
+                "D",
+                "품목 전환시간",
+                "같은 설비에서 A와 B 품목을 번갈아 만들며 방향별 준비시간을 관찰합니다.",
+                "품목 순서가 순가공시간이 같아도 완료시각을 바꾸는 이유를 이해합니다.",
+                "A→B 120분, B→A 15분일 때 어떤 전환이 간트에 길게 보일지 예상해 보세요.",
+                List.of("전환 시작 구간", "방향별 changeoverMinutes", "Makespan 증가"),
+                "이전 품목과 다음 품목 조합에 맞는 방향성 전환시간이 가공 전에 추가됩니다.",
+                "우선순위를 바꿔 같은 품목을 묶었을 때 총 준비시간이 줄어드는지 확인해 보세요.",
+                List.of(new MachineSpec("CELL", "공용 가공 셀")),
+                List.of(
+                        constraintProduct("ITEM-A", "품목 A", "CELL", 60),
+                        constraintProduct("ITEM-B", "품목 B", "CELL", 60)
+                ),
+                List.of(
+                        order("ITEM-A", "CO-A-1", 1, 0, 600, 100),
+                        order("ITEM-B", "CO-B-1", 1, 0, 720, 90),
+                        order("ITEM-A", "CO-A-2", 1, 0, 840, 80),
+                        order("ITEM-B", "CO-B-2", 1, 0, 960, 70)
+                )
+        );
+    }
+
+    private LearningScenarioBlueprint maintenance() {
+        return new LearningScenarioBlueprint(
+                "MAINTENANCE",
+                "D",
+                "계획 정비 회피",
+                "오전 10시부터 13시까지 정비가 잡힌 설비에 세 작업을 배치합니다.",
+                "설비 정비가 가용시간을 차감하고 작업을 앞뒤 근무구간으로 나누는 방식을 이해합니다.",
+                "08시에 시작한 작업들이 정비 구간을 어떻게 건너뛸지 예상해 보세요.",
+                List.of("정비와 작업 비겹침", "작업 종료시각 이동", "가용 CAPA 감소"),
+                "스케줄러는 정비 구간을 비가용시간으로 취급해 작업 시간을 정비 이후로 이어 붙입니다.",
+                "정비 종료를 1시간 늦췄을 때 마지막 작업 완료시각 변화를 확인해 보세요.",
+                List.of(new MachineSpec("PRESS", "프레스")),
+                List.of(constraintProduct("PLATE", "프레스 판", "PRESS", 90)),
+                List.of(
+                        order("PLATE", "MT-01", 1, 0, 480, 100),
+                        order("PLATE", "MT-02", 1, 0, 600, 90),
+                        order("PLATE", "MT-03", 1, 0, 720, 80)
+                )
+        );
+    }
+
+    private LearningScenarioBlueprint alternativeMachine() {
+        return new LearningScenarioBlueprint(
+                "ALTERNATIVE_MACHINE",
+                "D",
+                "대체 설비 선택",
+                "한 공정을 두 대의 후보 설비에서 처리해 가장 이른 완료 설비를 선택합니다.",
+                "후보 우선순위보다 완료 가능시각이 먼저 평가되는 방식을 이해합니다.",
+                "첫 작업이 기본 설비를 점유한 뒤 두 번째 작업이 어느 설비로 갈지 예상해 보세요.",
+                List.of("작업별 machineId", "후보 설비 분산", "Makespan 단축"),
+                "완료시각이 같으면 후보 우선순위를 따르지만, 대기 차이가 생기면 더 빨리 끝나는 설비를 고릅니다.",
+                "대체 설비 근무 시작을 늦춰 선택이 다시 기본 설비로 돌아오는지 확인해 보세요.",
+                List.of(
+                        new MachineSpec("PRIMARY", "기본 가공기"),
+                        new MachineSpec("ALT", "대체 가공기")
+                ),
+                List.of(new ProductSpec(
+                        "GEAR",
+                        "기어",
+                        List.of(new OperationSpec(
+                                1,
+                                "MILL",
+                                "밀링",
+                                180,
+                                "PRIMARY",
+                                Map.of("PRIMARY", 1, "ALT", 2)
+                        ))
+                )),
+                List.of(
+                        order("GEAR", "AM-01", 1, 0, 600, 100),
+                        order("GEAR", "AM-02", 1, 0, 720, 90),
+                        order("GEAR", "AM-03", 1, 0, 840, 80)
+                )
+        );
+    }
+
+    private LearningScenarioBlueprint bottleneck() {
+        return new LearningScenarioBlueprint(
+                "BOTTLENECK",
+                "D",
+                "병목 공정 찾기",
+                "30분 전처리와 후처리 사이에 180분 열처리를 둬 대기가 쌓이는 지점을 만듭니다.",
+                "가장 느린 공정이 전체 흐름과 설비 가동률을 지배하는 현상을 이해합니다.",
+                "세 설비 중 어느 설비 앞에 작업 대기가 누적될지 예상해 보세요.",
+                List.of("설비별 작업분", "열처리 앞 대기", "최고 가동률"),
+                "열처리의 처리시간이 전후 공정보다 길어 전체 생산율을 제한하고 병목 후보가 됩니다.",
+                "열처리 설비를 한 대 더 후보로 추가했을 때 makespan 변화를 확인해 보세요.",
+                List.of(
+                        new MachineSpec("PREP", "전처리기"),
+                        new MachineSpec("HEAT", "열처리기"),
+                        new MachineSpec("FINISH", "후처리기")
+                ),
+                List.of(new ProductSpec(
+                        "PART",
+                        "열처리 부품",
+                        List.of(
+                                new OperationSpec(1, "PREP", "전처리", 30, "PREP"),
+                                new OperationSpec(2, "HEAT", "열처리", 180, "HEAT"),
+                                new OperationSpec(3, "FINISH", "후처리", 30, "FINISH")
+                        )
+                )),
+                List.of(
+                        order("PART", "BN-01", 1, 0, 720, 100),
+                        order("PART", "BN-02", 1, 0, 900, 90),
+                        order("PART", "BN-03", 1, 0, 1_080, 80),
+                        order("PART", "BN-04", 1, 0, 1_260, 70)
+                )
+        );
+    }
+
     private ProductSpec product(
             String code,
             String name,
@@ -242,6 +361,25 @@ public class LearningScenarioCatalog {
                         "가공",
                         processingMinutes,
                         "CELL"
+                ))
+        );
+    }
+
+    private ProductSpec constraintProduct(
+            String code,
+            String name,
+            String machineCode,
+            int processingMinutes
+    ) {
+        return new ProductSpec(
+                code,
+                name,
+                List.of(new OperationSpec(
+                        1,
+                        "PROCESS",
+                        "가공",
+                        processingMinutes,
+                        machineCode
                 ))
         );
     }

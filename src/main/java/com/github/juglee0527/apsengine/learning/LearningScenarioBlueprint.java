@@ -1,6 +1,7 @@
 package com.github.juglee0527.apsengine.learning;
 
 import java.util.List;
+import java.util.Map;
 
 record LearningScenarioBlueprint(
         String key,
@@ -48,8 +49,29 @@ record LearningScenarioBlueprint(
             String code,
             String name,
             int processingMinutes,
-            String machineCode
+            String machineCode,
+            Map<String, Integer> machineCandidates
     ) {
+        OperationSpec(
+                int sequence,
+                String code,
+                String name,
+                int processingMinutes,
+                String machineCode
+        ) {
+            this(
+                    sequence,
+                    code,
+                    name,
+                    processingMinutes,
+                    machineCode,
+                    Map.of(machineCode, 1)
+            );
+        }
+
+        OperationSpec {
+            machineCandidates = Map.copyOf(machineCandidates);
+        }
     }
 
     record OrderSpec(

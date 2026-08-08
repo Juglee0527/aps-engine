@@ -12,5 +12,6 @@ export const state = {
     learningScenarios: [],
     runningLearningScenario: null,
     learningInstance: null,
-    learningComparison: null
+    learningComparison: null,
+    constraintImpact: null
 };

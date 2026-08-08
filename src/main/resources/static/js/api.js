@@ -27,7 +27,9 @@ export const API = {
     learningInstanceSchedules: (instanceId) =>
         `/api/v1/learning/instances/${instanceId}/schedules`,
     learningRuleComparison: (instanceId) =>
-        `/api/v1/learning/instances/${instanceId}/rule-comparison`
+        `/api/v1/learning/instances/${instanceId}/rule-comparison`,
+    learningConstraintImpact: (instanceId) =>
+        `/api/v1/learning/instances/${instanceId}/constraint-impact`
 };
 
 export async function request(url, options = {}) {

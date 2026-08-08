@@ -88,6 +88,42 @@ export function renderRuleComparison() {
     }).join("");
 }
 
+export function renderConstraintImpact() {
+    const section = document.querySelector("#guide-constraint-impact");
+    const container = document.querySelector("#guide-constraint-result-grid");
+    const impact = state.constraintImpact;
+    section.hidden = !impact;
+    if (!impact) {
+        container.innerHTML = "";
+        return;
+    }
+    text("#guide-constraint-explanation", impact.explanation);
+    const cards = [
+        ["제약 제거 기준", impact.withoutConstraint],
+        ["제약 적용 결과", impact.withConstraint]
+    ];
+    container.innerHTML = cards.map(([label, result], index) => {
+        const changeover = result.tasks.reduce(
+            (sum, task) => sum + (task.changeoverMinutes || 0),
+            0
+        );
+        const machines = new Set(result.tasks.map((task) => task.machineId)).size;
+        return `
+            <article class="guide-impact-card ${index === 1 ? "is-applied" : ""}">
+                <span>${escapeHtml(label)}</span>
+                <strong>${escapeHtml(impact.scenarioKey)}</strong>
+                <dl>
+                    <div><dt>Makespan</dt><dd>${result.makespanMinutes}분</dd></div>
+                    <div><dt>총 지연</dt><dd>${result.totalTardinessMinutes}분</dd></div>
+                    <div><dt>전환시간</dt><dd>${changeover}분</dd></div>
+                    <div><dt>사용 설비</dt><dd>${machines}대</dd></div>
+                </dl>
+                <p>${result.orderSequence.map(escapeHtml).join(" → ")}</p>
+            </article>
+        `;
+    }).join("");
+}
+
 export function renderSampleOnboarding({
     completion,
     runningSampleStep,

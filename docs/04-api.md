@@ -843,6 +843,10 @@ GET /api/v1/learning/scenarios
 | `PRECEDENCE` | 가공→검사→포장 선후관계 | 3설비·1품목·2오더 |
 | `TARDINESS` | 지연 오더와 지연시간 KPI | 1설비·2품목·4오더 |
 | `RULE_COMPARISON` | Priority·EDD·SPT 순서와 KPI 비교 | 1설비·3품목·6오더 |
+| `CHANGEOVER` | 방향별 품목 전환 준비시간 | 1설비·2품목·4오더 |
+| `MAINTENANCE` | 정비 비가용시간 회피 | 1설비·1품목·3오더 |
+| `ALTERNATIVE_MACHINE` | 가장 이른 완료 후보 설비 선택 | 2설비·1품목·3오더 |
+| `BOTTLENECK` | 느린 중간 공정의 부하 누적 | 3설비·1품목·4오더 |
 
 ### 20.2 실습 인스턴스 생성
 
@@ -926,3 +930,16 @@ GET /api/v1/learning/instances/{instanceId}/rule-comparison
 세 결과는 같은 오더 스냅샷을 사용하며 조회만으로 ScheduleRun이나 오더 상태를 변경하지 않습니다.
 완전 동률은 `EXPLICIT_PRIORITY`, `EDD`, `SPT` 순으로 결정합니다. 비교 후 확정할 때만 20.4 API에
 선택한 `dispatchingRule`을 보내 기존 비동기 실행 경로를 사용합니다.
+
+### 20.6 제조 제약 적용 전후 비교
+
+```http
+GET /api/v1/learning/instances/{instanceId}/constraint-impact
+```
+
+응답은 `scenarioKey`, `withoutConstraint`, `withConstraint`, `explanation`을 반환합니다. 두 결과는
+20.5의 규칙별 결과와 같은 KPI·작업 순서·작업 목록 구조입니다. 기준 결과에서는 Changeover,
+Maintenance와 대체 설비 후보를 제거하고, 적용 결과에서는 인스턴스가 생성한 제약을 사용합니다.
+`CHANGEOVER`는 방향별 준비시간, `MAINTENANCE`는 비가용 구간 이후 완료시각, `ALTERNATIVE_MACHINE`은
+선택 설비 수, `BOTTLENECK`은 설비별 작업분 차이를 중점적으로 비교합니다. 조회만으로 ScheduleRun과
+오더 상태는 바뀌지 않습니다.

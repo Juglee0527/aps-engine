@@ -195,6 +195,110 @@ public class ScheduleRunService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public ConstraintImpactResponse compareConstraintImpact(
+            String scenarioKey,
+            OffsetDateTime planningStart,
+            List<Long> productionOrderIds
+    ) {
+        List<ProductionOrder> orders = findPlanningOrders(
+                productionOrderIds
+        );
+        SchedulingContext constrained = createContext(orders, planningStart);
+        ScheduleCalculation withoutConstraint = calculateSchedule(
+                planningStart,
+                DispatchingRule.EXPLICIT_PRIORITY,
+                withoutManufacturingConstraints(constrained),
+                FrozenScheduleSeed.empty()
+        );
+        ScheduleCalculation withConstraint = calculateSchedule(
+                planningStart,
+                DispatchingRule.EXPLICIT_PRIORITY,
+                constrained,
+                FrozenScheduleSeed.empty()
+        );
+        return new ConstraintImpactResponse(
+                scenarioKey,
+                comparisonResult(
+                        DispatchingRule.EXPLICIT_PRIORITY,
+                        withoutConstraint
+                ),
+                comparisonResult(
+                        DispatchingRule.EXPLICIT_PRIORITY,
+                        withConstraint
+                ),
+                "전환시간, 정비 비가용시간, 대체 설비 후보를 제거한 기준 계획과 "
+                        + "제약을 적용한 계획을 비교했습니다."
+        );
+    }
+
+    private SchedulingContext withoutManufacturingConstraints(
+            SchedulingContext context
+    ) {
+        List<SchedulingOrderInput> inputs = context.inputs().stream()
+                .map(order -> new SchedulingOrderInput(
+                        order.orderId(),
+                        order.orderNumber(),
+                        order.productId(),
+                        order.quantity(),
+                        order.releaseAt(),
+                        order.dueAt(),
+                        order.priority(),
+                        order.operations().stream()
+                                .map(this::withoutOperationConstraints)
+                                .toList()
+                ))
+                .toList();
+        Map<Long, SchedulingMachineCandidateInput> primaryCapacity =
+                new LinkedHashMap<>();
+        inputs.stream()
+                .flatMap(order -> order.operations().stream())
+                .flatMap(operation ->
+                        operation.machineCandidates().stream())
+                .forEach(candidate -> primaryCapacity.putIfAbsent(
+                        candidate.machineId(),
+                        candidate
+                ));
+        return new SchedulingContext(
+                inputs,
+                List.of(),
+                List.copyOf(primaryCapacity.values()),
+                context.ordersById(),
+                context.operationsById(),
+                context.machinesById()
+        );
+    }
+
+    private SchedulingOperationInput withoutOperationConstraints(
+            SchedulingOperationInput operation
+    ) {
+        SchedulingMachineCandidateInput primary = operation
+                .machineCandidates()
+                .stream()
+                .filter(candidate -> candidate.machineId()
+                        == operation.machineId())
+                .findFirst()
+                .orElseThrow();
+        SchedulingMachineCandidateInput baselineCandidate =
+                new SchedulingMachineCandidateInput(
+                        primary.machineId(),
+                        primary.priority(),
+                        primary.workingTimes(),
+                        List.of()
+                );
+        return new SchedulingOperationInput(
+                operation.operationId(),
+                operation.machineId(),
+                operation.sequence(),
+                operation.operationCode(),
+                operation.operationName(),
+                operation.processingTimeMinutesPerUnit(),
+                operation.workingTimes(),
+                List.of(),
+                List.of(baselineCandidate)
+        );
+    }
+
     private DispatchingRuleComparisonResult comparisonResult(
             DispatchingRule rule,
             ScheduleCalculation calculation

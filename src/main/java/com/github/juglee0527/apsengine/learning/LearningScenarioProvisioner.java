@@ -7,6 +7,10 @@ import java.util.Map;
 
 import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
@@ -37,6 +41,8 @@ class LearningScenarioProvisioner {
     private final ProductRepository productRepository;
     private final RoutingRepository routingRepository;
     private final ProductionOrderRepository orderRepository;
+    private final ChangeoverTimeRepository changeoverRepository;
+    private final MachineMaintenanceRepository maintenanceRepository;
     private final LearningScenarioEntityTracker tracker;
 
     LearningScenarioProvisioner(
@@ -47,6 +53,8 @@ class LearningScenarioProvisioner {
             ProductRepository productRepository,
             RoutingRepository routingRepository,
             ProductionOrderRepository orderRepository,
+            ChangeoverTimeRepository changeoverRepository,
+            MachineMaintenanceRepository maintenanceRepository,
             LearningScenarioEntityTracker tracker
     ) {
         this.factoryRepository = factoryRepository;
@@ -56,6 +64,8 @@ class LearningScenarioProvisioner {
         this.productRepository = productRepository;
         this.routingRepository = routingRepository;
         this.orderRepository = orderRepository;
+        this.changeoverRepository = changeoverRepository;
+        this.maintenanceRepository = maintenanceRepository;
         this.tracker = tracker;
     }
 
@@ -93,6 +103,7 @@ class LearningScenarioProvisioner {
                 blueprint,
                 machines
         );
+        createConstraints(instance, blueprint, machines, routings);
         createOrders(instance, blueprint, routings);
     }
 
@@ -166,12 +177,19 @@ class LearningScenarioProvisioner {
                     spec.name() + " 표준 공정"
             );
             for (OperationSpec operation : spec.operations()) {
+                Map<Machine, Integer> candidates = new LinkedHashMap<>();
+                operation.machineCandidates().forEach((code, priority) ->
+                        candidates.put(
+                                requiredMachine(machines, code),
+                                priority
+                        ));
                 routing.addOperation(
                         operation.sequence(),
                         operation.code(),
                         operation.name(),
                         operation.processingMinutes(),
-                        requiredMachine(machines, operation.machineCode())
+                        requiredMachine(machines, operation.machineCode()),
+                        candidates
                 );
             }
             routing = routingRepository.saveAndFlush(routing);
@@ -183,6 +201,70 @@ class LearningScenarioProvisioner {
             );
         }
         return routings;
+    }
+
+    private void createConstraints(
+            LearningScenarioInstance instance,
+            LearningScenarioBlueprint blueprint,
+            Map<String, Machine> machines,
+            Map<String, Routing> routings
+    ) {
+        if (blueprint.key().equals("CHANGEOVER")) {
+            Product itemA = requiredRouting(routings, "ITEM-A").product();
+            Product itemB = requiredRouting(routings, "ITEM-B").product();
+            createChangeover(
+                    instance,
+                    requiredMachine(machines, "CELL"),
+                    itemA,
+                    itemB,
+                    120
+            );
+            createChangeover(
+                    instance,
+                    requiredMachine(machines, "CELL"),
+                    itemB,
+                    itemA,
+                    15
+            );
+        }
+        if (blueprint.key().equals("MAINTENANCE")) {
+            MachineMaintenance maintenance =
+                    maintenanceRepository.saveAndFlush(
+                            MachineMaintenance.create(
+                                    requiredMachine(machines, "PRESS"),
+                                    instance.planningStart().plusHours(2),
+                                    instance.planningStart().plusHours(5),
+                                    "APS 학습용 계획 정비"
+                            )
+                    );
+            track(
+                    instance,
+                    LearningScenarioEntityType.MAINTENANCE,
+                    maintenance.id()
+            );
+        }
+    }
+
+    private void createChangeover(
+            LearningScenarioInstance instance,
+            Machine machine,
+            Product fromProduct,
+            Product toProduct,
+            int minutes
+    ) {
+        ChangeoverTime changeover = changeoverRepository.saveAndFlush(
+                ChangeoverTime.create(
+                        machine,
+                        fromProduct,
+                        toProduct,
+                        minutes
+                )
+        );
+        track(
+                instance,
+                LearningScenarioEntityType.CHANGEOVER_TIME,
+                changeover.id()
+        );
     }
 
     private void createOrders(

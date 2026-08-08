@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.OffsetDateTime;
@@ -13,6 +14,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.github.juglee0527.apsengine.capacity.WorkingCalendar;
 import com.github.juglee0527.apsengine.capacity.WorkingCalendarRepository;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTimeRepository;
+import com.github.juglee0527.apsengine.constraint.changeover.ChangeoverTime;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenanceRepository;
+import com.github.juglee0527.apsengine.constraint.maintenance.MachineMaintenance;
 import com.github.juglee0527.apsengine.factory.Factory;
 import com.github.juglee0527.apsengine.factory.FactoryRepository;
 import com.github.juglee0527.apsengine.factory.line.ProductionLine;
@@ -45,6 +50,8 @@ class LearningScenarioProvisionerTest {
     @Mock ProductRepository productRepository;
     @Mock RoutingRepository routingRepository;
     @Mock ProductionOrderRepository orderRepository;
+    @Mock ChangeoverTimeRepository changeoverRepository;
+    @Mock MachineMaintenanceRepository maintenanceRepository;
     @Mock LearningScenarioEntityTracker tracker;
 
     private LearningScenarioProvisioner provisioner;
@@ -67,6 +74,8 @@ class LearningScenarioProvisionerTest {
                 productRepository,
                 routingRepository,
                 orderRepository,
+                changeoverRepository,
+                maintenanceRepository,
                 tracker
         );
     }
@@ -93,6 +102,7 @@ class LearningScenarioProvisionerTest {
                 any(),
                 org.mockito.ArgumentMatchers.anyLong()
         );
+        verifyNoInteractions(changeoverRepository, maintenanceRepository);
 
         ArgumentCaptor<ProductionOrder> orders =
                 ArgumentCaptor.forClass(ProductionOrder.class);
@@ -105,6 +115,53 @@ class LearningScenarioProvisionerTest {
                             .startsWith(instance.namespace());
                     assertThat(order.dueAt()).isAfter(order.releaseAt());
                 });
+    }
+
+    @Test
+    void provisionsDirectionalChangeoverConstraints() {
+        stubIdentity(changeoverRepository, ChangeoverTime.class);
+        LearningScenarioInstance instance = scenarioInstance("CHANGEOVER");
+
+        provisioner.provision(
+                instance,
+                new LearningScenarioCatalog().blueprint("CHANGEOVER")
+        );
+
+        ArgumentCaptor<ChangeoverTime> values =
+                ArgumentCaptor.forClass(ChangeoverTime.class);
+        verify(changeoverRepository, times(2))
+                .saveAndFlush(values.capture());
+        assertThat(values.getAllValues())
+                .extracting(ChangeoverTime::changeoverMinutes)
+                .containsExactly(120, 15);
+    }
+
+    @Test
+    void provisionsMaintenanceRelativeToPlanningStart() {
+        stubIdentity(maintenanceRepository, MachineMaintenance.class);
+        LearningScenarioInstance instance = scenarioInstance("MAINTENANCE");
+
+        provisioner.provision(
+                instance,
+                new LearningScenarioCatalog().blueprint("MAINTENANCE")
+        );
+
+        ArgumentCaptor<MachineMaintenance> value =
+                ArgumentCaptor.forClass(MachineMaintenance.class);
+        verify(maintenanceRepository).saveAndFlush(value.capture());
+        assertThat(value.getValue().startAt())
+                .isEqualTo(instance.planningStart().plusHours(2));
+        assertThat(value.getValue().endAt())
+                .isEqualTo(instance.planningStart().plusHours(5));
+    }
+
+    private LearningScenarioInstance scenarioInstance(String key) {
+        return LearningScenarioInstance.create(
+                UUID.randomUUID(),
+                key,
+                OffsetDateTime.parse("2026-08-10T08:00:00+09:00"),
+                OffsetDateTime.parse("2026-08-08T10:00:00+09:00")
+        );
     }
 
     private <T> void stubIdentity(

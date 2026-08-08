@@ -122,6 +122,11 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "id=\"guide-rule-comparison\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "id=\"guide-constraint-impact\""
+                        )
                 ));
     }
 

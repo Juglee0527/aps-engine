@@ -3,6 +3,7 @@ import {SAMPLE_DATA, SAMPLE_STEP_KEYS} from "./js/guide-data.js";
 import {
     renderGuideStatus,
     renderLearningScenarios,
+    renderConstraintImpact,
     renderRuleComparison,
     renderSampleOnboarding as renderGuideOnboarding
 } from "./js/guide.js";
@@ -156,6 +157,7 @@ function render() {
     renderGuideStatus();
     renderLearningScenarios();
     renderRuleComparison();
+    renderConstraintImpact();
     renderSampleOnboarding();
     populateSelects();
 }
@@ -277,12 +279,15 @@ async function runLearningScenario(scenarioKey) {
                 body: JSON.stringify({requestKey: crypto.randomUUID()})
             }
         );
-        const comparison = await request(
-            API.learningRuleComparison(instance.id)
-        );
+        const [comparison, constraintImpact] = await Promise.all([
+            request(API.learningRuleComparison(instance.id)),
+            request(API.learningConstraintImpact(instance.id))
+        ]);
         state.learningInstance = instance;
         state.learningComparison = comparison;
+        state.constraintImpact = constraintImpact;
         renderRuleComparison();
+        renderConstraintImpact();
         document.querySelector("#guide-rule-comparison").scrollIntoView({
             behavior: "smooth",
             block: "start"

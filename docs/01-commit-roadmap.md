@@ -613,7 +613,7 @@ README와 로드맵에서 048~059의 범위와 현재 상태를 추적할 수 �
 권장 커밋 메시지: feat: add dispatching rule comparison lab
 ```
 
-### [ ] 055. 제조 제약 학습 시나리오
+### [x] 055. 제조 제약 학습 시나리오
 
 ```text
 Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 시나리오와 결과 해설을 구현해 주세요.

@@ -7,6 +7,7 @@ import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionResponse;
 import com.github.juglee0527.apsengine.scheduling.ScheduleExecutionService;
 import com.github.juglee0527.apsengine.scheduling.DispatchingRuleComparisonResponse;
 import com.github.juglee0527.apsengine.scheduling.ScheduleRunService;
+import com.github.juglee0527.apsengine.scheduling.ConstraintImpactResponse;
 
 import jakarta.validation.Valid;
 
@@ -96,6 +97,18 @@ public class LearningScenarioController {
     ) {
         LearningScenarioPlanScope scope = service.planScope(instanceId);
         return scheduleRunService.compareDispatchingRules(
+                scope.planningStart(),
+                scope.productionOrderIds()
+        );
+    }
+
+    @GetMapping("/instances/{instanceId}/constraint-impact")
+    public ConstraintImpactResponse compareConstraintImpact(
+            @PathVariable long instanceId
+    ) {
+        LearningScenarioPlanScope scope = service.planScope(instanceId);
+        return scheduleRunService.compareConstraintImpact(
+                scope.instance().scenarioKey(),
                 scope.planningStart(),
                 scope.productionOrderIds()
         );

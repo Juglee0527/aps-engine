@@ -35,7 +35,11 @@ class LearningScenarioCatalogTest {
                         "FINITE_CAPACITY",
                         "PRECEDENCE",
                         "TARDINESS",
-                        "RULE_COMPARISON"
+                        "RULE_COMPARISON",
+                        "CHANGEOVER",
+                        "MAINTENANCE",
+                        "ALTERNATIVE_MACHINE",
+                        "BOTTLENECK"
                 );
         assertThat(catalog.findAll())
                 .allSatisfy(definition -> {
