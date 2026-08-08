@@ -377,6 +377,25 @@ function bindExplorationControls() {
     });
     document.querySelector("#order-prev-page")?.addEventListener("click", () => changeOrderPage(-1));
     document.querySelector("#order-next-page")?.addEventListener("click", () => changeOrderPage(1));
+    document.querySelector("#order-reset-button")?.addEventListener("click", async () => {
+        state.orderFilters = {
+            ...state.orderFilters,
+            page: 0,
+            query: "",
+            status: ""
+        };
+        document.querySelector("#order-filter-form")?.reset();
+        await loadAll();
+    });
+    document.querySelector("#orders-view")?.addEventListener("click", (event) => {
+        const action = event.target.closest("[data-order-empty-action]")
+                ?.dataset.orderEmptyAction;
+        if (action === "reset") {
+            document.querySelector("#order-reset-button")?.click();
+        } else if (action === "master") {
+            showView("master");
+        }
+    });
     document.querySelector("#gantt-filter-form")?.addEventListener("submit", async (event) => {
         event.preventDefault();
         const data = new FormData(event.currentTarget);

@@ -275,6 +275,7 @@
                         <option value="CANCELLED">CANCELLED</option>
                     </select>
                     <button class="ghost-button" type="submit">검색</button>
+                    <button id="order-reset-button" class="text-button" type="button">초기화</button>
                 </form>
                 <div class="table-scroll">
                     <table class="wide-table">
@@ -293,6 +294,14 @@
                         <tbody id="order-table-body"></tbody>
                     </table>
                 </div>
+                <footer class="list-footer">
+                    <div id="order-filter-summary" class="filter-summary" aria-live="polite"></div>
+                    <div class="explorer-pager">
+                        <span id="order-page-status">0건</span>
+                        <button id="order-prev-page" class="text-button" type="button">← 이전</button>
+                        <button id="order-next-page" class="text-button" type="button">다음 →</button>
+                    </div>
+                </footer>
             </section>
         </section>
 
@@ -304,11 +313,17 @@
                     <p>스케줄 계산에 직접 사용되는 자원, 품목, 공정, 근무시간입니다.</p>
                 </div>
                 <div class="master-actions">
-                    <button class="ghost-button" data-open-dialog="factory-dialog">+ 공장</button>
-                    <button class="ghost-button" data-open-dialog="line-dialog">+ 라인</button>
-                    <button class="ghost-button" data-open-dialog="machine-dialog">+ 설비</button>
-                    <button class="ghost-button" data-open-dialog="product-dialog">+ 품목</button>
-                    <button class="primary-button" data-open-dialog="routing-dialog">+ Routing</button>
+                    <div class="master-action-group">
+                        <span>생산 자원</span>
+                        <button class="ghost-button" data-open-dialog="factory-dialog">+ 공장</button>
+                        <button class="ghost-button" data-open-dialog="line-dialog">+ 라인</button>
+                        <button class="ghost-button" data-open-dialog="machine-dialog">+ 설비</button>
+                    </div>
+                    <div class="master-action-group">
+                        <span>제품과 공정</span>
+                        <button class="ghost-button" data-open-dialog="product-dialog">+ 품목</button>
+                        <button class="primary-button" data-open-dialog="routing-dialog">+ Routing</button>
+                    </div>
                 </div>
             </div>
 
@@ -366,11 +381,6 @@
                         <strong>어디가 위험한가?</strong>
                         <p>납기 지연과 설비 부하를 보여줘 먼저 볼 문제를 좁힙니다.</p>
                     </article>
-                </div>
-                <div class="explorer-pager">
-                    <span id="order-page-status">0건</span>
-                    <button id="order-prev-page" class="text-button" type="button">← 이전</button>
-                    <button id="order-next-page" class="text-button" type="button">다음 →</button>
                 </div>
             </section>
 
@@ -872,6 +882,7 @@
 <dialog id="factory-dialog" class="modal">
     <form id="factory-form">
         <header><div><span class="section-label">FACILITY</span><h2>공장 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">생산 자원과 라인이 속할 최상위 계획 단위입니다.</p>
         <label>공장 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="FACTORY-01" required></label>
         <label>공장 이름<input name="name" placeholder="서울 공장" required></label>
         <div class="modal-actions"><button type="button" class="ghost-button modal-cancel">취소</button><button type="submit" class="primary-button">등록</button></div>
@@ -881,6 +892,7 @@
 <dialog id="line-dialog" class="modal">
     <form id="line-form">
         <header><div><span class="section-label">FACILITY</span><h2>생산라인 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">공장 안에서 설비를 묶어 관리할 생산 흐름 단위입니다.</p>
         <label>공장<select name="factoryId" id="line-factory-select" required></select></label>
         <label>라인 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="LINE-01" required></label>
         <label>라인 이름<input name="name" placeholder="조립 라인" required></label>
@@ -891,6 +903,7 @@
 <dialog id="machine-dialog" class="modal">
     <form id="machine-form">
         <header><div><span class="section-label">FACILITY</span><h2>설비 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">공정을 실제로 수행하며 유한 CAPA가 적용되는 자원입니다.</p>
         <label>생산라인<select name="productionLineId" id="machine-line-select" required></select></label>
         <label>설비 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="CUTTER-01" required></label>
         <label>설비 이름<input name="name" placeholder="절단 설비" required></label>
@@ -902,6 +915,7 @@
 <dialog id="product-dialog" class="modal">
     <form id="product-form">
         <header><div><span class="section-label">PRODUCT</span><h2>품목 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">생산오더가 요구하는 최종 품목과 수량 단위를 정의합니다.</p>
         <label>품목 코드<input name="code" pattern="[A-Za-z0-9][A-Za-z0-9_-]*" placeholder="PANEL-01" required></label>
         <label>품목 이름<input name="name" placeholder="스마트 제어 패널" required></label>
         <label>단위<select name="unit"><option value="PIECE">PIECE</option><option value="KILOGRAM">KILOGRAM</option><option value="METER">METER</option></select></label>
@@ -912,6 +926,7 @@
 <dialog id="routing-dialog" class="modal modal-wide">
     <form id="routing-form">
         <header><div><span class="section-label">PROCESS</span><h2>Routing 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">품목을 만들기 위한 공정 순서, 표준 가공시간과 기본 설비를 정의합니다.</p>
         <div class="form-grid">
             <label>품목<select name="productId" id="routing-product-select" required></select></label>
             <label>Routing 코드<input name="code" placeholder="ROUTING-STD" required></label>
@@ -926,6 +941,7 @@
 <dialog id="order-dialog" class="modal">
     <form id="order-form">
         <header><div><span class="section-label">ORDER</span><h2>생산오더 등록</h2></div><button type="button" class="modal-close">×</button></header>
+        <p class="modal-copy">투입 가능시각, 납기와 우선순위를 가진 실제 계획 수요를 등록합니다.</p>
         <label>오더번호<input name="orderNumber" placeholder="PO-2026-001" required></label>
         <label>Routing<select name="routingId" id="order-routing-select" required></select></label>
         <div class="form-grid two">

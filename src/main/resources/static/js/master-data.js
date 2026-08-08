@@ -8,7 +8,7 @@ export function renderMasterData() {
     products.replaceChildren();
 
     if (state.factories.length === 0) {
-        facilities.innerHTML = `<div class="table-empty">공장과 생산 자원을 등록해 주세요.</div>`;
+        facilities.innerHTML = `<div class="empty-state compact"><strong>생산 자원부터 구성하세요</strong><p>공장 → 라인 → 설비 → 근무시간 순서로 등록합니다.</p></div>`;
     }
     for (const factory of state.factories) {
         const group = document.createElement("article");
@@ -28,7 +28,7 @@ export function renderMasterData() {
     }
 
     if (state.products.length === 0) {
-        products.innerHTML = `<div class="table-empty">품목과 Routing을 등록해 주세요.</div>`;
+        products.innerHTML = `<div class="empty-state compact"><strong>제품과 공정을 구성하세요</strong><p>품목을 등록한 뒤 Routing에 공정과 설비를 연결합니다.</p></div>`;
     }
     for (const product of state.products) {
         const group = document.createElement("article");
