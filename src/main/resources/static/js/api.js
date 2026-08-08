@@ -29,7 +29,9 @@ export const API = {
     learningRuleComparison: (instanceId) =>
         `/api/v1/learning/instances/${instanceId}/rule-comparison`,
     learningConstraintImpact: (instanceId) =>
-        `/api/v1/learning/instances/${instanceId}/constraint-impact`
+        `/api/v1/learning/instances/${instanceId}/constraint-impact`,
+    learningFrozenHorizon: (instanceId) =>
+        `/api/v1/learning/instances/${instanceId}/frozen-horizon`
 };
 
 export async function request(url, options = {}) {

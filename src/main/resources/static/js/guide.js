@@ -124,6 +124,76 @@ export function renderConstraintImpact() {
     }).join("");
 }
 
+export function renderFrozenHorizonLab() {
+    const section = document.querySelector("#guide-frozen-horizon");
+    const summary = document.querySelector("#guide-frozen-summary");
+    const changes = document.querySelector("#guide-frozen-change-list");
+    const lab = state.frozenHorizonLab;
+    section.hidden = !lab;
+    if (!lab) {
+        summary.innerHTML = "";
+        changes.innerHTML = "";
+        return;
+    }
+    text("#guide-frozen-explanation", lab.explanation);
+    text("#guide-frozen-at", formatLabTime(lab.frozenAt));
+    text(
+        "#guide-maintenance-window",
+        `${formatLabTime(lab.maintenanceStartAt)} ~ ${formatLabTime(lab.maintenanceEndAt)}`
+    );
+    const cards = [
+        ["기준 계획", lab.baseline],
+        ["Frozen Horizon 재계획", lab.rescheduled]
+    ];
+    summary.innerHTML = cards.map(([label, run], index) => `
+        <article class="guide-frozen-kpi ${index === 1 ? "is-rescheduled" : ""}">
+            <span>${escapeHtml(label)} · RUN #${run.id}</span>
+            <strong>${escapeHtml(run.dispatchingRule)}</strong>
+            <dl>
+                <div><dt>Makespan</dt><dd>${run.makespanMinutes}분</dd></div>
+                <div><dt>총 지연</dt><dd>${run.totalTardinessMinutes}분</dd></div>
+                <div><dt>지연 오더</dt><dd>${run.delayedOrderCount}건</dd></div>
+                <div><dt>작업</dt><dd>${run.taskCount}건</dd></div>
+            </dl>
+        </article>
+    `).join("");
+    const labels = {
+        FIXED: "고정",
+        MOVED: "이동",
+        EXCLUDED: "제외",
+        NEW: "신규"
+    };
+    changes.innerHTML = lab.changes.map((change) => `
+        <li class="is-${change.classification.toLowerCase()}">
+            <span>${escapeHtml(labels[change.classification] || change.classification)}</span>
+            <strong>${escapeHtml(change.orderNumber)}</strong>
+            <small>${escapeHtml(change.reason)}</small>
+            <code>${escapeHtml(formatChangeTime(change))}</code>
+        </li>
+    `).join("");
+}
+
+function formatChangeTime(change) {
+    const before = change.beforeStartAt
+        ? `${formatLabTime(change.beforeStartAt)}~${formatLabTime(change.beforeEndAt)}`
+        : "없음";
+    const after = change.afterStartAt
+        ? `${formatLabTime(change.afterStartAt)}~${formatLabTime(change.afterEndAt)}`
+        : "없음";
+    return `${before} → ${after}`;
+}
+
+function formatLabTime(value) {
+    if (!value) return "-";
+    return new Date(value).toLocaleString("ko-KR", {
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+    });
+}
+
 export function renderSampleOnboarding({
     completion,
     runningSampleStep,

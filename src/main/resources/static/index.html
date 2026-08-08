@@ -376,12 +376,12 @@
                         <ul><li>Changeover</li><li>Maintenance</li><li>병목</li></ul>
                         <button type="button" class="text-button" data-guide-target="guide-scenario-labs">제약 실습으로 이동 →</button>
                     </article>
-                    <article class="guide-course-card" data-learning-course="E">
+                    <article class="guide-course-card is-available" data-learning-course="E">
                         <span class="guide-course-index">COURSE E · CHANGE</span>
                         <strong>계획 변경 대응하기</strong>
                         <p>긴급오더가 들어왔을 때 기존 작업을 보호하며 다시 계획합니다.</p>
                         <ul><li>Frozen Horizon</li><li>고정 작업</li><li>재스케줄링</li></ul>
-                        <small>056에서 재계획 실습 제공</small>
+                        <button type="button" class="text-button" data-guide-target="guide-scenario-labs">재계획 실습으로 이동 →</button>
                     </article>
                     <article class="guide-course-card" data-learning-course="F">
                         <span class="guide-course-index">COURSE F · SCALE</span>
@@ -512,6 +512,22 @@
                     <p id="guide-constraint-explanation"></p>
                 </header>
                 <div id="guide-constraint-result-grid" class="guide-impact-grid" aria-live="polite"></div>
+            </section>
+
+            <section id="guide-frozen-horizon" class="guide-section" hidden>
+                <header class="guide-section-heading">
+                    <div>
+                        <span class="section-label">FROZEN HORIZON LAB</span>
+                        <h2>계획 안정성을 지키며 긴급 변경 반영하기</h2>
+                    </div>
+                    <p id="guide-frozen-explanation"></p>
+                </header>
+                <div class="guide-frozen-boundary">
+                    <span>동결 기준 <strong id="guide-frozen-at">-</strong></span>
+                    <span>계획 정비 <strong id="guide-maintenance-window">-</strong></span>
+                </div>
+                <div id="guide-frozen-summary" class="guide-impact-grid" aria-live="polite"></div>
+                <ol id="guide-frozen-change-list" class="guide-frozen-change-list" aria-live="polite"></ol>
             </section>
 
             <section id="guide-onboarding" class="panel guide-section guide-onboarding">

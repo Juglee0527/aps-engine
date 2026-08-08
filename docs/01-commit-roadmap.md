@@ -622,7 +622,7 @@ Changeover, Maintenance, 대체 설비와 병목을 각각 관찰할 수 있는 
 권장 커밋 메시지: feat: add manufacturing constraint labs
 ```
 
-### [ ] 056. Frozen Horizon 학습 시나리오
+### [x] 056. Frozen Horizon 학습 시나리오
 
 ```text
 기준 계획에 긴급오더와 정비 이벤트를 추가하고 Frozen Horizon으로 재스케줄링하는 실습을 구현해 주세요.

@@ -31,6 +31,7 @@ public class LearningScenarioCatalog {
         register(values, maintenance());
         register(values, alternativeMachine());
         register(values, bottleneck());
+        register(values, frozenHorizon());
         this.blueprints = Collections.unmodifiableMap(values);
     }
 
@@ -317,6 +318,27 @@ public class LearningScenarioCatalog {
                         order("PART", "BN-02", 1, 0, 900, 90),
                         order("PART", "BN-03", 1, 0, 1_080, 80),
                         order("PART", "BN-04", 1, 0, 1_260, 70)
+                )
+        );
+    }
+
+    private LearningScenarioBlueprint frozenHorizon() {
+        return new LearningScenarioBlueprint(
+                "FROZEN_HORIZON",
+                "E",
+                "긴급오더와 Frozen Horizon",
+                "기준 계획에 긴급오더·정비·취소를 반영하되 이미 시작한 작업은 보호합니다.",
+                "계획 안정성과 긴급 대응 사이에서 Frozen Horizon이 하는 역할을 이해합니다.",
+                "10시 동결 경계를 걸친 작업과 그 뒤의 작업이 각각 어떻게 처리될지 예상해 보세요.",
+                List.of("경계와 겹친 고정 작업", "이동·제외·신규 작업", "재계획 전후 KPI"),
+                "경계 전에 시작한 작업은 끝날 때까지 고정되고, 이후 작업만 정비와 긴급오더를 반영해 다시 배치됩니다.",
+                "동결 기준을 1시간 앞뒤로 옮겼을 때 고정되는 작업 수와 납기 성과를 비교해 보세요.",
+                List.of(new MachineSpec("CELL", "긴급 대응 셀")),
+                List.of(constraintProduct("MODULE", "긴급 대응 모듈", "CELL", 60)),
+                List.of(
+                        order("MODULE", "FH-KEEP", 3, 0, 420, 100),
+                        order("MODULE", "FH-MOVE", 2, 0, 600, 80),
+                        order("MODULE", "FH-CANCEL", 1, 0, 720, 60)
                 )
         );
     }

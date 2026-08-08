@@ -39,7 +39,8 @@ class LearningScenarioCatalogTest {
                         "CHANGEOVER",
                         "MAINTENANCE",
                         "ALTERNATIVE_MACHINE",
-                        "BOTTLENECK"
+                        "BOTTLENECK",
+                        "FROZEN_HORIZON"
                 );
         assertThat(catalog.findAll())
                 .allSatisfy(definition -> {

@@ -943,3 +943,26 @@ Maintenance와 대체 설비 후보를 제거하고, 적용 결과에서는 인�
 `CHANGEOVER`는 방향별 준비시간, `MAINTENANCE`는 비가용 구간 이후 완료시각, `ALTERNATIVE_MACHINE`은
 선택 설비 수, `BOTTLENECK`은 설비별 작업분 차이를 중점적으로 비교합니다. 조회만으로 ScheduleRun과
 오더 상태는 바뀌지 않습니다.
+
+### 20.7 Frozen Horizon 안내형 실습
+
+```http
+POST /api/v1/learning/instances/{instanceId}/frozen-horizon
+Content-Type: application/json
+
+{
+  "baselineExecutionKey": "8cf11908-bf94-474e-b92d-87acde35a3fc",
+  "rescheduleExecutionKey": "33f1f77e-4d64-4600-88e6-4e31dcd38815",
+  "dispatchingRule": "EXPLICIT_PRIORITY"
+}
+```
+
+`FROZEN_HORIZON` 인스턴스에서만 실행할 수 있습니다. 서버는 기준 계획을 저장한 뒤 계획 시작
+2시간 후를 동결 기준으로 정하고, 취소 오더·긴급오더와 11:00~13:00 계획 정비를 추가해 새
+ScheduleRun을 만듭니다. 재계획의 신규 확정 오더는 해당 인스턴스가 추적하는 ID로 제한되므로 다른
+학습 인스턴스나 사용자가 만든 오더가 섞이지 않습니다.
+
+응답은 `baseline`, `rescheduled`, 동결·정비 시각과 작업별 `changes`를 반환합니다. 변경 분류는
+경계 전에 시작한 `FIXED`, 경계 이후 다시 배치한 `MOVED`, 취소로 빠진 `EXCLUDED`, 재계획에
+처음 들어온 `NEW`이며, 각 항목에 전후 시각과 이유가 포함됩니다. 요청한 Dispatching Rule은
+재계획에만 적용되고 기준 계획은 비교 기준을 고정하기 위해 명시적 우선순위를 사용합니다.

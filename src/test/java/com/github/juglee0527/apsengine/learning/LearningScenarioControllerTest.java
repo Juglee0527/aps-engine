@@ -44,6 +44,9 @@ class LearningScenarioControllerTest {
     @MockitoBean
     private ScheduleRunService scheduleRunService;
 
+    @MockitoBean
+    private FrozenHorizonLabService frozenHorizonLabService;
+
     @Test
     void listsScenarioDefinitions() throws Exception {
         when(service.findScenarios()).thenReturn(List.of(

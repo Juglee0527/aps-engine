@@ -372,6 +372,23 @@ public class ScheduleRunService {
             OffsetDateTime frozenAt,
             DispatchingRule requestedRule
     ) {
+        return reschedule(
+                sourceScheduleRunId,
+                executionKey,
+                frozenAt,
+                requestedRule,
+                null
+        );
+    }
+
+    @Transactional
+    public ScheduleRun reschedule(
+            long sourceScheduleRunId,
+            UUID executionKey,
+            OffsetDateTime frozenAt,
+            DispatchingRule requestedRule,
+            List<Long> productionOrderIds
+    ) {
         if (sourceScheduleRunId < 1
                 || executionKey == null
                 || frozenAt == null) {
@@ -399,7 +416,7 @@ public class ScheduleRunService {
                 ? source.dispatchingRule()
                 : requestedRule;
         ReschedulingPreparation preparation =
-                prepareRescheduling(source, frozenAt);
+                prepareRescheduling(source, frozenAt, productionOrderIds);
         SchedulingContext context = createContext(
                 preparation.planningOrders(),
                 source.planningStart(),
@@ -459,7 +476,8 @@ public class ScheduleRunService {
 
     private ReschedulingPreparation prepareRescheduling(
             ScheduleRun source,
-            OffsetDateTime frozenAt
+            OffsetDateTime frozenAt,
+            List<Long> productionOrderIds
     ) {
         List<ScheduledOperation> sourceOperations =
                 source.scheduledOperations();
@@ -475,7 +493,10 @@ public class ScheduleRunService {
                 orderAvailableAt
         );
         List<ProductionOrder> newlyConfirmedOrders =
-                findNewlyConfirmedOrders(sourceOrderIds);
+                findNewlyConfirmedOrders(
+                        sourceOrderIds,
+                        productionOrderIds
+                );
         for (ProductionOrder order : newlyConfirmedOrders) {
             planningOrders.add(PlanningOrder.all(order));
             orderAvailableAt.put(order.id(), frozenAt);
@@ -542,8 +563,12 @@ public class ScheduleRunService {
     }
 
     private List<ProductionOrder> findNewlyConfirmedOrders(
-            Set<Long> sourceOrderIds
+            Set<Long> sourceOrderIds,
+            List<Long> productionOrderIds
     ) {
+        Set<Long> allowedIds = normalizeOptionalScope(
+                productionOrderIds
+        );
         return distinctOrders(
                 productionOrderRepository
                         .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
@@ -551,7 +576,24 @@ public class ScheduleRunService {
                         )
         ).stream()
                 .filter(order -> !sourceOrderIds.contains(order.id()))
+                .filter(order -> allowedIds == null
+                        || allowedIds.contains(order.id()))
                 .toList();
+    }
+
+    private Set<Long> normalizeOptionalScope(List<Long> productionOrderIds) {
+        if (productionOrderIds == null) {
+            return null;
+        }
+        if (productionOrderIds.stream().anyMatch(
+                id -> id == null || id < 1
+        )) {
+            throw new ApplicationException(
+                    ErrorCode.INVALID_REQUEST,
+                    "재계획 범위에는 올바른 생산오더 ID만 지정할 수 있습니다."
+            );
+        }
+        return new HashSet<>(productionOrderIds);
     }
 
     private FrozenResources createFrozenResources(

@@ -138,6 +138,13 @@ public class ProductionOrder {
         status = ProductionOrderStatus.SCHEDULED;
     }
 
+    public void cancel() {
+        if (status == ProductionOrderStatus.CANCELLED) {
+            return;
+        }
+        status = ProductionOrderStatus.CANCELLED;
+    }
+
     public Long id() {
         return id;
     }

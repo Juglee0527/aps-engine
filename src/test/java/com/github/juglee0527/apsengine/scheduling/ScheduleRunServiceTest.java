@@ -299,6 +299,16 @@ class ScheduleRunServiceTest {
         );
         ReflectionTestUtils.setField(newOrder, "id", 20L);
         newOrder.confirm();
+        ProductionOrder foreignOrder = ProductionOrder.create(
+                data.order().routing(),
+                "PO-FOREIGN",
+                1,
+                PLANNING_START,
+                PLANNING_START.plusHours(8),
+                100
+        );
+        ReflectionTestUtils.setField(foreignOrder, "id", 21L);
+        foreignOrder.confirm();
         UUID executionKey = UUID.randomUUID();
         OffsetDateTime frozenAt = PLANNING_START.plusHours(1);
 
@@ -309,7 +319,7 @@ class ScheduleRunServiceTest {
         when(productionOrderRepository
                 .findAllByStatusOrderByPriorityDescDueAtAscIdAsc(
                         ProductionOrderStatus.CONFIRMED
-                )).thenReturn(List.of(newOrder));
+                )).thenReturn(List.of(foreignOrder, newOrder));
         when(workingCalendarRepository
                 .findAllByMachine_IdInAndActiveTrue(anyCollection()))
                 .thenReturn(data.calendars());
@@ -320,7 +330,8 @@ class ScheduleRunServiceTest {
                 10L,
                 executionKey,
                 frozenAt,
-                null
+                null,
+                List.of(data.order().id(), newOrder.id())
         );
 
         assertThat(source.scheduledOperations()).hasSize(2);
@@ -351,6 +362,11 @@ class ScheduleRunServiceTest {
                 .hasSize(3);
         assertThat(newOrder.status())
                 .isEqualTo(ProductionOrderStatus.SCHEDULED);
+        assertThat(foreignOrder.status())
+                .isEqualTo(ProductionOrderStatus.CONFIRMED);
+        assertThat(result.scheduledOperations())
+                .noneMatch(operation -> operation.productionOrder().id()
+                        .equals(foreignOrder.id()));
         assertThat(result.totalTardinessMinutes()).isPositive();
     }
 

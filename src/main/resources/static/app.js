@@ -4,6 +4,7 @@ import {
     renderGuideStatus,
     renderLearningScenarios,
     renderConstraintImpact,
+    renderFrozenHorizonLab,
     renderRuleComparison,
     renderSampleOnboarding as renderGuideOnboarding
 } from "./js/guide.js";
@@ -158,6 +159,7 @@ function render() {
     renderLearningScenarios();
     renderRuleComparison();
     renderConstraintImpact();
+    renderFrozenHorizonLab();
     renderSampleOnboarding();
     populateSelects();
 }
@@ -279,6 +281,27 @@ async function runLearningScenario(scenarioKey) {
                 body: JSON.stringify({requestKey: crypto.randomUUID()})
             }
         );
+        if (scenarioKey === "FROZEN_HORIZON") {
+            const lab = await request(API.learningFrozenHorizon(instance.id), {
+                method: "POST",
+                body: JSON.stringify({
+                    baselineExecutionKey: crypto.randomUUID(),
+                    rescheduleExecutionKey: crypto.randomUUID(),
+                    dispatchingRule: "EXPLICIT_PRIORITY"
+                })
+            });
+            state.learningInstance = instance;
+            state.learningComparison = null;
+            state.constraintImpact = null;
+            state.frozenHorizonLab = lab;
+            await loadAll();
+            document.querySelector("#guide-frozen-horizon").scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+            showToast("Frozen Horizon 재계획 전후를 만들었습니다.");
+            return;
+        }
         const [comparison, constraintImpact] = await Promise.all([
             request(API.learningRuleComparison(instance.id)),
             request(API.learningConstraintImpact(instance.id))
@@ -286,6 +309,7 @@ async function runLearningScenario(scenarioKey) {
         state.learningInstance = instance;
         state.learningComparison = comparison;
         state.constraintImpact = constraintImpact;
+        state.frozenHorizonLab = null;
         renderRuleComparison();
         renderConstraintImpact();
         document.querySelector("#guide-rule-comparison").scrollIntoView({

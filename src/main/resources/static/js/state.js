@@ -13,5 +13,6 @@ export const state = {
     runningLearningScenario: null,
     learningInstance: null,
     learningComparison: null,
-    constraintImpact: null
+    constraintImpact: null,
+    frozenHorizonLab: null
 };

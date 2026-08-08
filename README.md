@@ -270,7 +270,7 @@ aps-engine
 - [x] 053. 기초 APS 학습 시나리오
 - [x] 054. Dispatching Rule 비교 실험실
 - [x] 055. 제조 제약 학습 시나리오
-- [ ] 056. Frozen Horizon 학습 시나리오
+- [x] 056. Frozen Horizon 학습 시나리오
 - [ ] 057. 대량 시나리오와 계획 탐색
 - [ ] 058. 학습 진도와 결과 코치
 - [ ] 059. APS 학습 경험 통합 검증

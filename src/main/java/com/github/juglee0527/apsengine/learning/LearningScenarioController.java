@@ -27,15 +27,18 @@ public class LearningScenarioController {
     private final LearningScenarioService service;
     private final ScheduleExecutionService executionService;
     private final ScheduleRunService scheduleRunService;
+    private final FrozenHorizonLabService frozenHorizonLabService;
 
     public LearningScenarioController(
             LearningScenarioService service,
             ScheduleExecutionService executionService,
-            ScheduleRunService scheduleRunService
+            ScheduleRunService scheduleRunService,
+            FrozenHorizonLabService frozenHorizonLabService
     ) {
         this.service = service;
         this.executionService = executionService;
         this.scheduleRunService = scheduleRunService;
+        this.frozenHorizonLabService = frozenHorizonLabService;
     }
 
     @GetMapping("/scenarios")
@@ -112,5 +115,13 @@ public class LearningScenarioController {
                 scope.planningStart(),
                 scope.productionOrderIds()
         );
+    }
+
+    @PostMapping("/instances/{instanceId}/frozen-horizon")
+    public FrozenHorizonLabResponse runFrozenHorizon(
+            @PathVariable long instanceId,
+            @Valid @RequestBody FrozenHorizonLabRequest request
+    ) {
+        return frozenHorizonLabService.run(instanceId, request);
     }
 }
