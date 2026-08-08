@@ -559,7 +559,7 @@ README와 로드맵에서 048~059의 범위와 현재 상태를 추적할 수 �
 권장 커밋 메시지: docs: define aps learning experience
 ```
 
-### [ ] 049. 프론트엔드 모듈화
+### [x] 049. 프론트엔드 모듈화
 
 ```text
 단일 app.js의 API, 상태, 공통 UI, 스케줄 보드, 기준정보, 오더와 사용자 가이드 책임을 ES Module로 분리해 주세요.

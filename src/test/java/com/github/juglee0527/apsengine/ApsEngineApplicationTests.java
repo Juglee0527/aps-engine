@@ -93,6 +93,36 @@ class ApsEngineApplicationTests {
     }
 
     @Test
+    void servesFrontendAsNativeEsModules() throws Exception {
+        mockMvc.perform(get("/index.html"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "<script src=\"/app.js\" type=\"module\">"
+                        )
+                ));
+
+        mockMvc.perform(get("/app.js"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "from \"./js/api.js\""
+                        )
+                ));
+
+        for (String module : new String[]{
+                "api", "state", "ui", "schedule-board",
+                "orders", "master-data", "guide", "guide-data"
+        }) {
+            mockMvc.perform(get("/js/" + module + ".js"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith(
+                            "text/javascript"
+                    ));
+        }
+    }
+
+    @Test
     void exposesHealthEndpoint() throws Exception {
         mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
