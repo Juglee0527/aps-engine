@@ -252,15 +252,19 @@ td small { display: block; margin-top: 3px; color: #7d8998; font-size: 11px; }
 .guide-hero-copy .section-label { color: var(--lime); }
 .guide-hero-copy h2 { margin-top: 12px; font-size: 29px; line-height: 1.28; letter-spacing: -.045em; }
 .guide-hero-copy p { max-width: 440px; margin: 16px 0 23px; color: #9eacbd; font-size: 11px; line-height: 1.75; }
+.guide-hero-meta { display: flex; flex-wrap: wrap; gap: 7px; margin: -6px 0 22px; }
+.guide-hero-meta span { padding: 6px 9px; color: #b4c0ce; background: #17283e; border: 1px solid #263a52; border-radius: 999px; font-size: 11px; }
+.guide-hero-meta strong { margin-right: 2px; color: var(--lime); }
 .guide-question-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
 .guide-question-grid article { display: flex; flex-direction: column; justify-content: center; padding: 31px 25px; border-right: 1px solid #26374d; }
 .guide-question-grid article:last-child { border-right: 0; }
 .guide-question-grid span { color: var(--lime); font: 10px Consolas, monospace; }
 .guide-question-grid strong { margin-top: 18px; color: #fff; font-size: 15px; }
 .guide-question-grid p { margin: 9px 0 0; color: #8697aa; font-size: 10px; line-height: 1.65; }
-.guide-local-nav { position: sticky; top: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; padding: 8px; background: rgba(244,247,250,.96); border: 1px solid var(--line); backdrop-filter: blur(8px); }
-.guide-local-nav a { padding: 8px 12px; color: #4f6075; font-size: 9px; font-weight: 800; text-decoration: none; }
-.guide-local-nav a:hover, .guide-local-nav a:focus-visible { color: #172b43; background: #fff; outline: 2px solid var(--blue); outline-offset: -2px; }
+.guide-local-nav { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 12px; padding: 7px; background: rgba(244,247,250,.96); border: 1px solid var(--line); border-radius: var(--radius-md); backdrop-filter: blur(8px); box-shadow: var(--shadow-sm); }
+.guide-local-nav a { display: flex; align-items: center; gap: 8px; padding: 9px 10px; color: #4f6075; border-radius: var(--radius-sm); font-size: 11px; font-weight: 800; text-decoration: none; }
+.guide-local-nav a > span { color: #8b98a7; font: 800 9px Consolas, monospace; }
+.guide-local-nav a:hover, .guide-local-nav a:focus-visible, .guide-local-nav a[aria-current="location"] { color: #172b43; background: #fff; box-shadow: inset 0 -2px 0 var(--lime-dark); }
 .guide-aps-map, #guide-curriculum, #guide-onboarding, #guide-result-reading, #guide-glossary { scroll-margin-top: 58px; }
 .guide-aps-map { padding: 24px; }
 .guide-engine-flow { display: grid; grid-template-columns: 1fr 34px 1fr 34px 1fr; align-items: stretch; margin-top: 18px; }
@@ -311,6 +315,8 @@ td small { display: block; margin-top: 3px; color: #7d8998; font-size: 11px; }
 .guide-scenario-progress.is-needs_review { color: #8a5a20; background: #fff0d4; }
 .guide-scenario-card > strong { margin-top: 10px; color: #26374a; font-size: 15px; }
 .guide-scenario-card > p { min-height: 38px; margin: 9px 0; color: #6f7f92; font-size: 9px; line-height: 1.65; }
+.guide-scenario-meta { display: flex; flex-wrap: wrap; gap: 6px; margin: 3px 0 12px; }
+.guide-scenario-meta span { padding: 5px 8px; color: #52667d; background: #eef2f6; border-radius: 999px; font-size: 10px; font-weight: 800; }
 .guide-scenario-card ul { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; padding: 0; list-style: none; }
 .guide-scenario-card li { padding: 4px 7px; color: #596b80; background: #eef2f5; font-size: 8px; }
 .guide-scenario-card small { margin: auto 0 12px; color: #8290a1; font-size: 8px; }
@@ -458,6 +464,35 @@ td small { display: block; margin-top: 3px; color: #7d8998; font-size: 11px; }
 .guide-limitations ul { margin: 0; padding: 15px 0 0 17px; border-top: 1px solid #35475d; }
 .guide-limitations li { margin: 7px 0; color: #b4bfcc; font-size: 9px; line-height: 1.5; }
 
+/* Learning content uses a reading scale independent from dense planning tables. */
+#guide-view .guide-section-heading h2 { font-size: 23px; line-height: 1.35; }
+#guide-view .guide-section-heading > p,
+#guide-view .guide-panel-header > p { max-width: 560px; font-size: 12px; line-height: 1.6; }
+#guide-view .guide-hero-copy p { font-size: 13px; }
+#guide-view .guide-question-grid p,
+#guide-view .guide-engine-node li,
+#guide-view .guide-course-card p,
+#guide-view .guide-learning-method li p,
+#guide-view .guide-status-card p,
+#guide-view .guide-scenario-card > p,
+#guide-view .guide-scenario-predict,
+#guide-view .guide-reading-card p,
+#guide-view .guide-glossary dd,
+#guide-view .guide-limitations p,
+#guide-view .guide-limitations li { font-size: 12px; }
+#guide-view .guide-course-card li,
+#guide-view .guide-scenario-card li,
+#guide-view .guide-scenario-card small,
+#guide-view .guide-storage-note { font-size: 11px; }
+#guide-view .guide-course-card > strong,
+#guide-view .guide-scenario-card > strong,
+#guide-view .guide-reading-card > strong { font-size: 16px; }
+#guide-view .guide-step p,
+#guide-view .guide-sample-preview,
+#guide-view .guide-coach-grid p,
+#guide-view .guide-coach-grid li,
+#guide-view .guide-coach-grid dd { font-size: 11px; }
+
 .modal { width: min(480px, calc(100vw - 40px)); padding: 0; color: var(--ink); background: var(--surface); border: 0; border-radius: 18px; box-shadow: 0 30px 90px rgba(3,11,22,.35); }
 .modal.modal-wide { width: min(900px, calc(100vw - 40px)); }
 .modal::backdrop { background: rgba(5,14,27,.68); backdrop-filter: blur(3px); }
@@ -550,6 +585,7 @@ td small { display: block; margin-top: 3px; color: #7d8998; font-size: 11px; }
     .legend { justify-content: flex-start; max-width: none; }
     .form-grid, .form-grid.two { grid-template-columns: 1fr; }
     .guide-local-nav { position: static; }
+    .guide-local-nav { grid-template-columns: repeat(2, 1fr); }
     .guide-question-grid { grid-template-columns: 1fr; }
     .guide-question-grid article { border-right: 0; border-bottom: 1px solid #26374d; }
     .guide-course-grid, .guide-system-boundaries, .guide-flow, .guide-reading-grid, .guide-reference-grid, .guide-scenario-grid, .guide-rule-grid, .guide-impact-grid { grid-template-columns: 1fr; }

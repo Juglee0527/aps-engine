@@ -259,6 +259,20 @@ function bindNavigation() {
     document.addEventListener("keydown", (event) => {
         if (event.key === "Escape") setNavigationOpen(false);
     });
+    const guideLinks = [...document.querySelectorAll(".guide-local-nav a")];
+    const guideTargets = guideLinks
+        .map((link) => document.querySelector(link.getAttribute("href")))
+        .filter(Boolean);
+    const guideObserver = new IntersectionObserver((entries) => {
+        const current = entries.find((entry) => entry.isIntersecting);
+        if (!current) return;
+        guideLinks.forEach((link) => {
+            const active = link.getAttribute("href") === `#${current.target.id}`;
+            if (active) link.setAttribute("aria-current", "location");
+            else link.removeAttribute("aria-current");
+        });
+    }, {rootMargin: "-20% 0px -65%", threshold: 0});
+    guideTargets.forEach((target) => guideObserver.observe(target));
 }
 
 function showView(view) {

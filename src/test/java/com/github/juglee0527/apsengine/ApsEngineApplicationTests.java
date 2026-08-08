@@ -243,6 +243,11 @@ class ApsEngineApplicationTests {
                         org.hamcrest.Matchers.containsString(
                                 "class=\"master-action-group\""
                         )
+                ))
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.containsString(
+                                "class=\"guide-hero-meta\""
+                        )
                 ));
 
         mockMvc.perform(get("/styles.css"))

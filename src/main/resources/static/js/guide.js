@@ -42,12 +42,20 @@ export function renderLearningScenarios() {
         const observations = scenario.observationPoints
             .map((point) => `<li>${escapeHtml(point)}</li>`)
             .join("");
+        const estimatedMinutes = scenario.expectedOrderCount > 200
+            ? 30
+            : scenario.expectedOrderCount > 20 ? 20 : 10;
         return `
             <article class="guide-scenario-card">
                 <span class="guide-course-index">LAB ${String(index + 1).padStart(2, "0")} · ${escapeHtml(scenario.key)}</span>
                 <em class="guide-scenario-progress is-${escapeHtml((progress?.status || "NEW").toLowerCase())}">${escapeHtml(progressLabel)}</em>
                 <strong>${escapeHtml(scenario.title)}</strong>
                 <p>${escapeHtml(scenario.objective)}</p>
+                <div class="guide-scenario-meta">
+                    <span>COURSE ${escapeHtml(scenario.course)}</span>
+                    <span>약 ${estimatedMinutes}분</span>
+                    <span>${scenario.expectedOrderCount}개 오더</span>
+                </div>
                 <div class="guide-scenario-predict">
                     <b>실행 전 질문</b>
                     <span>${escapeHtml(scenario.predictionPrompt)}</span>
